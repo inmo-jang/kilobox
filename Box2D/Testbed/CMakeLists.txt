@@ -72,9 +72,13 @@ if(APPLE)
 	# We are not using the Apple's framework version, but X11's
 	include_directories( /usr/X11/include )
 	link_directories( /usr/X11/lib )
-	set (OPENGL_LIBRARIES GL GLU GLUT X11)
+    message(Apple)
+	#set (OPENGL_LIBRARIES GL GLU GLUT X11)
+	set (OPENGL_LIBRARIES "-framework OpenGL -framework GLUT")
 elseif(WIN32)
 	set (ADDITIONAL_LIBRARIES winmm)
+else(APPLE)
+    set (ADDITIONAL_LIBRARIES freeglut_static)
 endif(APPLE)
 
 add_executable(Testbed
@@ -85,7 +89,7 @@ add_executable(Testbed
 target_link_libraries (
 	Testbed
 	Box2D
-	freeglut_static
+	#freeglut_static
 	glui
 	${ADDITIONAL_LIBRARIES}
 	${OPENGL_LIBRARIES}

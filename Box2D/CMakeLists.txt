@@ -26,7 +26,10 @@ if(BOX2D_BUILD_EXAMPLES)
 
   # Testbed and dependencies.
   find_package(OpenGL REQUIRED)
-  add_subdirectory(freeglut)
+  if (APPLE)
+  else(APPLE)
+    add_subdirectory(freeglut)
+  endif(APPLE)
   add_subdirectory(glui)
   add_subdirectory(Testbed)
 endif(BOX2D_BUILD_EXAMPLES)
