@@ -30,13 +30,13 @@ namespace
 	TestEntry* entry;
 	Test* test;
 	Settings settings;
-	int32 width = 640;
-	int32 height = 480;
+	int32 width = 1280;
+	int32 height = 720;
 	int32 framePeriod = 16;
 	int32 mainWindow;
 	float settingsHz = 60.0;
 	GLUI *glui;
-	float32 viewZoom = 1.0f;
+	float32 viewZoom = 0.05f;
 	int tx, ty, tw, th;
 	bool rMouseDown;
 	b2Vec2 lastp;

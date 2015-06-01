@@ -25,6 +25,7 @@
 	#include "freeglut/freeglut.h"
 #endif
 
+#include "kiloworld.h"
 #include "AddPair.h"
 #include "ApplyForce.h"
 #include "BodyTypes.h"
@@ -77,6 +78,7 @@
 
 TestEntry g_testEntries[] =
 {
+    {"Kiloworld", Kiloworld::Create},
 	{"Ray-Cast", RayCast::Create},
 	{"Dump Shell", DumpShell::Create},
 	{"Convex Hull", ConvexHull::Create},
