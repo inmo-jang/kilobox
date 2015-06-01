@@ -14,6 +14,10 @@ option(BOX2D_BUILD_SHARED "Build Box2D shared libraries" OFF)
 option(BOX2D_BUILD_STATIC "Build Box2D static libraries" ON)
 option(BOX2D_BUILD_EXAMPLES "Build Box2D examples" ON)
 
+
+# Use C++11
+set(CMAKE_CXX_FLAGS "-std=c++11")
+
 set(BOX2D_VERSION 2.3.0)
 set(LIB_INSTALL_DIR lib${LIB_SUFFIX})
 

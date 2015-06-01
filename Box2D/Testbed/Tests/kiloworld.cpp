@@ -12,13 +12,18 @@ void Kiloworld::Step(Settings* settings)
     //run the default physics and rendering
     Test::Step(settings);
     
-    
+    // Jiggle and render
     for(int i=0; i<bots.size(); i++)
     {
         bots[i]->m_body->ApplyForceToCenter(b2Vec2(rand(-0.1, 0.1), rand(-0.1, 0.1)), true);
+
+        bots[i]->render();
     }
     
-    //show some text in the main screen
+    // 
+
+
+    // Show some text in the main screen
     m_debugDraw.DrawString(5, m_textLine, "Kilobot");
     m_textLine += 15;
 }
@@ -29,7 +34,7 @@ void Kiloworld::build_world()
     make_static_box(xsize, ysize, 0.0, 0.0);
     
     // Now create kilobots randomly distributed
-    for(int i=0;i<1000;i++)
+    for(int i=0;i<100;i++)
         //make_kilobot(rand(-xsize/2+kbdia,+xsize/2-kbdia), rand(-ysize/2+kbdia,+ysize/2-kbdia), rand(-M_PI, M_PI));
         bots.push_back(new Kilobot(m_world,
                                    rand(-xsize/2+0.03,+xsize/2-0.03),
@@ -72,6 +77,9 @@ void Kilobot::make_kilobot(float xp, float yp, float th)
     kbdef.linearDamping     = kblineardamp;
     kbdef.angularDamping    = kbangulardamp;
     m_body                  = m_world->CreateBody(&kbdef);
+
+    // Create a reference to here in the physics world
+    m_body->SetUserData(this);
     
     b2CircleShape c;
     b2FixtureDef kfdef;
@@ -97,3 +105,62 @@ void Kilobot::make_kilobot(float xp, float yp, float th)
     kfdef.filter.maskBits       = KILOBOT;
     m_body->CreateFixture(&kfdef);
 }
+
+
+void Kilobot::render()
+{
+    b2Vec2 mypos = m_body->GetPosition();
+    printf("##id:%5d x:%8.4f y:%8.4f\n", kb_id, mypos.x, mypos.y);
+    //glColor3f(1,1,1);//white
+    //glLineStipple( 1, 0xF0F0 ); //evenly dashed line
+    //glEnable(GL_LINE_STIPPLE); 
+    //glBegin(GL_LINES);
+    for (int i = 0; i < inrange_bots.size(); i++) {
+        b2Vec2 theirpos = inrange_bots[i]->m_body->GetPosition();
+        printf("  id:%5d x:%8.4f y:%8.4f\n", inrange_bots[i]->kb_id, theirpos.x, theirpos.y);
+        //glVertex2f(mypos.x, mypos.y);
+        //glVertex2f(theirpos.x, theirpos.y);
+    }
+    //glEnd();
+    //glDisable(GL_LINE_STIPPLE);
+}
+
+bool get_contact(b2Contact *contact, Kilobot *&sender, Kilobot *&receiver)
+{
+    b2Fixture *fa = contact->GetFixtureA();
+    b2Fixture *fb = contact->GetFixtureB();
+    bool sa = fa->IsSensor();
+    bool sb = fb->IsSensor();
+    if (!(sa ^ sb))
+        return false;
+    Kilobot *ka = static_cast<Kilobot*>(fa->GetBody()->GetUserData());
+    Kilobot *kb = static_cast<Kilobot*>(fb->GetBody()->GetUserData());
+    if (sa)
+    {
+        sender      = ka;
+        receiver    = kb;
+    }
+    else
+    {
+        sender      = kb;
+        receiver    = ka;
+    }
+    return true;
+}
+
+void KBContactListener::BeginContact(b2Contact *contact)
+{
+    Kilobot *sender;
+    Kilobot *receiver;
+    if (get_contact(contact, sender, receiver))
+        sender->acquired(receiver);
+}
+
+void KBContactListener::EndContact(b2Contact *contact)
+{
+    Kilobot *sender;
+    Kilobot *receiver;
+    if (get_contact(contact, sender, receiver))
+        sender->lost(receiver);
+}
+

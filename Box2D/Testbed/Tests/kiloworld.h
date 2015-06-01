@@ -1,17 +1,30 @@
 // Copyright Simon Jones 2015
 
-#include <random>
-#include <random>
-
 #ifndef KILOWORLD_H
 #define KILOWORLD_H
+
+#include <random>
+#ifdef __APPLE__
+	#include <GLUT/glut.h>
+#else
+	#include "freeglut/freeglut.h"
+#endif
 
 
 
 #define DEGTORAD 0.0174532925199432957f
 #define RADTODEG 57.295779513082320876f
 
+// Forward declarations
 class Kilobot;
+
+// Subclass the built in contact class
+class KBContactListener : public b2ContactListener
+{
+    void BeginContact(b2Contact *contact);
+    void EndContact(b2Contact *contact);
+};
+
 
 enum entityCategory
 {
@@ -35,6 +48,9 @@ public:
         
         // Construct the world
         build_world();
+
+        // Tell the engine that we have a contact callback
+        m_world->SetContactListener(&contact_listener);
     }
     
     void Step(Settings* settings);
@@ -54,6 +70,8 @@ private:
     
     std::vector<Kilobot*>   bots;
     
+    KBContactListener   contact_listener;
+
     float   rand(float low, float high)
     {
         std::uniform_real_distribution<float>   dist(low, high);
@@ -87,6 +105,21 @@ public:
     b2Body  *m_body;
     b2World *m_world;
     int     kb_id;
+
+
+    // Functions to maintain the list of other bots we are in range of
+    void acquired(Kilobot *r)
+    {
+        printf("adding   %d\n", r->kb_id);
+        inrange_bots.push_back(r);
+    }
+    void lost(Kilobot *r)
+    {
+        printf("removing %d\n", r->kb_id);
+        inrange_bots.erase(std::find(inrange_bots.begin(), inrange_bots.end(), r));
+    }
+
+    void render();
     
 private:
     void    make_kilobot(float xp, float yp, float th);
@@ -100,21 +133,9 @@ private:
     float   kbsenserad;
     
     std::vector<Kilobot*>   inrange_bots;
-    void    acquired(Kilobot *r)
-    {
-        inrange_bots.push_back(r);
-    }
-    void    lost(Kilobot *r)
-    {
-        inrange_bots.erase(std::find(inrange_bots.begin(), inrange_bots.end(), r));
-    }
+
 };
 
-
-class KBContactListener : public b2ContactListener
-{
-    
-};
 
 
 #endif

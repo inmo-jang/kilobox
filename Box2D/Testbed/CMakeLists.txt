@@ -1,3 +1,5 @@
+
+
 # Some flags for Freeglut and GLUI.
 add_definitions( -DFREEGLUT_EXPORTS -DFREEGLUT_STATIC -D_CRT_SECURE_NO_WARNINGS )
 
