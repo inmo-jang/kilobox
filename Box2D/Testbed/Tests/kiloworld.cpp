@@ -111,17 +111,17 @@ void Kilobot::render()
 {
     b2Vec2 mypos = m_body->GetPosition();
     printf("##id:%5d x:%8.4f y:%8.4f\n", kb_id, mypos.x, mypos.y);
-    //glColor3f(1,1,1);//white
+    glColor3f(1,1,1);//white
     //glLineStipple( 1, 0xF0F0 ); //evenly dashed line
-    //glEnable(GL_LINE_STIPPLE); 
-    //glBegin(GL_LINES);
+    //glEnable(GL_LINE_STIPPLE);
+    glBegin(GL_LINES);
     for (int i = 0; i < inrange_bots.size(); i++) {
         b2Vec2 theirpos = inrange_bots[i]->m_body->GetPosition();
         printf("  id:%5d x:%8.4f y:%8.4f\n", inrange_bots[i]->kb_id, theirpos.x, theirpos.y);
-        //glVertex2f(mypos.x, mypos.y);
-        //glVertex2f(theirpos.x, theirpos.y);
+        glVertex2f(mypos.x, mypos.y);
+        glVertex2f(theirpos.x, theirpos.y);
     }
-    //glEnd();
+    glEnd();
     //glDisable(GL_LINE_STIPPLE);
 }
 
@@ -135,6 +135,9 @@ bool get_contact(b2Contact *contact, Kilobot *&sender, Kilobot *&receiver)
         return false;
     Kilobot *ka = static_cast<Kilobot*>(fa->GetBody()->GetUserData());
     Kilobot *kb = static_cast<Kilobot*>(fb->GetBody()->GetUserData());
+    if (!ka || !kb)
+        // If the user data is null, the objct is not a kilobot
+        return false;
     if (sa)
     {
         sender      = ka;
