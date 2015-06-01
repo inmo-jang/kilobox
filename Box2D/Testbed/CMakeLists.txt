@@ -57,6 +57,7 @@ set(Testbed_Tests_SRCS
 	Tests/VaryingRestitution.h
 	Tests/VerticalStack.h
 	Tests/Web.h
+	Tests/kiloworld.h
 )
 
 # These are used to create visual studio folders.
