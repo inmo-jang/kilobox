@@ -10,6 +10,8 @@
 #include <vector>
 #include <cstdlib>
 
+using namespace Kilolib;
+
 struct Neuron
 {
     Neuron(int _num_inputs) : num_inputs(_num_inputs)
@@ -86,7 +88,7 @@ public:
         std::vector<float> w;
         if ((words.size() == 2) && (words[1] == "random"))
             for(int i=0; i<nn.num_weights; i++)
-                w.push_back(2.0*erand48(rndbuf)-1.0);
+                w.push_back(rand(-1.0,1.0));
                             
         else if (words.size()-1 == nn.num_weights)
             for(int i=0; i<nn.num_weights; i++)

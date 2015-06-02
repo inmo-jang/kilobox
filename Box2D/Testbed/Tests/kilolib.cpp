@@ -53,7 +53,7 @@ void Kilobot::make_kilobot(float xp, float yp, float th)
     
 }
 
-void check_messages()
+void Kilobot::check_messages()
 {
     
 }
@@ -67,6 +67,7 @@ void Kilobot::update(float delta_t)
 
     // Handle message system
     check_messages();
+    printf("%s dt:%8d kilo_ticks:%8d\n", __PRETTY_FUNCTION__, dt, kilo_ticks);
 
     // Leave pheromone trace in environment
 
@@ -88,7 +89,7 @@ void Kilobot::render()
     glBegin(GL_LINES);
     for (int i = 0; i < inrange_bots.size(); i++) {
         b2Vec2 theirpos = inrange_bots[i]->m_body->GetPosition();
-        printf("  id:%5d x:%8.4f y:%8.4f\n", inrange_bots[i]->kb_id, theirpos.x, theirpos.y);
+        //printf("  id:%5d x:%8.4f y:%8.4f\n", inrange_bots[i]->kb_id, theirpos.x, theirpos.y);
         glVertex2f(mypos.x, mypos.y);
         glVertex2f(theirpos.x, theirpos.y);
     }

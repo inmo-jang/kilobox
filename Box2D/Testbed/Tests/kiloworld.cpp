@@ -39,7 +39,13 @@ void Kiloworld::build_world()
         mod->pose.y = rand(-ysize/2+0.03,+ysize/2-0.03);
         mod->pose.a = rand(-M_PI, M_PI);
         mod->world = m_world;
-        std::vector<std::string> words;
+        std::vector<std::string> words = {"evokilo1",
+            "-0.686275", "0.294118", "-3.000000", "1.196078",
+            "-3.039216", "-2.372549", "2.294118", "-4.529412",
+            "-4.333333", "3.941176", "-2.411765", "-3.745098",
+            "0.215686", "0.098039", "-4.882353", "3.862745",
+            "0.725490", "-3.901961", "3.588235", "0.882353",
+            "-2.372549", "1.980392", "3.274510", "-4.725490"};
         bots.push_back((Kilobot*)(new Evokilo1(mod, words)));
     }
 }

@@ -8,12 +8,20 @@
 #else
 	#include "freeglut/freeglut.h"
 #endif
+
+
 #include <random>
+
+
+
 #include "../Framework/Test.h"
 #include "../Framework/Render.h"
 
 #define DEGTORAD 0.0174532925199432957f
 #define RADTODEG 57.295779513082320876f
+
+
+typedef uint64_t usec_t;
 
 
 class ModelStigmergy
@@ -35,6 +43,34 @@ struct Pose
     float a;
 };
 
+class Color
+{
+public:
+    float r,g,b,a;
+	
+    Color( float r, float g, float b, float a=1.0 ){}
+	
+    Color(){}
+    
+    // Set fraction in cubehelix palette
+    Color(float f){}
+	
+    bool operator!=( const Color& other ) const;
+    bool operator==( const Color& other ) const;
+    static Color RandomColor();
+    void Print( const char* prefix ) const;
+    //void GLSet( void ) { glColor4f( r,g,b,a ); }
+};
+
+class CtrlArgs
+{
+public:
+    std::string worldfile;
+    std::string cmdline;
+    
+    CtrlArgs( std::string w, std::string c ) : worldfile(w), cmdline(c) {}
+};
+
 class ModelPosition
 {
 // Fake ModelPosition so that we can use the controller code as unchanged as possible from 
@@ -44,10 +80,18 @@ public:
 
     b2World *world;
     Pose pose;
+    Color color;
     Pose GetPose() 
     {
         return pose;
     }
+    struct World
+    {
+        usec_t SimTimeNow() {return 0;}
+    } fake_world;
+    void SetColor(Color col) {color = col;}
+    World *GetWorld() {return &fake_world;}
+    char *Token() {static char x[]="test"; return x;}
 };
 
 
@@ -71,6 +115,11 @@ namespace Kilolib
         MESSAGE         = 0x0002,
     };
 
+    class KBMaster
+    {
+    public:
+        KBMaster(ModelPosition *_pos, Kilobot *_kbc, bool _coro = false){}
+    };
 
     class Kilobot
     {
