@@ -78,7 +78,7 @@
 
 TestEntry g_testEntries[] =
 {
-    {"Kiloworld", Kiloworld::Create},
+    {"Kilolib", Kilolib::Kiloworld::Create},
 	{"Ray-Cast", RayCast::Create},
 	{"Dump Shell", DumpShell::Create},
 	{"Convex Hull", ConvexHull::Create},
