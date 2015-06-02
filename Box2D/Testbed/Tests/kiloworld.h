@@ -110,12 +110,12 @@ public:
     // Functions to maintain the list of other bots we are in range of
     void acquired(Kilobot *r)
     {
-        printf("adding   %d\n", r->kb_id);
+        //printf("adding   %d\n", r->kb_id);
         inrange_bots.push_back(r);
     }
     void lost(Kilobot *r)
     {
-        printf("removing %d\n", r->kb_id);
+        //printf("removing %d\n", r->kb_id);
         inrange_bots.erase(std::find(inrange_bots.begin(), inrange_bots.end(), r));
     }
 
