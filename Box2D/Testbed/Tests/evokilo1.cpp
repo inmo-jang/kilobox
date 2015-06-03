@@ -111,6 +111,8 @@ void Evokilo1::setup()
     nest        = 0;
     food        = 0;
     pheromone   = 0;
+
+    //printf("%3d evokilo setup\n", kilo_uid);
 }
 
 void Evokilo1::loop()

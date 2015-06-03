@@ -11,7 +11,11 @@
 
 
 #include <random>
-
+#include <queue>
+#include <memory>
+#include <iostream>
+#include <string>
+#include <cstdio>
 
 
 #include "../Framework/Test.h"
@@ -22,6 +26,16 @@
 
 
 typedef uint64_t usec_t;
+
+
+// From http://stackoverflow.com/questions/2342162/stdstring-formatting-like-sprintf
+template<typename ... Args>
+std::string string_format(const std::string& format, Args ... args){
+    size_t size = 1 + snprintf(nullptr, 0, format.c_str(), args ...);
+    std::unique_ptr<char[]> buf(new char[size]);
+    snprintf(buf.get(), size, format.c_str(), args ...);
+    return std::string(buf.get(), buf.get() + size);
+}
 
 
 class ModelStigmergy
@@ -85,13 +99,19 @@ public:
     {
         return pose;
     }
+    Pose GetGlobalPose()
+    {
+        return pose;
+    }
     struct World
     {
-        usec_t SimTimeNow() {return 0;}
+        usec_t simtime;
+        usec_t SimTimeNow() {return simtime;}
     } fake_world;
     void SetColor(Color col) {color = col;}
     World *GetWorld() {return &fake_world;}
-    char *Token() {static char x[]="test"; return x;}
+    std::string token;
+    const char *Token() {return token.c_str();}
 };
 
 
@@ -131,8 +151,8 @@ namespace Kilolib
             m_world             (_pos->world),
             kbdia               (0.031),
             kbdensity           (10.0),
-            kblineardamp        (2.0),
-            kbangulardamp       (2.0),
+            kblineardamp        (10.0),
+            kbangulardamp       (10.0),
             kbfriction          (1.0),
             kbrestitution       (1.0),
             kbsenserad          (0.1),
@@ -150,17 +170,21 @@ namespace Kilolib
             kilo_turn_right     (40)
         {
             // Generate a unique ID, pre-increment so that first ID is 1
-            kb_id = ++ids;
+            kilo_uid = ++ids;
             make_kilobot(pos->GetPose().x, pos->GetPose().y, pos->GetPose().a);
 
-            // Seed the random number generator with the unique ID
-            gen.seed(kb_id);
+            // Give the robot a name
+            pos->token = string_format("kilobot:%d", kilo_uid);
 
+            // Seed the random number generator with the unique ID
+            gen.seed(kilo_uid);
+
+            kilo_ticks_real = rand(0, 100);
+            kilo_ticks      = kilo_ticks_real;
         }
         ModelPosition   *pos;
         b2Body          *m_body;
         b2World         *m_world;
-        int             kb_id;
         
 
 
@@ -177,6 +201,8 @@ namespace Kilolib
         }
 
 
+
+
         void render();
         void update(float delta_t);
 
@@ -185,6 +211,7 @@ namespace Kilolib
         void check_messages();
         
         float   dt;
+        double  simtime;
         float   kbdia;
         float   kbdensity;
         float   kblineardamp;
@@ -194,15 +221,15 @@ namespace Kilolib
         float   kbsenserad;
         
         // Each kilobot has its own random number generator
-        std::default_random_engine              gen;
+        std::default_random_engine  gen;
 
         // Pointers to all kilobots within message range
-        std::vector<Kilobot*>   inrange_bots;
+        std::vector<Kilobot*>       inrange_bots;
 
         // Controller velocity goal, set by set_motor() based on two-wheel kinematics
-        double              omega_goal;
-        double              xdot_goal;
-        double              ydot_goal;
+        double                      omega_goal;
+        double                      xdot_goal;
+        double                      ydot_goal;
         // Pheromone strength
         double                      pheromone;
         ModelStigmergy::colour_t    ambient;
@@ -243,6 +270,16 @@ namespace Kilolib
             int16_t low_gain;
             int16_t high_gain;
         } distance_measurement_t;
+
+        // Message queue - not actually part of the API
+        struct m_event_t
+        {
+            message_t               m;
+            distance_measurement_t  d;
+            std::string             s;
+        };
+        typedef std::queue<m_event_t>   m_queue_t;
+        m_queue_t                       message_queue;
       
         // Message stuff
         typedef enum {
@@ -305,6 +342,7 @@ namespace Kilolib
         // so since the simulation tick defaults to 100ms, it will appear to increase in
         // chunks. This may affect the behaviour of some software..
         uint32_t            kilo_ticks;
+        float               kilo_ticks_real;
         const uint32_t      kilo_tx_period;//      = 3906;
         const double        message_period;//      = kilo_tx_period / timer0_freq;
         uint32_t            last_message;

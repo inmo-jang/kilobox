@@ -18,8 +18,8 @@ void Kilobot::make_kilobot(float xp, float yp, float th)
     kbdef.type              = b2_dynamicBody;
     kbdef.position.Set(xp, yp);
     kbdef.angle             = th;
-    kbdef.linearDamping     = kblineardamp;
-    kbdef.angularDamping    = kbangulardamp;
+    //kbdef.linearDamping     = kblineardamp;
+    //kbdef.angularDamping    = kbangulardamp;
     m_body                  = m_world->CreateBody(&kbdef);
 
     // Create a reference to here in the physics world
@@ -49,13 +49,71 @@ void Kilobot::make_kilobot(float xp, float yp, float th)
     kfdef.filter.maskBits       = KILOBOT;
     m_body->CreateFixture(&kfdef);
 
-    // Instantiate a controller
-    
+
 }
 
 void Kilobot::check_messages()
 {
+    // Messages are sent by placing them in a message queue owned by the recipient
+    message_t *msg = 0;
+    // Now see if its time to try sending a new message
+    uint32_t t = pos->GetWorld()->SimTimeNow();
+    if ((t - last_message) > (message_period * 1e6))
+    {
+        // Time to try and send a message if there is one. First, update the
+        // message attempt timestamp with a bit of randomness of 50ms
+        // FIXME!! SJ we really don't know how this will affect sim fidelity
+        // and perhaps this should be one of the parameters to evolve
+        last_message = t + rand(0, 200000);
+        // Call the callback function to see if there is anything there
+        msg = (*this.*kilo_message_tx)();
+        //printf("%s sending at %u\n", pos->Token(), t);
     
+    
+        // Check the set of inrange kilobots and copy the message into the
+        // target message queue
+        if (msg)
+        {
+            // Signal successful message transmission. This is no guarantee of
+            // reception, it just means (in the hardware) that no collision was
+            // detected in the first ~250us
+            (*this.*kilo_message_tx_success)();
+            int s = inrange_bots.size();
+            int r = rand(0, s);
+            for(int i=0; i<s; i++)
+            {
+                int j = (i + r) % s;
+                Kilobot *bot = inrange_bots[j];
+                // Get a pointer to the recipients message queue
+                m_queue_t &meq = bot->message_queue;
+                // Calculate distance between centres in mm
+                Pose me = pos->GetGlobalPose();
+                Pose tx = bot->pos->GetGlobalPose();
+                int dist = hypot(me.x - tx.x, me.y - tx.y) * 1000;
+                // Copy across the message and the distance
+                distance_measurement_t  d;
+                d.low_gain = dist;
+                // Put the message on the queue
+                //printf("placing msg from %s in %s dist %d\n",pos->Token(),bot->pos->Token(), dist);
+                m_event_t sendmsg;
+                sendmsg.m = *msg;
+                sendmsg.d = d;
+                sendmsg.s = pos->Token();
+                meq.push(sendmsg);
+            }
+        }
+    }
+    
+    // Now check if we have messages on our queue and for each one, call the 
+    // callback function
+    m_queue_t &meq = message_queue;
+    while (!meq.empty())
+    {
+        (*this.*kilo_message_rx)(&meq.front().m, &meq.front().d);
+        //printf("%s got message from distance %s %i\n", pos->Token(), meq.front().s.c_str(), meq.front().d.low_gain);
+        meq.pop();
+    }
+ 
 }
 
 
@@ -63,18 +121,68 @@ void Kilobot::update(float delta_t)
 {
     dt = delta_t;
     // Update the kilobot tick counter
-    kilo_ticks += dt * 1e6 / master_tick_period;
+    // Because user programs can change kilo_ticks, we check to see if the
+    // visible integer count has changed dramatically from the real internal
+    // time. If so, adjust the internal time. The tick frequency is about
+    // 30Hz, so for an update rate of 10Hz it should only ever differ by 3,
+    // for an update rate of 60Hz, should only differ by 1
+    simtime += dt * 1e6;
+    kilo_ticks_real += dt * 1e6 / master_tick_period;
+    if (abs(kilo_ticks_real - kilo_ticks) > 3)
+        kilo_ticks_real = kilo_ticks;
+    else
+        kilo_ticks = kilo_ticks_real;
+
+    // Update our fake ModelPosition that the controller can see
+    b2Vec2 p    = m_body->GetPosition();
+    pos->pose.x = p.x;
+    pos->pose.y = p.y;
+    float a     = m_body->GetAngle();
+    pos->pose.a = a;
+    pos->fake_world.simtime = (usec_t) simtime;
 
     // Handle message system
     check_messages();
-    printf("%s dt:%8d kilo_ticks:%8d\n", __PRETTY_FUNCTION__, dt, kilo_ticks);
+    //printf("%s dt:%8f kilo_ticks:%8d\n", __PRETTY_FUNCTION__, dt, kilo_ticks);
+
+    // Run the user code of the controller
+    loop();
 
     // Leave pheromone trace in environment
 
     // Do the physics, this always happens every tick, regardless of loop schelduling
     // This consists of working out what forces to apply to get our desired goal velocities
     // and then applying them
+    //
+    // The kilobot physical model assumes that there is a constant velocity dependent drag.
+    // This is called damping in the Box2D world. Our goal velocities should thus translate 
+    // directly into forces and torques via the damping constant
+    //
+    // The goal velocities are all in the frame of the kilobot, transform into world frame
+    float xd = xdot_goal * cos(a) - ydot_goal * sin(a);
+    float yd = xdot_goal * sin(a) + ydot_goal * cos(a);
 
+    float xf        = 0.0;
+    float yf        = 0.0;
+    float torque    = 0.0;
+    b2Vec2 v        = m_body->GetLinearVelocity();
+    float omega     = m_body->GetAngularVelocity();
+    float m         = m_body->GetMass();
+    float i         = m_body->GetInertia();
+
+    // Calculate the forces using damping from current velocity counteracted 
+    // by the goal velocity
+    //xd = yd = omega_goal = 0.0;
+    xf      += (-v.x + xd) * kblineardamp * m;
+    yf      += (-v.y + yd) * kblineardamp * m;
+    torque  += (-omega + omega_goal) * kbangulardamp * i;
+    
+    // Apply the force to the kilobot body
+    m_body->ApplyForceToCenter(b2Vec2(xf, yf), true);
+    m_body->ApplyTorque(torque, true);
+
+    //printf("%3d xd:%10.6f yd:%10.6f ad:%10.6f xf:%10.6f yf:%10.6f tq:%10.6f\n", 
+    //kilo_uid, xd, yd, omega_goal, xf, yf, torque);
 }
 
 
@@ -82,7 +190,7 @@ void Kilobot::update(float delta_t)
 void Kilobot::render()
 {
     b2Vec2 mypos = m_body->GetPosition();
-    printf("##id:%5d x:%8.4f y:%8.4f\n", kb_id, mypos.x, mypos.y);
+    //printf("##id:%5d x:%8.4f y:%8.4f\n", kilo_uid, mypos.x, mypos.y);
     glColor3f(1,1,1);//white
     //glLineStipple( 1, 0xF0F0 ); //evenly dashed line
     //glEnable(GL_LINE_STIPPLE);

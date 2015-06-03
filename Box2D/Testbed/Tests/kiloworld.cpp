@@ -9,19 +9,15 @@ using namespace Kilolib;
 void Kiloworld::Step(Settings* settings)
 {
     float dt = settings->hz > 0.0f ? 1.0f / settings->hz : float32(0.0f);
+
     //run the default physics and rendering
     Test::Step(settings);
-    
     // Jiggle and render
     for(int i=0; i<bots.size(); i++)
-    {
-        bots[i]->m_body->ApplyForceToCenter(b2Vec2(rand(-0.1, 0.1), rand(-0.1, 0.1)), true);
-
         bots[i]->update(dt);
-        bots[i]->render();
-    }
-    
     // Show some text in the main screen
+    for(int i=0; i<bots.size(); i++)
+        bots[i]->render();
     m_debugDraw.DrawString(5, m_textLine, "Kilobot");
     m_textLine += 15;
 }
@@ -46,7 +42,7 @@ void Kiloworld::build_world()
             "0.215686", "0.098039", "-4.882353", "3.862745",
             "0.725490", "-3.901961", "3.588235", "0.882353",
             "-2.372549", "1.980392", "3.274510", "-4.725490"};
-        bots.push_back((Kilobot*)(new Evokilo1(mod, words)));
+        bots.push_back((Kilobot*)(new Evokilo1(mod, words, "log.txt")));
     }
 }
 

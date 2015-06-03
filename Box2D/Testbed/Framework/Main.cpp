@@ -22,6 +22,12 @@
 
 #include <stdio.h>
 
+#include <sys/time.h>
+
+
+#define STAMP(x) {struct timeval t;gettimeofday(&t,NULL);printf("%s %8lu %s\n",__func__,(unsigned long)t.tv_usec,x);}
+
+
 namespace
 {
 	int32 testIndex = 0;
@@ -32,7 +38,7 @@ namespace
 	Settings settings;
 	int32 width = 1280;
 	int32 height = 720;
-	int32 framePeriod = 16;
+	int32 framePeriod = 1;
 	int32 mainWindow;
 	float settingsHz = 60.0;
 	GLUI *glui;
@@ -87,11 +93,12 @@ static void Timer(int)
 {
 	glutSetWindow(mainWindow);
 	glutPostRedisplay();
-	glutTimerFunc(framePeriod, Timer, 0);
+	//glutTimerFunc(framePeriod, Timer, 0);
 }
 
 static void SimulationLoop()
 {
+    STAMP("Start of loop");
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glMatrixMode(GL_MODELVIEW);
@@ -107,7 +114,7 @@ static void SimulationLoop()
 
 	test->DrawTitle(entry->name);
 
-	glutSwapBuffers();
+	//glutSwapBuffers();
 
 	if (testSelection != testIndex)
 	{
@@ -119,6 +126,8 @@ static void SimulationLoop()
 		settings.viewCenter.Set(0.0f, 20.0f);
 		Resize(width, height);
 	}
+	glutPostRedisplay();
+    STAMP("End of loop");
 }
 
 static void Keyboard(unsigned char key, int x, int y)
@@ -395,7 +404,8 @@ int main(int argc, char** argv)
 	test = entry->createFcn();
 
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
+	//glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
+	glutInitDisplayMode(GLUT_RGBA );
 	glutInitWindowSize(width, height);
 	char title[32];
 	sprintf(title, "Box2D Version %d.%d.%d", b2_version.major, b2_version.minor, b2_version.revision);

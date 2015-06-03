@@ -325,8 +325,8 @@ void Test::Step(Settings* settings)
 	// Track maximum profile times
 	{
 		const b2Profile& p = m_world->GetProfile();
-		m_maxProfile.step = b2Max(m_maxProfile.step, p.step);
-		m_maxProfile.collide = b2Max(m_maxProfile.collide, p.collide);
+		if (p.step < 10)    m_maxProfile.step = b2Max(m_maxProfile.step, p.step);
+		if (p.collide < 10) m_maxProfile.collide = b2Max(m_maxProfile.collide, p.collide);
 		m_maxProfile.solve = b2Max(m_maxProfile.solve, p.solve);
 		m_maxProfile.solveInit = b2Max(m_maxProfile.solveInit, p.solveInit);
 		m_maxProfile.solveVelocity = b2Max(m_maxProfile.solveVelocity, p.solveVelocity);
@@ -334,8 +334,8 @@ void Test::Step(Settings* settings)
 		m_maxProfile.solveTOI = b2Max(m_maxProfile.solveTOI, p.solveTOI);
 		m_maxProfile.broadphase = b2Max(m_maxProfile.broadphase, p.broadphase);
 
-		m_totalProfile.step += p.step;
-		m_totalProfile.collide += p.collide;
+		if (p.step < 10)    m_totalProfile.step += p.step;
+		if (p.collide < 10) m_totalProfile.collide += p.collide;
 		m_totalProfile.solve += p.solve;
 		m_totalProfile.solveInit += p.solveInit;
 		m_totalProfile.solveVelocity += p.solveVelocity;

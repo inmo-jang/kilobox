@@ -65,7 +65,7 @@ typedef double float64;
 
 /// A small length used as a collision and constraint tolerance. Usually it is
 /// chosen to be numerically significant, but visually insignificant.
-#define b2_linearSlop			0.005f
+#define b2_linearSlop			0.0005f
 
 /// A small angle used as a collision and constraint tolerance. Usually it is
 /// chosen to be numerically significant, but visually insignificant.
@@ -120,7 +120,7 @@ typedef double float64;
 #define b2_timeToSleep				0.5f
 
 /// A body cannot sleep if its linear velocity is above this tolerance.
-#define b2_linearSleepTolerance		0.01f
+#define b2_linearSleepTolerance		0.001f
 
 /// A body cannot sleep if its angular velocity is above this tolerance.
 #define b2_angularSleepTolerance	(2.0f / 180.0f * b2_pi)
