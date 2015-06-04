@@ -23,6 +23,7 @@
 #include "Render.h"
 
 #include <stdlib.h>
+#include <string>
 
 class Test;
 struct Settings;
