@@ -185,15 +185,63 @@ void Kilobot::update(float delta_t)
     //kilo_uid, xd, yd, omega_goal, xf, yf, torque);
 }
 
+void DrawSolidCircle(const b2Vec2& center, float32 radius, const b2Vec2& axis, const b2Color& color, bool outline, bool solid)
+{
+	const float32 k_segments = 16.0f;
+	const float32 k_increment = 2.0f * b2_pi / k_segments;
+	float32 theta = 0.0f;
+	glEnable(GL_BLEND);
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    if (solid)
+	    glColor4f(color.r, color.g, color.b, 1.0f);
+    else
+	    glColor4f(color.r, color.g, color.b, 0.2f);
+	glBegin(GL_TRIANGLE_FAN);
+	for (int32 i = 0; i < k_segments; ++i)
+	{
+		b2Vec2 v = center + radius * b2Vec2(cosf(theta), sinf(theta));
+		glVertex2f(v.x, v.y);
+		theta += k_increment;
+	}
+	glEnd();
+	glDisable(GL_BLEND);
+
+    if (outline)
+    {
+        theta = 0.0f;
+        //glColor4f(color.r, color.g, color.b, 1.0f);
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        glBegin(GL_LINE_LOOP);
+        for (int32 i = 0; i < k_segments; ++i)
+        {
+            b2Vec2 v = center + radius * b2Vec2(cosf(theta), sinf(theta));
+            glVertex2f(v.x, v.y);
+            theta += k_increment;
+        }
+        glEnd();
+
+        b2Vec2 p = center + radius * axis;
+        glBegin(GL_LINES);
+        glVertex2f(center.x, center.y);
+        glVertex2f(p.x, p.y);
+        glEnd();
+    }
+}
 
 
 void Kilobot::render()
 {
     b2Vec2 mypos = m_body->GetPosition();
+    float a = m_body->GetAngle();
+    const b2Transform &xf = m_body->GetTransform();
     //printf("##id:%5d x:%8.4f y:%8.4f\n", kilo_uid, mypos.x, mypos.y);
+
+
+    DrawSolidCircle(mypos, kbsenserad, b2Mul(xf, b2Vec2(1.0f, 0.0f)), b2Color(0.1, 0.0, 1.0), false, false);
+    DrawSolidCircle(mypos, kbdia/2, b2Mul(xf, b2Vec2(1.0f, 0.0f)), b2Color(0.9, 0.7, 0.7), true, true);
+
+
     glColor3f(1,1,1);//white
-    //glLineStipple( 1, 0xF0F0 ); //evenly dashed line
-    //glEnable(GL_LINE_STIPPLE);
     glBegin(GL_LINES);
     for (int i = 0; i < inrange_bots.size(); i++) {
         b2Vec2 theirpos = inrange_bots[i]->m_body->GetPosition();
@@ -202,7 +250,6 @@ void Kilobot::render()
         glVertex2f(theirpos.x, theirpos.y);
     }
     glEnd();
-    //glDisable(GL_LINE_STIPPLE);
 }
 
 bool get_contact(b2Contact *contact, Kilobot *&sender, Kilobot *&receiver)

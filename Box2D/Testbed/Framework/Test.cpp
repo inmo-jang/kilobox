@@ -279,16 +279,22 @@ void Test::Step(Settings* settings)
 			timeStep = 0.0f;
 		}
 
-		m_debugDraw.DrawString(5, m_textLine, "****PAUSED****");
-		m_textLine += DRAW_STRING_NEW_LINE;
+        if (settings->time_to_draw)
+        {
+            m_debugDraw.DrawString(5, m_textLine, "****PAUSED****");
+            m_textLine += DRAW_STRING_NEW_LINE;
+        }
 	}
 
-	uint32 flags = 0;
-	flags += settings->drawShapes			* b2Draw::e_shapeBit;
-	flags += settings->drawJoints			* b2Draw::e_jointBit;
-	flags += settings->drawAABBs			* b2Draw::e_aabbBit;
-	flags += settings->drawCOMs				* b2Draw::e_centerOfMassBit;
-	m_debugDraw.SetFlags(flags);
+    if (settings->time_to_draw)
+    {
+        uint32 flags = 0;
+        flags += settings->drawShapes			* b2Draw::e_shapeBit;
+        flags += settings->drawJoints			* b2Draw::e_jointBit;
+        flags += settings->drawAABBs			* b2Draw::e_aabbBit;
+        flags += settings->drawCOMs				* b2Draw::e_centerOfMassBit;
+        m_debugDraw.SetFlags(flags);
+    }
 
 	m_world->SetAllowSleeping(settings->enableSleep > 0);
 	m_world->SetWarmStarting(settings->enableWarmStarting > 0);
@@ -297,6 +303,7 @@ void Test::Step(Settings* settings)
 
 	m_pointCount = 0;
 
+    // Run the actual physics engine
 	m_world->Step(timeStep, settings->velocityIterations, settings->positionIterations);
 
     if (settings->time_to_draw)
@@ -386,72 +393,75 @@ void Test::Step(Settings* settings)
         }
 	}
 
-	if (m_mouseJoint)
-	{
-		b2Vec2 p1 = m_mouseJoint->GetAnchorB();
-		b2Vec2 p2 = m_mouseJoint->GetTarget();
+    if (settings->time_to_draw)
+    {
+        if (m_mouseJoint)
+        {
+            b2Vec2 p1 = m_mouseJoint->GetAnchorB();
+            b2Vec2 p2 = m_mouseJoint->GetTarget();
 
-		b2Color c;
-		c.Set(0.0f, 1.0f, 0.0f);
-		m_debugDraw.DrawPoint(p1, 4.0f, c);
-		m_debugDraw.DrawPoint(p2, 4.0f, c);
+            b2Color c;
+            c.Set(0.0f, 1.0f, 0.0f);
+            m_debugDraw.DrawPoint(p1, 4.0f, c);
+            m_debugDraw.DrawPoint(p2, 4.0f, c);
 
-		c.Set(0.8f, 0.8f, 0.8f);
-		m_debugDraw.DrawSegment(p1, p2, c);
-	}
-	
-	if (m_bombSpawning)
-	{
-		b2Color c;
-		c.Set(0.0f, 0.0f, 1.0f);
-		m_debugDraw.DrawPoint(m_bombSpawnPoint, 4.0f, c);
+            c.Set(0.8f, 0.8f, 0.8f);
+            m_debugDraw.DrawSegment(p1, p2, c);
+        }
+        
+        if (m_bombSpawning)
+        {
+            b2Color c;
+            c.Set(0.0f, 0.0f, 1.0f);
+            m_debugDraw.DrawPoint(m_bombSpawnPoint, 4.0f, c);
 
-		c.Set(0.8f, 0.8f, 0.8f);
-		m_debugDraw.DrawSegment(m_mouseWorld, m_bombSpawnPoint, c);
-	}
+            c.Set(0.8f, 0.8f, 0.8f);
+            m_debugDraw.DrawSegment(m_mouseWorld, m_bombSpawnPoint, c);
+        }
 
-	if (settings->drawContactPoints && settings->time_to_draw)
-	{
-		const float32 k_impulseScale = 0.1f;
-		const float32 k_axisScale = 0.3f;
+        if (settings->drawContactPoints && settings->time_to_draw)
+        {
+            const float32 k_impulseScale = 0.1f;
+            const float32 k_axisScale = 0.3f;
 
-		for (int32 i = 0; i < m_pointCount; ++i)
-		{
-			ContactPoint* point = m_points + i;
+            for (int32 i = 0; i < m_pointCount; ++i)
+            {
+                ContactPoint* point = m_points + i;
 
-			if (point->state == b2_addState)
-			{
-				// Add
-				m_debugDraw.DrawPoint(point->position, 10.0f, b2Color(0.3f, 0.95f, 0.3f));
-			}
-			else if (point->state == b2_persistState)
-			{
-				// Persist
-				m_debugDraw.DrawPoint(point->position, 5.0f, b2Color(0.3f, 0.3f, 0.95f));
-			}
+                if (point->state == b2_addState)
+                {
+                    // Add
+                    m_debugDraw.DrawPoint(point->position, 10.0f, b2Color(0.3f, 0.95f, 0.3f));
+                }
+                else if (point->state == b2_persistState)
+                {
+                    // Persist
+                    m_debugDraw.DrawPoint(point->position, 5.0f, b2Color(0.3f, 0.3f, 0.95f));
+                }
 
-			if (settings->drawContactNormals == 1)
-			{
-				b2Vec2 p1 = point->position;
-				b2Vec2 p2 = p1 + k_axisScale * point->normal;
-				m_debugDraw.DrawSegment(p1, p2, b2Color(0.9f, 0.9f, 0.9f));
-			}
-			else if (settings->drawContactImpulse == 1)
-			{
-				b2Vec2 p1 = point->position;
-				b2Vec2 p2 = p1 + k_impulseScale * point->normalImpulse * point->normal;
-				m_debugDraw.DrawSegment(p1, p2, b2Color(0.9f, 0.9f, 0.3f));
-			}
+                if (settings->drawContactNormals == 1)
+                {
+                    b2Vec2 p1 = point->position;
+                    b2Vec2 p2 = p1 + k_axisScale * point->normal;
+                    m_debugDraw.DrawSegment(p1, p2, b2Color(0.9f, 0.9f, 0.9f));
+                }
+                else if (settings->drawContactImpulse == 1)
+                {
+                    b2Vec2 p1 = point->position;
+                    b2Vec2 p2 = p1 + k_impulseScale * point->normalImpulse * point->normal;
+                    m_debugDraw.DrawSegment(p1, p2, b2Color(0.9f, 0.9f, 0.3f));
+                }
 
-			if (settings->drawFrictionImpulse == 1)
-			{
-				b2Vec2 tangent = b2Cross(point->normal, 1.0f);
-				b2Vec2 p1 = point->position;
-				b2Vec2 p2 = p1 + k_impulseScale * point->tangentImpulse * tangent;
-				m_debugDraw.DrawSegment(p1, p2, b2Color(0.9f, 0.9f, 0.3f));
-			}
-		}
-	}
+                if (settings->drawFrictionImpulse == 1)
+                {
+                    b2Vec2 tangent = b2Cross(point->normal, 1.0f);
+                    b2Vec2 p1 = point->position;
+                    b2Vec2 p2 = p1 + k_impulseScale * point->tangentImpulse * tangent;
+                    m_debugDraw.DrawSegment(p1, p2, b2Color(0.9f, 0.9f, 0.3f));
+                }
+            }
+        }
+    }
 }
 
 void Test::ShiftOrigin(const b2Vec2& newOrigin)

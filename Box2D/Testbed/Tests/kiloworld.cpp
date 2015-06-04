@@ -2,6 +2,7 @@
 
 #include "kiloworld.h"
 #include "evokilo1.h"
+#include "worldfile.h"
 
 using namespace Kilolib;
 
@@ -19,6 +20,7 @@ void Kiloworld::Step(Settings* settings)
     
     if (settings->time_to_draw)
     {
+        render_arena();
         for(int i=0; i<bots.size(); i++)
             bots[i]->render();
         m_debugDraw.DrawString(5, m_textLine, "Kilobot");
@@ -31,6 +33,30 @@ void Kiloworld::build_world()
     // Make arena of fixed lines
     make_static_box(xsize, ysize, 0.0, 0.0);
     
+    // Read in the worldfile
+
+    printf("%s\n", settings->worldfile.c_str());
+    // We need to parse the worldfile, which is in Stage format, but the only
+    // things we care about are:
+    //  quit_time <number>
+    //  define <name> kilobot ( ctrl "<control_string>" )
+    //  <name> ( pose [ <x> <y> <dont_care> <angle> ] )
+    wf = new Worldfile();
+    if (!wf->Load(settings->worldfile))
+    {
+        exit(1);
+    }
+    int entity = 0;
+    float quit_time = 0;
+    quit_time = wf->ReadFloat(entity, "quit_time", quit_time);
+    printf("Got quit time %f\n", quit_time);
+    for(entity=1; entity < wf->GetEntityCount(); entity++)
+    {
+        const char *typestr = (char*)wf->GetEntityType(entity);
+        printf("%d %s\n", entity, typestr);
+    }
+    
+
     // Now create kilobots randomly distributed
     for(int i=0;i<100;i++)
     {
@@ -71,7 +97,30 @@ void Kiloworld::make_static_box(float xs, float ys, float xp, float yp)
     // The fixture is created directly from the shape because
     // we are not altering the default properties of the created
     // fixture
-    arena->CreateFixture(&perimeter, 0);
+    arena_fixture = arena->CreateFixture(&perimeter, 0);
+}
+
+
+void Kiloworld::render_arena()
+{
+    b2ChainShape *chain = (b2ChainShape*)arena_fixture->GetShape();
+	int32 count = chain->m_count;
+    const b2Vec2* vertices = chain->m_vertices;
+
+    b2Vec2 v1 = vertices[0];
+
+    glColor3f(0.0f, 1.0f, 0.0f);
+    glBegin(GL_LINES);
+    for (int32 i = 1; i < count; ++i)
+    {
+        b2Vec2 v2 = vertices[i];
+        glVertex2f(v1.x, v1.y);
+        glVertex2f(v2.x, v2.y);
+        //m_debugDraw.DrawSegment(v1, v2, color);
+        //m_debugDraw.DrawCircle(v1, 0.05f, color);
+        v1 = v2;
+    }
+    glEnd();
 }
 
 

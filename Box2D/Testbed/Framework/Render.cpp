@@ -94,6 +94,7 @@ void DebugDraw::DrawSolidCircle(const b2Vec2& center, float32 radius, const b2Ve
 	glEnd();
 	glDisable(GL_BLEND);
 
+    return;
 	theta = 0.0f;
 	glColor4f(color.r, color.g, color.b, 1.0f);
 	glBegin(GL_LINE_LOOP);

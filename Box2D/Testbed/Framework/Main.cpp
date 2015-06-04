@@ -38,7 +38,18 @@ namespace
 	Settings settings;
 	int32 width = 1280;
 	int32 height = 720;
-	int32 framePeriod = 16;
+    // Unless this is lower than the actual frame rate, this seems to cause
+    // problems, possibly due to running on compositing window managers -
+    // it happens on both OSX and Ubuntu with compiz.
+    // The sim physics is stepped in the glut idle callback and the display callback
+    // but only renders within the display callback. When the framePeriod is less than 17
+    // (frame rate of 60Hz), the physics only seems to be stepped really slowly.
+    //
+    // Hmmm.. if we attempt to render at a faster rate than the actual display, I guess
+    // swapBuffers blocks to synchronise with the actual display, meaning very few calls to the 
+    // idle callback
+    // 
+	int32 framePeriod = 20;
 	int32 mainWindow;
 	float settingsHz = 60.0;
 	GLUI *glui;
@@ -106,6 +117,7 @@ static void SimulationAdvance()
 static void SimulationDisplay()
 {
     STAMP("Display");
+    glClearColor(0.9f, 0.9f, 0.9f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
 	glMatrixMode(GL_MODELVIEW);
@@ -126,16 +138,6 @@ static void SimulationDisplay()
     
 	glutSwapBuffers();
     
-	if (testSelection != testIndex)
-	{
-		testIndex = testSelection;
-		delete test;
-		entry = g_testEntries + testIndex;
-		test = entry->createFcn();
-		viewZoom = 1.0f;
-		settings.viewCenter.Set(0.0f, 20.0f);
-		Resize(width, height);
-	}
 }
 
 static void Keyboard(unsigned char key, int x, int y)
@@ -165,11 +167,6 @@ static void Keyboard(unsigned char key, int x, int y)
 		Resize(width, height);
 		break;
 
-		// Press 'r' to reset.
-	case 'r':
-		delete test;
-		test = entry->createFcn();
-		break;
 
 		// Press space to launch a bomb.
 	case ' ':
@@ -369,13 +366,6 @@ static void MouseWheel(int wheel, int direction, int x, int y)
 }
 #endif
 
-static void Restart(int)
-{
-	delete test;
-	entry = g_testEntries + testIndex;
-	test = entry->createFcn();
-    Resize(width, height);
-}
 
 static void Pause(int)
 {
@@ -397,19 +387,110 @@ static void SingleStep(int)
 	settings.singleStep = 1;
 }
 
+#include <getopt.h>
+
+const char* USAGE = 
+  "USAGE:  kilobox [options] <worldfile> \n"
+  "Available [options] are:\n"
+  "  --clock        : print simulation time peridically on standard output\n"
+  "  -c             : equivalent to --clock\n"
+  "  --gui          : run without a GUI\n"
+  "  -g             : equivalent to --gui\n"
+  "  --help         : print this message\n"
+  "  --args \"str\"   : define an argument string to be passed to all controllers\n"
+  "  -a \"str\"       : equivalent to --args \"str\"\n"
+  "  -h             : equivalent to --help\n"
+  "  -?             : equivalent to --help";
+
+static struct option longopts[] = {
+	{ "gui",  optional_argument,   NULL,  'g' },
+	{ "clock",  optional_argument,   NULL,  'c' },
+	{ "help",  optional_argument,   NULL,  'h' },
+	{ "args",  required_argument,   NULL,  'a' },
+	{ NULL, 0, NULL, 0 }
+};
+
+
+void rungui(int argc, char** argv);
+void runnogui(int argc, char** argv);
+
+
 int main(int argc, char** argv)
 {
-	testCount = 0;
-	while (g_testEntries[testCount].createFcn != NULL)
-	{
-		++testCount;
-	}
 
-	testIndex = b2Clamp(testIndex, 0, testCount-1);
-	testSelection = testIndex;
+    int ch=0, optindex=0;
+    bool showclock = false;
+    while ((ch = getopt_long(argc, argv, "cgh?", longopts, &optindex)) != -1)
+    {
+        switch(ch)
+        {
+            case 0: // long option given
+                printf( "option %s given\n", longopts[optindex].name );
+                break;
+            case 'a':
+                settings.ctrlargs = std::string(optarg);
+                break;
+            case 'c': 
+                showclock = true;
+                printf( "[Clock enabled]" );
+                break;
+            case 'g': 
+                settings.usegui = false;
+                printf( "[GUI disabled]" );
+                break;
+            case 'h':  
+            case '?':  
+                puts( USAGE );
+                break;
+            default:
+                printf("unhandled option %c\n", ch );
+                puts( USAGE );
 
-	entry = g_testEntries + testIndex;
-	test = entry->createFcn();
+        }
+    }
+
+    printf("%d %d\n", argc, optindex);
+    optindex = optind; //points to first non-option
+    if(optindex < argc && optindex > 0)
+    {      
+        settings.worldfile = std::string(argv[optindex]);
+    }
+
+
+    testCount = 1;
+    testIndex = 0;
+    testSelection = testIndex;
+    entry = g_testEntries + testIndex;
+
+    // Construct the world
+	test = entry->createFcn(&settings);
+
+    if (settings.usegui)
+        rungui(argc, argv);
+    else
+        runnogui(argc, argv);
+	return 0;
+}
+
+void runnogui(int argc, char** argv)
+{
+    float sim_time = 300.0;
+    float time = 0.0;
+    while(time < sim_time)
+    {
+        settings.time_to_draw = 0;
+        float dt = 1/settings.hz;
+        time += dt;
+	    test->Step(&settings);
+        if (fabs(time/10-floor(time/10)) < dt/10)
+        {
+            printf("[%8.3f]\n", time);
+        }
+    }
+}
+
+void rungui(int argc, char** argv)
+{
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
@@ -485,7 +566,6 @@ int main(int argc, char** argv)
 
 	glui->add_button("Pause", 0, Pause);
 	glui->add_button("Single Step", 0, SingleStep);
-	glui->add_button("Restart", 0, Restart);
 
 	glui->add_button("Quit", 0,(GLUI_Update_CB)Exit);
 	glui->set_main_gfx_window( mainWindow );
@@ -495,5 +575,4 @@ int main(int argc, char** argv)
 
 	glutMainLoop();
 
-	return 0;
 }

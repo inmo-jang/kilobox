@@ -109,7 +109,7 @@ public:
         
         if (logfile != "")
         {
-            printf("Logfile is %s\n", logfile.c_str());
+            //printf("Logfile is %s\n", logfile.c_str());
             log_open(logfile);
         }
         

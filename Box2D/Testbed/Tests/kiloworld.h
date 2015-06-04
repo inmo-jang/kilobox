@@ -13,6 +13,7 @@
 #include "../Framework/Render.h"
 
 #include "kilolib.h"
+#include "worldfile.h"
 
 
 namespace Kilolib
@@ -21,8 +22,9 @@ namespace Kilolib
     class Kiloworld : public Test
     {
     public:
-        Kiloworld()
+        Kiloworld(Settings *_settings)
         :
+            settings(_settings),
             xsize(3.0),
             ysize(2.0)
         {
@@ -43,15 +45,19 @@ namespace Kilolib
         
         void build_world();
         void make_static_box(float xsize, float ysize, float xpos, float ypos);
+        void render_arena();
         void make_kilobot(float xp, float yp, float th);
         
         // Function called by the testbench to create the world
-        static Test* Create()
+        static Test* Create(Settings *settings)
         {
-            return new Kiloworld;
+            return new Kiloworld(settings);
         }
 
     private:
+        // These are the global settings
+        Settings *settings;
+
         float   xsize;
         float   ysize;
 
@@ -66,8 +72,15 @@ namespace Kilolib
         
         // Set up a random number generator
         std::default_random_engine              gen;
+
+        // arena
+        b2Body *arena;
+        b2Fixture *arena_fixture;
+
+        Worldfile *wf;
        
     };
+
 
 };
 

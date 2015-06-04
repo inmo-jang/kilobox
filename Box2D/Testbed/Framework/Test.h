@@ -27,7 +27,7 @@
 class Test;
 struct Settings;
 
-typedef Test* TestCreateFcn();
+typedef Test* TestCreateFcn(Settings *settings);
 
 #define	RAND_LIMIT	32767
 #define DRAW_STRING_NEW_LINE 25
@@ -59,8 +59,8 @@ struct Settings
 		hz = 60.0f;
 		velocityIterations = 8;
 		positionIterations = 3;
-		drawShapes = 1;
-		drawJoints = 1;
+		drawShapes = 0;
+		drawJoints = 0;
 		drawAABBs = 0;
 		drawContactPoints = 0;
 		drawContactNormals = 0;
@@ -76,6 +76,9 @@ struct Settings
 		pause = 0;
 		singleStep = 0;
         time_to_draw = 1;
+        ctrlargs = std::string("");
+        worldfile = std::string("");
+        usegui = true;
 	}
 
 	b2Vec2 viewCenter;
@@ -99,6 +102,9 @@ struct Settings
 	int32 pause;
 	int32 singleStep;
     int32 time_to_draw;
+    std::string ctrlargs;
+    std::string worldfile;
+    bool usegui;
 };
 
 struct TestEntry

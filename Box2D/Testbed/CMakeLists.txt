@@ -19,6 +19,8 @@ set(Testbed_Tests_SRCS
 	Tests/kilolib.cpp
 	Tests/kiloworld.h
 	Tests/kiloworld.cpp
+    Tests/worldfile.cpp
+    Tests/worldfile.h
 	Tests/evokilo1.h
 	Tests/evokilo1.cpp
 )
