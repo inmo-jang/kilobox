@@ -38,7 +38,7 @@ namespace
 	Settings settings;
 	int32 width = 1280;
 	int32 height = 720;
-	int32 framePeriod = 1;
+	int32 framePeriod = 16;
 	int32 mainWindow;
 	float settingsHz = 60.0;
 	GLUI *glui;
@@ -93,30 +93,39 @@ static void Timer(int)
 {
 	glutSetWindow(mainWindow);
 	glutPostRedisplay();
-	//glutTimerFunc(framePeriod, Timer, 0);
+	glutTimerFunc(framePeriod, Timer, 0);
 }
 
-static void SimulationLoop()
+static void SimulationAdvance()
 {
-    STAMP("Start of loop");
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    STAMP("Advance");
+    settings.time_to_draw = 0;
+	test->Step(&settings);
+}
 
+static void SimulationDisplay()
+{
+    STAMP("Display");
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-
+    
 	b2Vec2 oldCenter = settings.viewCenter;
 	settings.hz = settingsHz;
+    
+    settings.time_to_draw = 1;
 	test->Step(&settings);
+    
 	if (oldCenter.x != settings.viewCenter.x || oldCenter.y != settings.viewCenter.y)
 	{
 		Resize(width, height);
 	}
-
+    
 	test->DrawTitle(entry->name);
-
+    
 	glutSwapBuffers();
-    //glFlush();
-
+    
 	if (testSelection != testIndex)
 	{
 		testIndex = testSelection;
@@ -127,8 +136,6 @@ static void SimulationLoop()
 		settings.viewCenter.Set(0.0f, 20.0f);
 		Resize(width, height);
 	}
-	glutPostRedisplay();
-    STAMP("End of loop");
 }
 
 static void Keyboard(unsigned char key, int x, int y)
@@ -405,15 +412,16 @@ int main(int argc, char** argv)
 	test = entry->createFcn();
 
 	glutInit(&argc, argv);
-	//glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);
+	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
+	//glutInitDisplayMode(GLUT_RGBA | GLUT_SINGLE);
 	glutInitWindowSize(width, height);
 	char title[32];
 	sprintf(title, "Box2D Version %d.%d.%d", b2_version.major, b2_version.minor, b2_version.revision);
 	mainWindow = glutCreateWindow(title);
 	//glutSetOption (GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
 
-	glutDisplayFunc(SimulationLoop);
+	glutIdleFunc(SimulationAdvance);
+    glutDisplayFunc(SimulationDisplay);
 	GLUI_Master.set_glutReshapeFunc(Resize);  
 	GLUI_Master.set_glutKeyboardFunc(Keyboard);
 	GLUI_Master.set_glutSpecialFunc(KeyboardSpecial);

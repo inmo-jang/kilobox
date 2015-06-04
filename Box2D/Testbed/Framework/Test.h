@@ -75,6 +75,7 @@ struct Settings
 		enableSleep = 1;
 		pause = 0;
 		singleStep = 0;
+        time_to_draw = 1;
 	}
 
 	b2Vec2 viewCenter;
@@ -97,6 +98,7 @@ struct Settings
 	int32 enableSleep;
 	int32 pause;
 	int32 singleStep;
+    int32 time_to_draw;
 };
 
 struct TestEntry

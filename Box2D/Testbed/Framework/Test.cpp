@@ -299,14 +299,15 @@ void Test::Step(Settings* settings)
 
 	m_world->Step(timeStep, settings->velocityIterations, settings->positionIterations);
 
-	m_world->DrawDebugData();
+    if (settings->time_to_draw)
+        m_world->DrawDebugData();
 
 	if (timeStep > 0.0f)
 	{
 		++m_stepCount;
 	}
 
-	if (settings->drawStats)
+	if (settings->drawStats && settings->time_to_draw)
 	{
 		int32 bodyCount = m_world->GetBodyCount();
 		int32 contactCount = m_world->GetContactCount();
@@ -362,23 +363,27 @@ void Test::Step(Settings* settings)
 			aveProfile.solveTOI = scale * m_totalProfile.solveTOI;
 			aveProfile.broadphase = scale * m_totalProfile.broadphase;
 		}
+        
+        if (settings->time_to_draw)
+        {
 
-		m_debugDraw.DrawString(5, m_textLine, "step [ave] (max) = %5.2f [%6.2f] (%6.2f)", p.step, aveProfile.step, m_maxProfile.step);
-		m_textLine += DRAW_STRING_NEW_LINE;
-		m_debugDraw.DrawString(5, m_textLine, "collide [ave] (max) = %5.2f [%6.2f] (%6.2f)", p.collide, aveProfile.collide, m_maxProfile.collide);
-		m_textLine += DRAW_STRING_NEW_LINE;
-		m_debugDraw.DrawString(5, m_textLine, "solve [ave] (max) = %5.2f [%6.2f] (%6.2f)", p.solve, aveProfile.solve, m_maxProfile.solve);
-		m_textLine += DRAW_STRING_NEW_LINE;
-		m_debugDraw.DrawString(5, m_textLine, "solve init [ave] (max) = %5.2f [%6.2f] (%6.2f)", p.solveInit, aveProfile.solveInit, m_maxProfile.solveInit);
-		m_textLine += DRAW_STRING_NEW_LINE;
-		m_debugDraw.DrawString(5, m_textLine, "solve velocity [ave] (max) = %5.2f [%6.2f] (%6.2f)", p.solveVelocity, aveProfile.solveVelocity, m_maxProfile.solveVelocity);
-		m_textLine += DRAW_STRING_NEW_LINE;
-		m_debugDraw.DrawString(5, m_textLine, "solve position [ave] (max) = %5.2f [%6.2f] (%6.2f)", p.solvePosition, aveProfile.solvePosition, m_maxProfile.solvePosition);
-		m_textLine += DRAW_STRING_NEW_LINE;
-		m_debugDraw.DrawString(5, m_textLine, "solveTOI [ave] (max) = %5.2f [%6.2f] (%6.2f)", p.solveTOI, aveProfile.solveTOI, m_maxProfile.solveTOI);
-		m_textLine += DRAW_STRING_NEW_LINE;
-		m_debugDraw.DrawString(5, m_textLine, "broad-phase [ave] (max) = %5.2f [%6.2f] (%6.2f)", p.broadphase, aveProfile.broadphase, m_maxProfile.broadphase);
-		m_textLine += DRAW_STRING_NEW_LINE;
+            m_debugDraw.DrawString(5, m_textLine, "step [ave] (max) = %5.2f [%6.2f] (%6.2f)", p.step, aveProfile.step, m_maxProfile.step);
+            m_textLine += DRAW_STRING_NEW_LINE;
+            m_debugDraw.DrawString(5, m_textLine, "collide [ave] (max) = %5.2f [%6.2f] (%6.2f)", p.collide, aveProfile.collide, m_maxProfile.collide);
+            m_textLine += DRAW_STRING_NEW_LINE;
+            m_debugDraw.DrawString(5, m_textLine, "solve [ave] (max) = %5.2f [%6.2f] (%6.2f)", p.solve, aveProfile.solve, m_maxProfile.solve);
+            m_textLine += DRAW_STRING_NEW_LINE;
+            m_debugDraw.DrawString(5, m_textLine, "solve init [ave] (max) = %5.2f [%6.2f] (%6.2f)", p.solveInit, aveProfile.solveInit, m_maxProfile.solveInit);
+            m_textLine += DRAW_STRING_NEW_LINE;
+            m_debugDraw.DrawString(5, m_textLine, "solve velocity [ave] (max) = %5.2f [%6.2f] (%6.2f)", p.solveVelocity, aveProfile.solveVelocity, m_maxProfile.solveVelocity);
+            m_textLine += DRAW_STRING_NEW_LINE;
+            m_debugDraw.DrawString(5, m_textLine, "solve position [ave] (max) = %5.2f [%6.2f] (%6.2f)", p.solvePosition, aveProfile.solvePosition, m_maxProfile.solvePosition);
+            m_textLine += DRAW_STRING_NEW_LINE;
+            m_debugDraw.DrawString(5, m_textLine, "solveTOI [ave] (max) = %5.2f [%6.2f] (%6.2f)", p.solveTOI, aveProfile.solveTOI, m_maxProfile.solveTOI);
+            m_textLine += DRAW_STRING_NEW_LINE;
+            m_debugDraw.DrawString(5, m_textLine, "broad-phase [ave] (max) = %5.2f [%6.2f] (%6.2f)", p.broadphase, aveProfile.broadphase, m_maxProfile.broadphase);
+            m_textLine += DRAW_STRING_NEW_LINE;
+        }
 	}
 
 	if (m_mouseJoint)
@@ -405,7 +410,7 @@ void Test::Step(Settings* settings)
 		m_debugDraw.DrawSegment(m_mouseWorld, m_bombSpawnPoint, c);
 	}
 
-	if (settings->drawContactPoints)
+	if (settings->drawContactPoints && settings->time_to_draw)
 	{
 		const float32 k_impulseScale = 0.1f;
 		const float32 k_axisScale = 0.3f;

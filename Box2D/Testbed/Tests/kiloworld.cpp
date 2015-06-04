@@ -16,10 +16,14 @@ void Kiloworld::Step(Settings* settings)
     for(int i=0; i<bots.size(); i++)
         bots[i]->update(dt);
     // Show some text in the main screen
-    for(int i=0; i<bots.size(); i++)
-        bots[i]->render();
-    m_debugDraw.DrawString(5, m_textLine, "Kilobot");
-    m_textLine += 15;
+    
+    if (settings->time_to_draw)
+    {
+        for(int i=0; i<bots.size(); i++)
+            bots[i]->render();
+        m_debugDraw.DrawString(5, m_textLine, "Kilobot");
+        m_textLine += 15;
+    }
 }
 
 void Kiloworld::build_world()
