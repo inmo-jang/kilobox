@@ -51,7 +51,7 @@ namespace
     // 
 	int32 framePeriod = 20;
 	int32 mainWindow;
-	float settingsHz = 60.0;
+	float settingsHz = 10.0;
 	GLUI *glui;
 	float32 viewZoom = 0.05f;
 	int tx, ty, tw, th;
@@ -109,14 +109,14 @@ static void Timer(int)
 
 static void SimulationAdvance()
 {
-    STAMP("Advance");
+    //STAMP("Advance");
     settings.time_to_draw = 0;
 	test->Step(&settings);
 }
 
 static void SimulationDisplay()
 {
-    STAMP("Display");
+    //STAMP("Display");
     glClearColor(0.9f, 0.9f, 0.9f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     
@@ -431,7 +431,7 @@ int main(int argc, char** argv)
                 settings.ctrlargs = std::string(optarg);
                 break;
             case 'c': 
-                showclock = true;
+                settings.show_time = true;
                 printf( "[Clock enabled]" );
                 break;
             case 'g': 
@@ -465,6 +465,7 @@ int main(int argc, char** argv)
     // Construct the world
 	test = entry->createFcn(&settings);
 
+	settings.hz = settingsHz;
     if (settings.usegui)
         rungui(argc, argv);
     else
@@ -474,18 +475,12 @@ int main(int argc, char** argv)
 
 void runnogui(int argc, char** argv)
 {
-    float sim_time = 300.0;
-    float time = 0.0;
-    while(time < sim_time)
+    // Don't start paused when in command line mode
+    settings.pause = 0;
+    while(settings.elapsed_time < settings.quit_time)
     {
         settings.time_to_draw = 0;
-        float dt = 1/settings.hz;
-        time += dt;
 	    test->Step(&settings);
-        if (fabs(time/10-floor(time/10)) < dt/10)
-        {
-            printf("[%8.3f]\n", time);
-        }
     }
 }
 

@@ -1,4 +1,8 @@
 
+#include <string>
+#include <sstream>
+#include <algorithm>
+#include <iterator>
 
 #include "kiloworld.h"
 #include "evokilo1.h"
@@ -28,6 +32,17 @@ void Kiloworld::Step(Settings* settings)
     }
 }
 
+static std::vector<std::string> split(std::string s)
+{
+    // Quite frankly, this is inpenetrable, found on stackoverflow, but at least it doesn't require boost
+    // Apparently an istream iterator of type string regards whitespace as the separator..
+    std::vector<std::string> words;
+    std::istringstream iss(s);
+    std::copy (std::istream_iterator<std::string>(iss), std::istream_iterator<std::string>(), back_inserter(words));
+    return words;
+}
+
+
 void Kiloworld::build_world()
 {
     // Make arena of fixed lines
@@ -47,33 +62,71 @@ void Kiloworld::build_world()
         exit(1);
     }
     int entity = 0;
-    float quit_time = 0;
-    quit_time = wf->ReadFloat(entity, "quit_time", quit_time);
-    printf("Got quit time %f\n", quit_time);
+    //float quit_time = 0;
+    settings->quit_time = wf->ReadFloat(entity, "quit_time", settings->quit_time);
+    printf("Got quit time %f\n", settings->quit_time);
     for(entity=1; entity < wf->GetEntityCount(); entity++)
     {
         const char *typestr = (char*)wf->GetEntityType(entity);
-        printf("%d %s\n", entity, typestr);
+        int entity_parent = wf->GetEntityParent(entity);
+        //printf("%d %d %s\n", entity, wf->GetEntityParent(entity), typestr);
+        // We are interested in the entities of type position with parent entity 0
+        // These are top level kilobit models within the world, grab the pose
+        // data associated with them, and the controller
+        if (entity_parent == 0 && !strcmp(typestr, "position"))
+        {
+            double x, y, z, a;
+            if (!wf->PropertyExists(entity, "pose"))
+            {
+                printf("No pose found for kilobot entity %d, exitting\n", entity);
+                exit(1);
+            }
+            wf->ReadTuple(entity, "pose", 0, 4, "llla", &x, &y, &z, &a);
+            CProperty *ctrlp =  wf->GetProperty(entity, "ctrl");
+            if (!ctrlp)
+            {
+                printf("No controller token for kilobot entity %d, exitting\n", entity);
+                exit(1);
+            }
+            const char *controller = wf->GetPropertyValue(ctrlp, 0);
+            if (!controller)
+            {
+                printf("No controller string for kilobot entity %d, exitting\n", entity);
+                exit(1);
+            }
+            //printf("Kilobot pose[%f,%f,%f,%f] ctrl[%s]\n", x, y, z, a, controller);
+
+            // Now create the kilobot 
+            ModelPosition *mod = new ModelPosition;
+            mod->pose.x = x;
+            mod->pose.y = y;
+            mod->pose.a = a;
+            mod->world = m_world;
+            // tokenize the argument string into words
+            std::vector<std::string> words = split(controller);
+            bots.push_back((Kilobot*)(new Evokilo1(mod, words, "log.txt")));
+
+        }
     }
     
 
-    // Now create kilobots randomly distributed
-    for(int i=0;i<100;i++)
-    {
-        ModelPosition *mod = new ModelPosition;
-        mod->pose.x = rand(-xsize/2+0.03,+xsize/2-0.03);
-        mod->pose.y = rand(-ysize/2+0.03,+ysize/2-0.03);
-        mod->pose.a = rand(-M_PI, M_PI);
-        mod->world = m_world;
-        std::vector<std::string> words = {"evokilo1",
-            "-0.686275", "0.294118", "-3.000000", "1.196078",
-            "-3.039216", "-2.372549", "2.294118", "-4.529412",
-            "-4.333333", "3.941176", "-2.411765", "-3.745098",
-            "0.215686", "0.098039", "-4.882353", "3.862745",
-            "0.725490", "-3.901961", "3.588235", "0.882353",
-            "-2.372549", "1.980392", "3.274510", "-4.725490"};
-        bots.push_back((Kilobot*)(new Evokilo1(mod, words, "log.txt")));
-    }
+//    // Now create kilobots randomly distributed
+//    for(int i=0;i<100;i++)
+//    {
+//        ModelPosition *mod = new ModelPosition;
+//        mod->pose.x = rand(-xsize/2+0.03,+xsize/2-0.03);
+//        mod->pose.y = rand(-ysize/2+0.03,+ysize/2-0.03);
+//        mod->pose.a = rand(-M_PI, M_PI);
+//        mod->world = m_world;
+//        std::vector<std::string> words = {"evokilo1",
+//            "-0.686275", "0.294118", "-3.000000", "1.196078",
+//            "-3.039216", "-2.372549", "2.294118", "-4.529412",
+//            "-4.333333", "3.941176", "-2.411765", "-3.745098",
+//            "0.215686", "0.098039", "-4.882353", "3.862745",
+//            "0.725490", "-3.901961", "3.588235", "0.882353",
+//            "-2.372549", "1.980392", "3.274510", "-4.725490"};
+//        bots.push_back((Kilobot*)(new Evokilo1(mod, words, "log.txt")));
+//    }
 }
 
 

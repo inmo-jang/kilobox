@@ -58,8 +58,10 @@ void Kilobot::check_messages()
     message_t *msg = 0;
     // Now see if its time to try sending a new message
     uint32_t t = pos->GetWorld()->SimTimeNow();
-    if ((t - last_message) > (message_period * 1e6))
+    if (((int)t - (int)last_message) > (message_period * 1e6))
     {
+        //if (kilo_uid == 1)
+        //    printf("time:%i last:%i period:%f\n", t, last_message, message_period);
         // Time to try and send a message if there is one. First, update the
         // message attempt timestamp with a bit of randomness of 50ms
         // FIXME!! SJ we really don't know how this will affect sim fidelity

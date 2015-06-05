@@ -1237,7 +1237,7 @@ int Worldfile::LookupEntity(const char *type)
 void PrintProp( const char* key, CProperty* prop )
 {
   if( prop )
-    printf( "Print key %s prop ent %d name %s\n", key, prop->entity, prop->name.c_str() );
+    printf( "Print key>>%s<< prop ent>>%d<< name>>%s<<\n", key, prop->entity, prop->name.c_str() );
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -1245,6 +1245,9 @@ void PrintProp( const char* key, CProperty* prop )
 void Worldfile::DumpEntities()
 {
   printf("\n## begin entities\n");
+
+	for(int i=0; i<entities.size(); i++)
+        printf("entity:%d parent:%d type:%s\n", i, entities[i].parent, entities[i].type.c_str());
 
 	FOR_EACH( it, properties )
 		PrintProp( it->first.c_str(), it->second );

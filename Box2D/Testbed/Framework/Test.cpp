@@ -303,6 +303,14 @@ void Test::Step(Settings* settings)
 
 	m_pointCount = 0;
 
+
+    // Update the elapsed time and print to console if enabled
+    settings->elapsed_time += timeStep;
+    if (settings->show_time && 
+        fabs(settings->elapsed_time/10-floor(settings->elapsed_time/10)) < timeStep/10)
+    {
+        printf("[%8.3f]\n", settings->elapsed_time);
+    }
     // Run the actual physics engine
 	m_world->Step(timeStep, settings->velocityIterations, settings->positionIterations);
 

@@ -74,12 +74,15 @@ struct Settings
 		enableContinuous = 1;
 		enableSubStepping = 0;
 		enableSleep = 1;
-		pause = 0;
+		pause = 1;
 		singleStep = 0;
         time_to_draw = 1;
         ctrlargs = std::string("");
         worldfile = std::string("");
         usegui = true;
+        quit_time = 300;
+        elapsed_time = 0;
+        show_time = false;
 	}
 
 	b2Vec2 viewCenter;
@@ -106,6 +109,9 @@ struct Settings
     std::string ctrlargs;
     std::string worldfile;
     bool usegui;
+    float quit_time;
+    float elapsed_time;
+    bool show_time;
 };
 
 struct TestEntry
