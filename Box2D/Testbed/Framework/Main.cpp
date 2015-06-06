@@ -222,7 +222,7 @@ static void KeyboardSpecial(int key, int x, int y)
 		if (mod == GLUT_ACTIVE_CTRL)
 		{
 			b2Vec2 newOrigin(2.0f, 0.0f);
-			test->ShiftOrigin(newOrigin);
+			//test->ShiftOrigin(newOrigin);
 		}
 		else
 		{
@@ -236,7 +236,7 @@ static void KeyboardSpecial(int key, int x, int y)
 		if (mod == GLUT_ACTIVE_CTRL)
 		{
 			b2Vec2 newOrigin(-2.0f, 0.0f);
-			test->ShiftOrigin(newOrigin);
+			//test->ShiftOrigin(newOrigin);
 		}
 		else
 		{
@@ -250,7 +250,7 @@ static void KeyboardSpecial(int key, int x, int y)
 		if (mod == GLUT_ACTIVE_CTRL)
 		{
 			b2Vec2 newOrigin(0.0f, 2.0f);
-			test->ShiftOrigin(newOrigin);
+			//test->ShiftOrigin(newOrigin);
 		}
 		else
 		{
@@ -264,7 +264,7 @@ static void KeyboardSpecial(int key, int x, int y)
 		if (mod == GLUT_ACTIVE_CTRL)
 		{
 			b2Vec2 newOrigin(0.0f, -2.0f);
-			test->ShiftOrigin(newOrigin);
+			//test->ShiftOrigin(newOrigin);
 		}
 		else
 		{

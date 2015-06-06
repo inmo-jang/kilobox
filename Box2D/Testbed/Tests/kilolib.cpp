@@ -180,8 +180,8 @@ void Kilobot::update(float delta_t)
     torque  += (-omega + omega_goal) * kbangulardamp * i;
     
     // Apply the force to the kilobot body
-    m_body->ApplyForceToCenter(b2Vec2(xf, yf), true);
-    m_body->ApplyTorque(torque, true);
+    m_body->ApplyForceToCenter(b2Vec2(xf, yf));
+    m_body->ApplyTorque(torque);
 
     //printf("%3d xd:%10.6f yd:%10.6f ad:%10.6f xf:%10.6f yf:%10.6f tq:%10.6f\n", 
     //kilo_uid, xd, yd, omega_goal, xf, yf, torque);
