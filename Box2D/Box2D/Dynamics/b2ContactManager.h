@@ -15,11 +15,12 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #ifndef B2_CONTACT_MANAGER_H
 #define B2_CONTACT_MANAGER_H
 
 #include <Box2D/Collision/b2BroadPhase.h>
+#include <Box2D/Common/OpenCL/b2CLNarrowPhase.h>
 
 class b2Contact;
 class b2ContactFilter;
@@ -31,22 +32,37 @@ class b2ContactManager
 {
 public:
 	b2ContactManager();
+    ~b2ContactManager();
 
 	// Broad-phase callback.
 	void AddPair(void* proxyUserDataA, void* proxyUserDataB);
 
 	void FindNewContacts();
 
+	void cpuFindNewContacts () ;
+	void cpuCollide () ; 
+	void cpuOverLap() ; 
+
 	void Destroy(b2Contact* c);
+	void Destroy_nocallback(b2Contact* c);
 
 	void Collide();
             
+	void SetWorldPointer(b2World *p) { m_pWorld = p; }
+
 	b2BroadPhase m_broadPhase;
 	b2Contact* m_contactList;
-	int32 m_contactCount;
+	int32 *m_pContactCounts, m_contactCount, m_maxContactCount;
 	b2ContactFilter* m_contactFilter;
 	b2ContactListener* m_contactListener;
 	b2BlockAllocator* m_allocator;
+
+#if defined(NARROWPHASE_OPENCL)
+	b2CLNarrowPhase m_cl_narrowPhase;
+#endif
+
+private:
+	b2World* m_pWorld;
 };
 
 #endif

@@ -15,10 +15,11 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #include <Box2D/Dynamics/Joints/b2PrismaticJoint.h>
 #include <Box2D/Dynamics/b2Body.h>
 #include <Box2D/Dynamics/b2TimeStep.h>
+#include <Box2D/Dynamics/b2World.h>
 
 // Linear constraint (point-to-line)
 // d = p2 - p1 = x2 + r2 - x1 - r1
@@ -557,6 +558,8 @@ void b2PrismaticJoint::EnableLimit(bool flag)
 		m_bodyB->SetAwake(true);
 		m_enableLimit = flag;
 		m_impulse.z = 0.0f;
+
+		SET_JOINTS_UPDATED;
 	}
 }
 
@@ -580,6 +583,8 @@ void b2PrismaticJoint::SetLimits(float32 lower, float32 upper)
 		m_lowerTranslation = lower;
 		m_upperTranslation = upper;
 		m_impulse.z = 0.0f;
+
+		SET_JOINTS_UPDATED;
 	}
 }
 
@@ -593,6 +598,8 @@ void b2PrismaticJoint::EnableMotor(bool flag)
 	m_bodyA->SetAwake(true);
 	m_bodyB->SetAwake(true);
 	m_enableMotor = flag;
+
+	SET_JOINTS_UPDATED;
 }
 
 void b2PrismaticJoint::SetMotorSpeed(float32 speed)
@@ -600,6 +607,8 @@ void b2PrismaticJoint::SetMotorSpeed(float32 speed)
 	m_bodyA->SetAwake(true);
 	m_bodyB->SetAwake(true);
 	m_motorSpeed = speed;
+
+	SET_JOINTS_UPDATED;
 }
 
 void b2PrismaticJoint::SetMaxMotorForce(float32 force)
@@ -607,6 +616,8 @@ void b2PrismaticJoint::SetMaxMotorForce(float32 force)
 	m_bodyA->SetAwake(true);
 	m_bodyB->SetAwake(true);
 	m_maxMotorForce = force;
+
+	SET_JOINTS_UPDATED;
 }
 
 float32 b2PrismaticJoint::GetMotorForce(float32 inv_dt) const

@@ -15,7 +15,8 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
+#include <Box2D/Dynamics/b2World.h>
 #include <Box2D/Collision/b2BroadPhase.h>
 #include <cstring>
 using namespace std;
@@ -31,6 +32,11 @@ b2BroadPhase::b2BroadPhase()
 	m_moveCapacity = 16;
 	m_moveCount = 0;
 	m_moveBuffer = (int32*)b2Alloc(m_moveCapacity * sizeof(int32));
+
+#ifdef BROADPHASE_OPENCL
+	m_pWorld = NULL;
+	m_pCL_broadPhase = new b2CLBroadPhase;
+#endif
 }
 
 b2BroadPhase::~b2BroadPhase()
@@ -120,3 +126,10 @@ bool b2BroadPhase::QueryCallback(int32 proxyId)
 
 	return true;
 }
+
+#ifdef BROADPHASE_OPENCL
+bool b2BroadPhase::UseListener() const
+{
+	return m_pWorld->UseListener();
+}
+#endif

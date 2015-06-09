@@ -18,6 +18,7 @@
 
 #include <Box2D/Common/b2StackAllocator.h>
 #include <Box2D/Common/b2Math.h>
+#include <stdio.h>
 
 b2StackAllocator::b2StackAllocator()
 {
@@ -35,6 +36,12 @@ b2StackAllocator::~b2StackAllocator()
 
 void* b2StackAllocator::Allocate(int32 size)
 {
+#ifdef _DEBUG
+	//printf("Stack Allocate\n");
+	if (m_entryCount >= b2_maxStackEntries)
+		int a = 0;
+#endif
+
 	b2Assert(m_entryCount < b2_maxStackEntries);
 
 	b2StackEntry* entry = m_entries + m_entryCount;
@@ -60,8 +67,18 @@ void* b2StackAllocator::Allocate(int32 size)
 
 void b2StackAllocator::Free(void* p)
 {
+#ifdef _DEBUG
+	//printf("Stack Free\n");
+#endif
+	
 	b2Assert(m_entryCount > 0);
 	b2StackEntry* entry = m_entries + m_entryCount - 1;
+
+#ifdef _DEBUG
+	if (p != entry->data)
+		int a = 0;
+#endif
+
 	b2Assert(p == entry->data);
 	if (entry->usedMalloc)
 	{

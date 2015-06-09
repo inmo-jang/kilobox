@@ -15,7 +15,7 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #include <Box2D/Dynamics/b2Body.h>
 #include <Box2D/Dynamics/b2Fixture.h>
 #include <Box2D/Dynamics/b2World.h>
@@ -103,6 +103,10 @@ b2Body::b2Body(const b2BodyDef* bd, b2World* world)
 
 	m_fixtureList = NULL;
 	m_fixtureCount = 0;
+
+	m_uid = m_last_uid = -1 ; 
+
+	colors[0] = colors[1] = colors[2] = -1;
 }
 
 b2Body::~b2Body()
@@ -171,6 +175,9 @@ b2Fixture* b2Body::CreateFixture(const b2FixtureDef* def)
 	fixture->m_next = m_fixtureList;
 	m_fixtureList = fixture;
 	++m_fixtureCount;
+	++m_world->m_fixtureCount;
+	m_world->m_proxyCount += fixture->m_proxyCount;
+	m_world->m_bFixtureChanged = true;
 
 	fixture->m_body = this;
 
@@ -183,6 +190,18 @@ b2Fixture* b2Body::CreateFixture(const b2FixtureDef* def)
 	// Let the world know we have a new fixture. This will cause new contacts
 	// to be created at the beginning of the next time step.
 	m_world->m_flags |= b2World::e_newFixture;
+
+	if (fixture->m_shape->GetType()!=fixture->m_shape->e_circle 
+		&& fixture->m_shape->GetType()!=fixture->m_shape->e_edge
+		&& fixture->m_shape->GetType()!=fixture->m_shape->e_chain
+		&& fixture->m_shape->GetType()!=fixture->m_shape->e_polygon)
+	{
+#if defined(_DEBUG) && defined(BOX2D_OPENCL)
+		if (b2clGlobal_OpenCLSupported)
+			printf("The OpenCL code does not support some shapes at this time!\nUse orginal CPU code instead!\n");
+#endif
+		b2clGlobal_OpenCLSupported = false; 
+	}
 
 	return fixture;
 }
@@ -258,6 +277,8 @@ void b2Body::DestroyFixture(b2Fixture* fixture)
 	allocator->Free(fixture, sizeof(b2Fixture));
 
 	--m_fixtureCount;
+	--m_world->m_fixtureCount;
+	m_world->m_bFixtureChanged = true;
 
 	// Reset the mass data.
 	ResetMassData();
@@ -367,6 +388,7 @@ void b2Body::SetMassData(const b2MassData* massData)
 		m_invI = 1.0f / m_I;
 	}
 
+
 	// Move center of mass.
 	b2Vec2 oldCenter = m_sweep.c;
 	m_sweep.localCenter =  massData->center;
@@ -422,6 +444,10 @@ void b2Body::SetTransform(const b2Vec2& position, float32 angle)
 		f->Synchronize(broadPhase, m_xf, m_xf);
 	}
 
+	//printf("===FindNewContacts (in SetTransform)===\n");
+    SetWorldDynamicFlag();
+    
+    m_world->InitializeGPUData();
 	m_world->m_contactManager.FindNewContacts();
 }
 
@@ -511,4 +537,15 @@ void b2Body::Dump()
 		b2Log("  }\n");
 	}
 	b2Log("}\n");
+}
+
+void b2Body::SetWorldStaticFlag()
+{
+	m_world->m_bBodyStaticAttributeChanged = true;
+}
+
+void b2Body::SetWorldDynamicFlag()
+{
+    //printf("SetWorldDynamicFlag\n");
+	m_world->m_bBodyDynamicAttributeChanged = true;
 }

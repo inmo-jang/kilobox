@@ -15,11 +15,13 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #ifndef B2_WELD_JOINT_H
 #define B2_WELD_JOINT_H
 
 #include <Box2D/Dynamics/Joints/b2Joint.h>
+#include <Box2D/Dynamics/b2Body.h>
+#include <Box2D/Dynamics/b2World.h>
 
 /// Weld joint definition. You need to specify local anchor points
 /// where they are attached and the relative body angle. The position
@@ -78,11 +80,11 @@ public:
 	float32 GetReferenceAngle() const { return m_referenceAngle; }
 
 	/// Set/get frequency in Hz.
-	void SetFrequency(float32 hz) { m_frequencyHz = hz; }
+	void SetFrequency(float32 hz);
 	float32 GetFrequency() const { return m_frequencyHz; }
 
 	/// Set/get damping ratio.
-	void SetDampingRatio(float32 ratio) { m_dampingRatio = ratio; }
+	void SetDampingRatio(float32 ratio);
 	float32 GetDampingRatio() const { return m_dampingRatio; }
 
 	/// Dump to b2Log
@@ -91,6 +93,7 @@ public:
 protected:
 
 	friend class b2Joint;
+	friend class b2CLCommonData;
 
 	b2WeldJoint(const b2WeldJointDef* def);
 
@@ -122,5 +125,19 @@ protected:
 	float32 m_invIB;
 	b2Mat33 m_mass;
 };
+
+inline void b2WeldJoint::SetFrequency(float32 hz) 
+{ 
+	m_frequencyHz = hz; 
+
+	SET_JOINTS_UPDATED;
+}
+
+inline void b2WeldJoint::SetDampingRatio(float32 ratio) 
+{ 
+	m_dampingRatio = ratio; 
+
+	SET_JOINTS_UPDATED;
+}
 
 #endif

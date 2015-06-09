@@ -15,7 +15,7 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #ifndef B2_PRISMATIC_JOINT_H
 #define B2_PRISMATIC_JOINT_H
 
@@ -150,6 +150,7 @@ public:
 protected:
 	friend class b2Joint;
 	friend class b2GearJoint;
+	friend class b2CLCommonData;
 	b2PrismaticJoint(const b2PrismaticJointDef* def);
 
 	void InitVelocityConstraints(const b2SolverData& data);

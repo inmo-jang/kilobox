@@ -15,10 +15,11 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #include <Box2D/Dynamics/Joints/b2MouseJoint.h>
 #include <Box2D/Dynamics/b2Body.h>
 #include <Box2D/Dynamics/b2TimeStep.h>
+#include <Box2D/Dynamics/b2World.h>
 
 // p = attached point, m = mouse point
 // C = p - m
@@ -56,6 +57,8 @@ void b2MouseJoint::SetTarget(const b2Vec2& target)
 		m_bodyB->SetAwake(true);
 	}
 	m_targetA = target;
+
+	SET_JOINTS_UPDATED;
 }
 
 const b2Vec2& b2MouseJoint::GetTarget() const
@@ -66,6 +69,8 @@ const b2Vec2& b2MouseJoint::GetTarget() const
 void b2MouseJoint::SetMaxForce(float32 force)
 {
 	m_maxForce = force;
+
+	SET_JOINTS_UPDATED;
 }
 
 float32 b2MouseJoint::GetMaxForce() const
@@ -76,6 +81,8 @@ float32 b2MouseJoint::GetMaxForce() const
 void b2MouseJoint::SetFrequency(float32 hz)
 {
 	m_frequencyHz = hz;
+
+	SET_JOINTS_UPDATED;
 }
 
 float32 b2MouseJoint::GetFrequency() const
@@ -86,6 +93,8 @@ float32 b2MouseJoint::GetFrequency() const
 void b2MouseJoint::SetDampingRatio(float32 ratio)
 {
 	m_dampingRatio = ratio;
+
+	SET_JOINTS_UPDATED;
 }
 
 float32 b2MouseJoint::GetDampingRatio() const

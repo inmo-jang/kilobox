@@ -15,6 +15,9 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
+// this Box2DOCL file is developed based on Box2D
+#ifndef _BOX2D_TIMER_H_
+#define _BOX2D_TIMER_H_
 
 #include <Box2D/Common/b2Settings.h>
 
@@ -43,3 +46,5 @@ private:
 	unsigned long m_start_msec;
 #endif
 };
+
+#endif

@@ -15,7 +15,7 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #include <Box2D/Dynamics/b2Fixture.h>
 #include <Box2D/Dynamics/Contacts/b2Contact.h>
 #include <Box2D/Dynamics/b2World.h>
@@ -36,6 +36,8 @@ b2Fixture::b2Fixture()
 	m_proxyCount = 0;
 	m_shape = NULL;
 	m_density = 0.0f;
+
+	m_uid = m_last_uid = -1;
 }
 
 void b2Fixture::Create(b2BlockAllocator* allocator, b2Body* body, const b2FixtureDef* def)
@@ -50,6 +52,16 @@ void b2Fixture::Create(b2BlockAllocator* allocator, b2Body* body, const b2Fixtur
 	m_filter = def->filter;
 
 	m_isSensor = def->isSensor;
+
+	// we do not support sensor at this time
+	if (def->isSensor)
+	{
+#if defined(_DEBUG) && defined(BOX2D_OPENCL)
+		//if (b2clGlobal_OpenCLSupported)
+		//	printf("The OpenCL code does not support sensor at this time!\nUse orginal CPU code instead!\n");
+#endif
+		//b2clGlobal_OpenCLSupported = false;
+	}
 
 	m_shape = def->shape->Clone(allocator);
 
@@ -133,6 +145,8 @@ void b2Fixture::CreateProxies(b2BroadPhase* broadPhase, const b2Transform& xf)
 		proxy->proxyId = broadPhase->CreateProxy(proxy->aabb, proxy);
 		proxy->fixture = this;
 		proxy->childIndex = i;
+
+		proxy->m_uid = proxy->m_last_uid = -1;
 	}
 }
 
@@ -164,11 +178,11 @@ void b2Fixture::Synchronize(b2BroadPhase* broadPhase, const b2Transform& transfo
 		b2AABB aabb1, aabb2;
 		m_shape->ComputeAABB(&aabb1, transform1, proxy->childIndex);
 		m_shape->ComputeAABB(&aabb2, transform2, proxy->childIndex);
-	
+		
 		proxy->aabb.Combine(aabb1, aabb2);
 
 		b2Vec2 displacement = transform2.p - transform1.p;
-
+		
 		broadPhase->MoveProxy(proxy->proxyId, proxy->aabb, displacement);
 	}
 }

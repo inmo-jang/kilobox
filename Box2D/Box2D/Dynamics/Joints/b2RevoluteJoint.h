@@ -15,7 +15,7 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #ifndef B2_REVOLUTE_JOINT_H
 #define B2_REVOLUTE_JOINT_H
 
@@ -158,6 +158,7 @@ protected:
 	
 	friend class b2Joint;
 	friend class b2GearJoint;
+	friend class b2CLCommonData;
 
 	b2RevoluteJoint(const b2RevoluteJointDef* def);
 

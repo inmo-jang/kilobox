@@ -15,7 +15,7 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #include <Box2D/Dynamics/Contacts/b2ContactSolver.h>
 
 #include <Box2D/Dynamics/Contacts/b2Contact.h>
@@ -716,8 +716,18 @@ bool b2ContactSolver::SolvePositionConstraints()
 			float32 rnB = b2Cross(rB, normal);
 			float32 K = mA + mB + iA * rnA * rnA + iB * rnB * rnB;
 
+
+
 			// Compute normal impulse
 			float32 impulse = K > 0.0f ? - C / K : 0.0f;
+
+			//////////////////////////////////////////////////
+			//// A Test to see if my way of computing impulse is correct
+			//K = (1.0/mA) + (1.0/mB);// + 1.0/( iA * rnA * rnA + iB * rnB * rnB) ;
+			//impulse = K > 0.0f ? - C *K : 0.0f;
+			///////////////////////////////////////////////////
+
+
 
 			b2Vec2 P = impulse * normal;
 

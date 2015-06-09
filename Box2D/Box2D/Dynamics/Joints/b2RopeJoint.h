@@ -15,11 +15,13 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #ifndef B2_ROPE_JOINT_H
 #define B2_ROPE_JOINT_H
 
 #include <Box2D/Dynamics/Joints/b2Joint.h>
+#include <Box2D/Dynamics/b2Body.h>
+#include <Box2D/Dynamics/b2World.h>
 
 /// Rope joint definition. This requires two body anchor points and
 /// a maximum lengths.
@@ -71,7 +73,7 @@ public:
 	const b2Vec2& GetLocalAnchorB() const  { return m_localAnchorB; }
 
 	/// Set/Get the maximum length of the rope.
-	void SetMaxLength(float32 length) { m_maxLength = length; }
+	void SetMaxLength(float32 length);
 	float32 GetMaxLength() const;
 
 	b2LimitState GetLimitState() const;
@@ -82,6 +84,7 @@ public:
 protected:
 
 	friend class b2Joint;
+	friend class b2CLCommonData;
 	b2RopeJoint(const b2RopeJointDef* data);
 
 	void InitVelocityConstraints(const b2SolverData& data);
@@ -111,4 +114,10 @@ protected:
 	b2LimitState m_state;
 };
 
+inline void b2RopeJoint::SetMaxLength(float32 length) 
+{ 
+	m_maxLength = length; 
+
+	SET_JOINTS_UPDATED;
+}
 #endif

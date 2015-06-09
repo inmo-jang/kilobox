@@ -15,13 +15,15 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #include <Box2D/Common/b2Settings.h>
 #include <cstdlib>
 #include <cstdio>
 #include <cstdarg>
 
 b2Version b2_version = {2, 2, 1};
+
+bool b2clGlobal_OpenCLSupported = true;
 
 // Memory allocators. Modify these to use your own allocator.
 void* b2Alloc(int32 size)

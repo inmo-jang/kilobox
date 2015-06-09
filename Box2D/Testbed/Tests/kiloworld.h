@@ -38,6 +38,7 @@ namespace Kilolib
             build_world();
 
             // Tell the engine that we have a contact callback
+            m_world->SetUseListener(1);
             m_world->SetContactListener(&contact_listener);
         }
         

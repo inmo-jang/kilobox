@@ -377,6 +377,8 @@ void b2WheelJoint::EnableMotor(bool flag)
 	m_bodyA->SetAwake(true);
 	m_bodyB->SetAwake(true);
 	m_enableMotor = flag;
+
+	SET_JOINTS_UPDATED;
 }
 
 void b2WheelJoint::SetMotorSpeed(float32 speed)
@@ -384,6 +386,8 @@ void b2WheelJoint::SetMotorSpeed(float32 speed)
 	m_bodyA->SetAwake(true);
 	m_bodyB->SetAwake(true);
 	m_motorSpeed = speed;
+
+	SET_JOINTS_UPDATED;
 }
 
 void b2WheelJoint::SetMaxMotorTorque(float32 torque)
@@ -391,6 +395,8 @@ void b2WheelJoint::SetMaxMotorTorque(float32 torque)
 	m_bodyA->SetAwake(true);
 	m_bodyB->SetAwake(true);
 	m_maxMotorTorque = torque;
+
+	SET_JOINTS_UPDATED;
 }
 
 float32 b2WheelJoint::GetMotorTorque(float32 inv_dt) const

@@ -15,7 +15,7 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #ifndef B2_SETTINGS_H
 #define B2_SETTINGS_H
 
@@ -64,7 +64,7 @@ typedef double float64;
 
 /// A small length used as a collision and constraint tolerance. Usually it is
 /// chosen to be numerically significant, but visually insignificant.
-#define b2_linearSlop			0.005f
+#define b2_linearSlop			0.0005f
 
 /// A small angle used as a collision and constraint tolerance. Usually it is
 /// chosen to be numerically significant, but visually insignificant.
@@ -86,7 +86,8 @@ typedef double float64;
 
 /// A velocity threshold for elastic collisions. Any collision with a relative linear
 /// velocity below this threshold will be treated as inelastic.
-#define b2_velocityThreshold		1.0f
+//#define b2_velocityThreshold		0.01f
+#define b2_velocityThreshold		0.1f
 
 /// The maximum linear position correction used when solving constraints. This helps to
 /// prevent overshoot.
@@ -146,5 +147,7 @@ struct b2Version
 
 /// Current version.
 extern b2Version b2_version;
+
+extern bool b2clGlobal_OpenCLSupported;
 
 #endif

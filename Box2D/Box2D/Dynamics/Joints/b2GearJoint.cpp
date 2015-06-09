@@ -15,12 +15,13 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #include <Box2D/Dynamics/Joints/b2GearJoint.h>
 #include <Box2D/Dynamics/Joints/b2RevoluteJoint.h>
 #include <Box2D/Dynamics/Joints/b2PrismaticJoint.h>
 #include <Box2D/Dynamics/b2Body.h>
 #include <Box2D/Dynamics/b2TimeStep.h>
+#include <Box2D/Dynamics/b2World.h>
 
 // Gear Joint:
 // C0 = (coordinate1 + ratio * coordinate2)_initial
@@ -397,6 +398,8 @@ void b2GearJoint::SetRatio(float32 ratio)
 {
 	b2Assert(b2IsValid(ratio));
 	m_ratio = ratio;
+
+	SET_JOINTS_UPDATED;
 }
 
 float32 b2GearJoint::GetRatio() const

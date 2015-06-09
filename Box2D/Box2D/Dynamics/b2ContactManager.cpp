@@ -15,7 +15,8 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
+#include <Box2D/Dynamics/b2World.h>
 #include <Box2D/Dynamics/b2ContactManager.h>
 #include <Box2D/Dynamics/b2Body.h>
 #include <Box2D/Dynamics/b2Fixture.h>
@@ -29,9 +30,16 @@ b2ContactManager::b2ContactManager()
 {
 	m_contactList = NULL;
 	m_contactCount = 0;
+	m_pContactCounts = new int[b2Shape::contact_type_num];
+	memset(m_pContactCounts, 0, sizeof(int)*b2Shape::contact_type_num);
 	m_contactFilter = &b2_defaultFilter;
 	m_contactListener = &b2_defaultListener;
 	m_allocator = NULL;
+}
+
+b2ContactManager::~b2ContactManager()
+{
+    delete [] m_pContactCounts;
 }
 
 void b2ContactManager::Destroy(b2Contact* c)
@@ -40,60 +48,125 @@ void b2ContactManager::Destroy(b2Contact* c)
 	b2Fixture* fixtureB = c->GetFixtureB();
 	b2Body* bodyA = fixtureA->GetBody();
 	b2Body* bodyB = fixtureB->GetBody();
-
+    
 	if (m_contactListener && c->IsTouching())
 	{
 		m_contactListener->EndContact(c);
 	}
-
+    
 	// Remove from the world.
 	if (c->m_prev)
 	{
 		c->m_prev->m_next = c->m_next;
 	}
-
+    
 	if (c->m_next)
 	{
 		c->m_next->m_prev = c->m_prev;
 	}
-
+    
 	if (c == m_contactList)
 	{
 		m_contactList = c->m_next;
 	}
-
+    
 	// Remove from body 1
 	if (c->m_nodeA.prev)
 	{
 		c->m_nodeA.prev->next = c->m_nodeA.next;
 	}
-
+    
 	if (c->m_nodeA.next)
 	{
 		c->m_nodeA.next->prev = c->m_nodeA.prev;
 	}
-
+    
 	if (&c->m_nodeA == bodyA->m_contactList)
 	{
 		bodyA->m_contactList = c->m_nodeA.next;
 	}
-
+    
 	// Remove from body 2
 	if (c->m_nodeB.prev)
 	{
 		c->m_nodeB.prev->next = c->m_nodeB.next;
 	}
-
+    
 	if (c->m_nodeB.next)
 	{
 		c->m_nodeB.next->prev = c->m_nodeB.prev;
 	}
-
+    
 	if (&c->m_nodeB == bodyB->m_contactList)
 	{
 		bodyB->m_contactList = c->m_nodeB.next;
 	}
+    
+	// Call the factory.
+	b2Contact::Destroy(c, m_allocator);
+	--m_contactCount;
+}
 
+void b2ContactManager::Destroy_nocallback(b2Contact* c)
+{
+	b2Fixture* fixtureA = c->GetFixtureA();
+	b2Fixture* fixtureB = c->GetFixtureB();
+	b2Body* bodyA = fixtureA->GetBody();
+	b2Body* bodyB = fixtureB->GetBody();
+    
+//	if (m_contactListener && c->IsTouching())
+//	{
+//		m_contactListener->EndContact(c);
+//	}
+    
+	// Remove from the world.
+	if (c->m_prev)
+	{
+		c->m_prev->m_next = c->m_next;
+	}
+    
+	if (c->m_next)
+	{
+		c->m_next->m_prev = c->m_prev;
+	}
+    
+	if (c == m_contactList)
+	{
+		m_contactList = c->m_next;
+	}
+    
+	// Remove from body 1
+	if (c->m_nodeA.prev)
+	{
+		c->m_nodeA.prev->next = c->m_nodeA.next;
+	}
+    
+	if (c->m_nodeA.next)
+	{
+		c->m_nodeA.next->prev = c->m_nodeA.prev;
+	}
+    
+	if (&c->m_nodeA == bodyA->m_contactList)
+	{
+		bodyA->m_contactList = c->m_nodeA.next;
+	}
+    
+	// Remove from body 2
+	if (c->m_nodeB.prev)
+	{
+		c->m_nodeB.prev->next = c->m_nodeB.next;
+	}
+    
+	if (c->m_nodeB.next)
+	{
+		c->m_nodeB.next->prev = c->m_nodeB.prev;
+	}
+    
+	if (&c->m_nodeB == bodyB->m_contactList)
+	{
+		bodyB->m_contactList = c->m_nodeB.next;
+	}
+    
 	// Call the factory.
 	b2Contact::Destroy(c, m_allocator);
 	--m_contactCount;
@@ -104,22 +177,66 @@ void b2ContactManager::Destroy(b2Contact* c)
 // contact list.
 void b2ContactManager::Collide()
 {
-	// Update awake contacts.
-	b2Contact* c = m_contactList;
-	while (c)
+#ifdef _DEBUG_TIME_NARROWPHASE
+	m_pWorld->ave_contact_num += m_contactCount;
+#endif
+
+#if defined(BROADPHASE_OPENCL)
+	if (!b2clGlobal_OpenCLSupported)
+#endif
 	{
-		b2Fixture* fixtureA = c->GetFixtureA();
-		b2Fixture* fixtureB = c->GetFixtureB();
-		int32 indexA = c->GetChildIndexA();
-		int32 indexB = c->GetChildIndexB();
-		b2Body* bodyA = fixtureA->GetBody();
-		b2Body* bodyB = fixtureB->GetBody();
-		 
-		// Is this contact flagged for filtering?
-		if (c->m_flags & b2Contact::e_filterFlag)
+		// Update awake contacts.
+		b2Contact* c = m_contactList;
+		while (c)
 		{
-			// Should these bodies collide?
-			if (bodyB->ShouldCollide(bodyA) == false)
+			b2Fixture* fixtureA = c->GetFixtureA();
+			b2Fixture* fixtureB = c->GetFixtureB();
+			int32 indexA = c->GetChildIndexA();
+			int32 indexB = c->GetChildIndexB();
+			b2Body* bodyA = fixtureA->GetBody();
+			b2Body* bodyB = fixtureB->GetBody();
+
+			// Is this contact flagged for filtering?
+			if (c->m_flags & b2Contact::e_filterFlag)
+			{
+				// Should these bodies collide?
+				if (bodyB->ShouldCollide(bodyA) == false)
+				{
+					b2Contact* cNuke = c;
+					c = cNuke->GetNext();
+					Destroy(cNuke);
+					continue;
+				}
+
+				// Check user filtering.
+				if (m_contactFilter && m_contactFilter->ShouldCollide(fixtureA, fixtureB) == false)
+				{
+					b2Contact* cNuke = c;
+					c = cNuke->GetNext();
+					Destroy(cNuke);
+					continue;
+				}
+
+				// Clear the filtering flag.
+				c->m_flags &= ~b2Contact::e_filterFlag;
+			}
+
+			bool activeA = bodyA->IsAwake() && bodyA->m_type != b2_staticBody;
+			bool activeB = bodyB->IsAwake() && bodyB->m_type != b2_staticBody;
+
+			// At least one body must be awake and it must be dynamic or kinematic.
+			if (activeA == false && activeB == false)
+			{
+				c = c->GetNext();
+				continue;
+			}
+
+			int32 proxyIdA = fixtureA->m_proxies[indexA].proxyId;
+			int32 proxyIdB = fixtureB->m_proxies[indexB].proxyId;
+			bool overlap = m_broadPhase.TestOverlap(proxyIdA, proxyIdB);
+
+			// Here we destroy contacts that cease to overlap in the broad-phase.
+			if (overlap == false)
 			{
 				b2Contact* cNuke = c;
 				c = cNuke->GetNext();
@@ -127,51 +244,321 @@ void b2ContactManager::Collide()
 				continue;
 			}
 
-			// Check user filtering.
-			if (m_contactFilter && m_contactFilter->ShouldCollide(fixtureA, fixtureB) == false)
+	#if defined(NARROWPHASE_OPENCL)
+			if (!b2clGlobal_OpenCLSupported)
+	#endif
 			{
-				b2Contact* cNuke = c;
-				c = cNuke->GetNext();
-				Destroy(cNuke);
-				continue;
+			#ifdef _DEBUG_TIME_NARROWPHASE
+				b2Timer narrowPhaseTimer;
+			#endif
+				// The contact persists.
+				c->Update(m_contactListener);
+
+			#ifdef _DEBUG_TIME_NARROWPHASE
+				m_pWorld->updateContactTime += narrowPhaseTimer.GetMilliseconds();
+			#endif
 			}
 
-			// Clear the filtering flag.
-			c->m_flags &= ~b2Contact::e_filterFlag;
-		}
-
-		bool activeA = bodyA->IsAwake() && bodyA->m_type != b2_staticBody;
-		bool activeB = bodyB->IsAwake() && bodyB->m_type != b2_staticBody;
-
-		// At least one body must be awake and it must be dynamic or kinematic.
-		if (activeA == false && activeB == false)
-		{
 			c = c->GetNext();
-			continue;
 		}
-
-		int32 proxyIdA = fixtureA->m_proxies[indexA].proxyId;
-		int32 proxyIdB = fixtureB->m_proxies[indexB].proxyId;
-		bool overlap = m_broadPhase.TestOverlap(proxyIdA, proxyIdB);
-
-		// Here we destroy contacts that cease to overlap in the broad-phase.
-		if (overlap == false)
-		{
-			b2Contact* cNuke = c;
-			c = cNuke->GetNext();
-			Destroy(cNuke);
-			continue;
-		}
-
-		// The contact persists.
-		c->Update(m_contactListener);
-		c = c->GetNext();
 	}
+
+#if defined(NARROWPHASE_OPENCL)
+	if (b2clGlobal_OpenCLSupported)
+	{
+	#ifdef _DEBUG_TIME_NARROWPHASE
+		b2Timer narrowPhaseTimer, InitializeGPUDataTimer;
+	#endif
+	
+	//#if defined(BROADPHASE_OPENCL)
+	//	m_cl_narrowPhase.CreateXfBuffer(m_pWorld);
+	//#endif
+
+		//printf("contact count in NarrowPhase: %d\n", m_pWorld->m_contactManager.m_contactCount);
+		if (m_pWorld->m_contactManager.m_contactCount > 0)
+		{
+			//printf("NP: InitializeGPUData.\n");
+			m_cl_narrowPhase.InitializeGPUData(m_pWorld, m_contactList, m_pContactCounts);
+
+		#ifdef _DEBUG_TIME_NARROWPHASE
+			b2CLDevice::instance().finishCommandQueue();
+			m_pWorld->InitializeGPUDataTime += InitializeGPUDataTimer.GetMilliseconds();
+			b2Timer UpdateContactPairsTimer;
+		#endif
+
+			//printf("NP: UpdateContactPairs.\n");
+		#if defined(BROADPHASE_OPENCL)
+			m_cl_narrowPhase.UpdateContactPairs(m_contactCount, m_pContactCounts, m_maxContactCount/*m_contactListener*/);
+		#else
+			m_cl_narrowPhase.UpdateContactPairs(m_contactCount, m_pContactCounts, m_contactCount/*m_contactListener*/);
+		#endif
+
+			if (m_pWorld->m_uListenerCallback)
+			{
+				int *enableBitArray = NULL;
+				if (m_pWorld->m_uListenerCallback & b2ContactListener::l_PreSolve)
+				{
+					enableBitArray = new int[m_contactCount];
+				}
+				int validContactCount;
+				m_cl_narrowPhase.ReadbackGPUDataForListener(m_pWorld, &m_contactList, m_contactListener, enableBitArray, &validContactCount);
+				b2Contact* pc = m_contactList;
+				while (pc)
+				{
+					if ((pc->m_flags & 0x40)) // the bit is still set means it is no longer valid and need to be removed
+					{
+						b2Contact* cNuke = pc;
+						pc = cNuke->GetNext();
+
+						int temp = m_contactCount;
+						Destroy(cNuke);
+						m_contactCount = temp; // m_contactCount is from b2cl Narrow Phase, and thus should not be affected by Destroy(cNuke)
+
+						continue;
+					}
+					pc = pc->GetNext();
+				}
+				//// for debug
+//				printf("contact: %d, valid: %d\n", m_contactCount, validContactCount);
+//				for (int i=0; i<m_contactCount; i++)
+//				{
+//					if (i<validContactCount && enableBitArray[i]<=0)
+//						assert(0);
+//					printf("%d, ", enableBitArray[i]);
+//				}
+//				printf("\n");
+
+				if (m_pWorld->m_uListenerCallback & b2ContactListener::l_PreSolve)
+				{
+					b2CLDevice::instance().copyArrayToDevice(b2CLCommonData::instance().manifoldBinaryBitListBuffer, enableBitArray, 0, sizeof(int) * m_contactCount);
+
+					//// compact enabled contacts
+					//m_cl_narrowPhase.CompactEnabledContactPairs(m_contactCount);
+
+					delete [] enableBitArray;
+				}
+			}
+
+		#if defined(SOLVER_OPENCL)
+			//printf("NP: CompactContactPairs.\n");
+			m_cl_narrowPhase.CompactContactPairs(m_contactCount);
+			//printf("NP: CompactContactPairs finished.\n");
+		#endif
+
+		#ifdef _DEBUG_TIME_NARROWPHASE
+			b2CLDevice::instance().finishCommandQueue();
+			m_pWorld->UpdateContactPairsTime += UpdateContactPairsTimer.GetMilliseconds();
+			b2Timer ReadbackGPUDataTimer;
+		#endif
+
+		#if !defined(SOLVER_OPENCL)
+			// ReadbackGPUDataForListener already read back GPU data.
+			// So only call ReadbackGPUData if Listener is NOT used.
+			// NOTE: ReadbackGPUData may not work correctly now!!! Check inside!!!
+			if (!m_pWorld->m_uListenerCallback)
+				m_cl_narrowPhase.ReadbackGPUData(m_pWorld, m_contactList, m_contactListener);
+		#endif
+
+		#ifdef _DEBUG_TIME_NARROWPHASE
+			b2CLDevice::instance().finishCommandQueue();
+			m_pWorld->ReadbackGPUDataTime += ReadbackGPUDataTimer.GetMilliseconds();
+			m_pWorld->updateContactTime += narrowPhaseTimer.GetMilliseconds();
+		#endif
+		}
+
+	}
+#endif
+}
+
+
+void b2ContactManager::cpuCollide()
+{
+		// Update awake contacts.
+		b2Contact* c = m_contactList;
+		while (c)
+		{
+			b2Fixture* fixtureA = c->GetFixtureA();
+			b2Fixture* fixtureB = c->GetFixtureB();
+			int32 indexA = c->GetChildIndexA();
+			int32 indexB = c->GetChildIndexB();
+			b2Body* bodyA = fixtureA->GetBody();
+			b2Body* bodyB = fixtureB->GetBody();
+
+			// Is this contact flagged for filtering?
+			if (c->m_flags & b2Contact::e_filterFlag)
+			{
+				// Should these bodies collide?
+				if (bodyB->ShouldCollide(bodyA) == false)
+				{
+					b2Contact* cNuke = c;
+					c = cNuke->GetNext();
+					Destroy(cNuke);
+					continue;
+				}
+
+				// Check user filtering.
+				if (m_contactFilter && m_contactFilter->ShouldCollide(fixtureA, fixtureB) == false)
+				{
+					b2Contact* cNuke = c;
+					c = cNuke->GetNext();
+					Destroy(cNuke);
+					continue;
+				}
+
+				// Clear the filtering flag.
+				c->m_flags &= ~b2Contact::e_filterFlag;
+			}
+
+			bool activeA = bodyA->IsAwake() && bodyA->m_type != b2_staticBody;
+			bool activeB = bodyB->IsAwake() && bodyB->m_type != b2_staticBody;
+
+			// At least one body must be awake and it must be dynamic or kinematic.
+			if (activeA == false && activeB == false)
+			{
+				c = c->GetNext();
+				continue;
+			}
+
+			int32 proxyIdA = fixtureA->m_proxies[indexA].proxyId;
+			int32 proxyIdB = fixtureB->m_proxies[indexB].proxyId;
+			bool overlap = m_broadPhase.TestOverlap(proxyIdA, proxyIdB);
+
+			// Here we destroy contacts that cease to overlap in the broad-phase.
+			if (overlap == false)
+			{
+				b2Contact* cNuke = c;
+				c = cNuke->GetNext();
+				Destroy(cNuke);
+				continue;
+			}
+
+			{
+			#ifdef _DEBUG_TIME_NARROWPHASE
+				b2Timer narrowPhaseTimer;
+			#endif
+				// The contact persists.
+				c->Update(m_contactListener);
+
+			#ifdef _DEBUG_TIME_NARROWPHASE
+				m_pWorld->updateContactTime += narrowPhaseTimer.GetMilliseconds();
+			#endif
+			}
+
+			c = c->GetNext();
+		}
+
+}
+
+void b2ContactManager::cpuOverLap()
+{
+		// Update awake contacts.
+		b2Contact* c = m_contactList;
+		while (c)
+		{
+			b2Fixture* fixtureA = c->GetFixtureA();
+			b2Fixture* fixtureB = c->GetFixtureB();
+			int32 indexA = c->GetChildIndexA();
+			int32 indexB = c->GetChildIndexB();
+			b2Body* bodyA = fixtureA->GetBody();
+			b2Body* bodyB = fixtureB->GetBody();
+
+			// Is this contact flagged for filtering?
+			if (c->m_flags & b2Contact::e_filterFlag)
+			{
+				// Should these bodies collide?
+				if (bodyB->ShouldCollide(bodyA) == false)
+				{
+					b2Contact* cNuke = c;
+					c = cNuke->GetNext();
+					Destroy(cNuke);
+					continue;
+				}
+
+				// Check user filtering.
+				if (m_contactFilter && m_contactFilter->ShouldCollide(fixtureA, fixtureB) == false)
+				{
+					b2Contact* cNuke = c;
+					c = cNuke->GetNext();
+					Destroy(cNuke);
+					continue;
+				}
+
+				// Clear the filtering flag.
+				c->m_flags &= ~b2Contact::e_filterFlag;
+			}
+
+			bool activeA = bodyA->IsAwake() && bodyA->m_type != b2_staticBody;
+			bool activeB = bodyB->IsAwake() && bodyB->m_type != b2_staticBody;
+
+			// At least one body must be awake and it must be dynamic or kinematic.
+			if (activeA == false && activeB == false)
+			{
+				c = c->GetNext();
+				continue;
+			}
+
+			int32 proxyIdA = fixtureA->m_proxies[indexA].proxyId;
+			int32 proxyIdB = fixtureB->m_proxies[indexB].proxyId;
+			bool overlap = m_broadPhase.TestOverlap(proxyIdA, proxyIdB);
+
+			// Here we destroy contacts that cease to overlap in the broad-phase.
+			if (overlap == false)
+			{
+				b2Contact* cNuke = c;
+				c = cNuke->GetNext();
+				Destroy(cNuke);
+				continue;
+			}
+/*
+			{
+			#ifdef _DEBUG_TIME_NARROWPHASE
+				b2Timer narrowPhaseTimer;
+			#endif
+				// The contact persists.
+				c->Update(m_contactListener);
+
+			#ifdef _DEBUG_TIME_NARROWPHASE
+				m_pWorld->updateContactTime += narrowPhaseTimer.GetMilliseconds();
+			#endif
+			}
+*/
+			c = c->GetNext();
+		}
+
 }
 
 void b2ContactManager::FindNewContacts()
 {
+#if defined (_DEBUG_TIME_BROADPHASE)
+	m_broadPhase.SetTimePointers(&(m_pWorld->updatePairsTime), 
+		&(m_pWorld->CreateGPUBuffersTime), 
+		&(m_pWorld->ComputeAABBsTime), 
+		&(m_pWorld->SortAABBsTime), 
+		&(m_pWorld->ComputePairsTime));
+#endif
+
+	//m_pWorld->InitializeGPUData();
+	m_broadPhase.SetValues(m_pWorld->GetFixtureCount(), &m_contactCount, m_pContactCounts);
+	m_maxContactCount = m_pWorld->GetProxyCount() * MAX_CONTACT_PER_FIXTURE;
+    //printf("shape number: %d\n", m_pWorld->GetFixtureCount());
 	m_broadPhase.UpdatePairs(this);
+}
+
+
+void b2ContactManager::cpuFindNewContacts()
+{
+#if defined (_DEBUG_TIME_BROADPHASE)
+	m_broadPhase.SetTimePointers(&(m_pWorld->updatePairsTime), 
+		&(m_pWorld->CreateGPUBuffersTime), 
+		&(m_pWorld->ComputeAABBsTime), 
+		&(m_pWorld->SortAABBsTime), 
+		&(m_pWorld->ComputePairsTime));
+#endif
+
+	m_broadPhase.SetValues(m_pWorld->GetFixtureCount(), &m_contactCount, m_pContactCounts);
+	m_maxContactCount = m_pWorld->GetProxyCount() * MAX_CONTACT_PER_FIXTURE;
+    //printf("shape number: %d\n", m_pWorld->GetFixtureCount());
+	m_broadPhase.cpuUpdatePairs(this);
 }
 
 void b2ContactManager::AddPair(void* proxyUserDataA, void* proxyUserDataB)

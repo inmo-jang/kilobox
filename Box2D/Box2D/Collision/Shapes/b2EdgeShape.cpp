@@ -129,6 +129,8 @@ void b2EdgeShape::ComputeAABB(b2AABB* aabb, const b2Transform& xf, int32 childIn
 	aabb->upperBound = upper + r;
 }
 
+// Edge has no mass and inertia. 
+// So it behaves differently compared to a polygon having two vertices.
 void b2EdgeShape::ComputeMass(b2MassData* massData, float32 density) const
 {
 	B2_NOT_USED(density);

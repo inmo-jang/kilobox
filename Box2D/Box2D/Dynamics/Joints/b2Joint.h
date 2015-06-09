@@ -15,7 +15,7 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #ifndef B2_JOINT_H
 #define B2_JOINT_H
 
@@ -150,6 +150,7 @@ protected:
 	friend class b2Body;
 	friend class b2Island;
 	friend class b2GearJoint;
+	friend class b2CLCommonData;
 
 	static b2Joint* Create(const b2JointDef* def, b2BlockAllocator* allocator);
 	static void Destroy(b2Joint* joint, b2BlockAllocator* allocator);

@@ -15,13 +15,14 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #ifndef B2_ISLAND_H
 #define B2_ISLAND_H
 
 #include <Box2D/Common/b2Math.h>
 #include <Box2D/Dynamics/b2Body.h>
 #include <Box2D/Dynamics/b2TimeStep.h>
+#include <Box2D/Common/OpenCL/b2CLSolver.h>
 
 class b2Contact;
 class b2Joint;
@@ -35,7 +36,7 @@ class b2Island
 {
 public:
 	b2Island(int32 bodyCapacity, int32 contactCapacity, int32 jointCapacity,
-			b2StackAllocator* allocator, b2ContactListener* listener);
+			b2StackAllocator* allocator, b2ContactListener* listener, b2World *pWorld, b2CLSolver* pb2clSolver=NULL);
 	~b2Island();
 
 	void Clear()
@@ -48,6 +49,7 @@ public:
 	void Solve(b2Profile* profile, const b2TimeStep& step, const b2Vec2& gravity, bool allowSleep);
 
 	void SolveTOI(const b2TimeStep& subStep, int32 toiIndexA, int32 toiIndexB);
+	void gpuSolveTOI (b2Profile* profile, const b2TimeStep& step, const b2Vec2& gravity, bool allowSleep);
 
 	void Add(b2Body* body)
 	{
@@ -88,6 +90,11 @@ public:
 	int32 m_bodyCapacity;
 	int32 m_contactCapacity;
 	int32 m_jointCapacity;
+
+	b2World *m_pWorld;
+#if defined(SOLVER_OPENCL)
+    b2CLSolver *m_pb2clSolver;
+#endif
 };
 
 #endif

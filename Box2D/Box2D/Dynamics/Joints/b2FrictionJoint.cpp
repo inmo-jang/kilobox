@@ -15,10 +15,11 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #include <Box2D/Dynamics/Joints/b2FrictionJoint.h>
 #include <Box2D/Dynamics/b2Body.h>
 #include <Box2D/Dynamics/b2TimeStep.h>
+#include <Box2D/Dynamics/b2World.h>
 
 // Point-to-point constraint
 // Cdot = v2 - v1
@@ -216,6 +217,8 @@ void b2FrictionJoint::SetMaxForce(float32 force)
 {
 	b2Assert(b2IsValid(force) && force >= 0.0f);
 	m_maxForce = force;
+
+	SET_JOINTS_UPDATED;
 }
 
 float32 b2FrictionJoint::GetMaxForce() const
@@ -227,6 +230,8 @@ void b2FrictionJoint::SetMaxTorque(float32 torque)
 {
 	b2Assert(b2IsValid(torque) && torque >= 0.0f);
 	m_maxTorque = torque;
+
+	SET_JOINTS_UPDATED;
 }
 
 float32 b2FrictionJoint::GetMaxTorque() const

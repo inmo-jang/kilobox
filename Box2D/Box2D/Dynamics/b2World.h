@@ -15,7 +15,7 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #ifndef B2_WORLD_H
 #define B2_WORLD_H
 
@@ -25,6 +25,9 @@
 #include <Box2D/Dynamics/b2ContactManager.h>
 #include <Box2D/Dynamics/b2WorldCallbacks.h>
 #include <Box2D/Dynamics/b2TimeStep.h>
+#include <Box2D/Common/OpenCL/b2CLCommonData.h>
+#include <Box2D/Common/OpenCL/b2CLSolver.h>
+#include <Box2D/Common/OpenCL/b2CLSolveTOI.h>
 
 struct b2AABB;
 struct b2BodyDef;
@@ -57,6 +60,11 @@ public:
 	/// owned by you and must remain in scope. 
 	void SetContactFilter(b2ContactFilter* filter);
 
+	/// If the user wants to use Listener in OCL code,
+	/// This function MUST be called BEFORE SetContactListener.
+	void SetUseListener( int value ) { m_uListenerCallback = value; }
+	bool UseListener() const { return m_uListenerCallback>0; }
+
 	/// Register a contact event listener. The listener is owned by you and must
 	/// remain in scope.
 	void SetContactListener(b2ContactListener* listener);
@@ -85,6 +93,8 @@ public:
 	/// Destroy a joint. This may cause the connected bodies to begin colliding.
 	/// @warning This function is locked during callbacks.
 	void DestroyJoint(b2Joint* joint);
+
+	void InitializeGPUData();
 
 	/// Take a time step. This performs collision detection, integration,
 	/// and constraint solution.
@@ -163,6 +173,9 @@ public:
 	/// Get the number of bodies.
 	int32 GetBodyCount() const;
 
+	/// Get the number of fixtures.
+	int32 GetFixtureCount() const;
+
 	/// Get the number of joints.
 	int32 GetJointCount() const;
 
@@ -204,6 +217,16 @@ public:
 	/// @warning this should be called outside of a time step.
 	void Dump();
 
+	int frame_num;
+
+	void OutputToFile();
+	float getTotalTime (); 
+    float getNarrowPhaseTime(); 
+	float getSolverTime(); 
+
+	void SetJointsChanged() { m_bJointChanged = true; }
+	void SetJointsUpdated() { m_bJointUpdated = true; }
+
 private:
 
 	// m_flags
@@ -218,9 +241,16 @@ private:
 	friend class b2Fixture;
 	friend class b2ContactManager;
 	friend class b2Controller;
+	friend class b2CLCommonData;
+	friend class b2CLNarrowPhase;
+	friend class b2CLSolver;
+	friend class b2Island;
+	friend class b2CLBroadPhase;
 
 	void Solve(const b2TimeStep& step);
 	void SolveTOI(const b2TimeStep& step);
+
+
 
 	void DrawJoint(b2Joint* joint);
 	void DrawShape(b2Fixture* shape, const b2Transform& xf, const b2Color& color);
@@ -236,7 +266,16 @@ private:
 	b2Joint* m_jointList;
 
 	int32 m_bodyCount;
+	int32 m_fixtureCount;
+	int32 m_proxyCount;
 	int32 m_jointCount;
+	bool m_bBodyChanged, m_bFixtureChanged;
+	bool m_bBodyStaticAttributeChanged, m_bBodyDynamicAttributeChanged;
+	uint32 m_uListenerCallback; // This variable must be set by the user!!!
+
+	// for joint
+	bool m_bJointChanged; // added or deleted
+	bool m_bJointUpdated; // only value changes
 
 	b2Vec2 m_gravity;
 	bool m_allowSleep;
@@ -256,6 +295,46 @@ private:
 	bool m_stepComplete;
 
 	b2Profile m_profile;
+
+	 
+
+#if defined(SOLVER_OPENCL)
+    b2CLSolver m_b2clSolver;
+	b2CLSolveTOI m_b2clSolverTOI ; 
+	bool bFirstFrame;
+#endif
+
+#if defined(_DEBUG_TIME)
+	#define TOTAL_NUM_LOOP 60
+	int numLoops;
+	double ave_contact_num, ave_valid_contact_num;
+	FILE *f_output;
+	bool bOutputToFile;
+#endif
+
+#if defined(_DEBUG_TIME_STEP_TOTAL)
+	float stepTotalTime;
+	float stepNarrowPhaseTime, stepSolverTime, stepBroadPhaseTime, stepColorTime;
+	float stepTOIPhaseTime ; 
+#endif
+
+#if defined (_DEBUG_TIME_BROADPHASE)
+	float updatePairsTime;
+	float CreateGPUBuffersTime, ComputeAABBsTime, SortAABBsTime, ComputePairsTime;
+#endif
+
+#if defined(_DEBUG_TIME_NARROWPHASE)
+	float updateContactTime;
+	float InitializeGPUDataTime, UpdateContactPairsTime, ReadbackGPUDataTime;
+#endif
+
+#if defined(_DEBUG_TIME_SOLVER)
+	float solverTotalTime;
+	float constraintInitCPUTime, constraintInitGPUTime, constraintSolveTime, constraintFinalizeTime;
+	float testSolveTime;
+
+	float testSolveVelocityConstraintTime, testSolvePositionConstraintTime, testSolveTestPositionConstraintTime;
+#endif
 };
 
 inline b2Body* b2World::GetBodyList()
@@ -291,6 +370,11 @@ inline const b2Contact* b2World::GetContactList() const
 inline int32 b2World::GetBodyCount() const
 {
 	return m_bodyCount;
+}
+
+inline int32 b2World::GetFixtureCount() const
+{
+	return m_fixtureCount;
 }
 
 inline int32 b2World::GetJointCount() const

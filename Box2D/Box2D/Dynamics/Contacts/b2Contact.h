@@ -15,7 +15,7 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #ifndef B2_CONTACT_H
 #define B2_CONTACT_H
 
@@ -144,6 +144,9 @@ protected:
 	friend class b2ContactSolver;
 	friend class b2Body;
 	friend class b2Fixture;
+
+	friend class b2CLNarrowPhase;
+	friend class b2CLSolver;
 
 	// Flags stored in m_flags
 	enum

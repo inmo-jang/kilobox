@@ -66,34 +66,34 @@ Test::~Test()
 
 void Test::PreSolve(b2Contact* contact, const b2Manifold* oldManifold)
 {
-	const b2Manifold* manifold = contact->GetManifold();
-
-	if (manifold->pointCount == 0)
-	{
-		return;
-	}
-
-	b2Fixture* fixtureA = contact->GetFixtureA();
-	b2Fixture* fixtureB = contact->GetFixtureB();
-
-	b2PointState state1[b2_maxManifoldPoints], state2[b2_maxManifoldPoints];
-	b2GetPointStates(state1, state2, oldManifold, manifold);
-
-	b2WorldManifold worldManifold;
-	contact->GetWorldManifold(&worldManifold);
-
-	for (int32 i = 0; i < manifold->pointCount && m_pointCount < k_maxContactPoints; ++i)
-	{
-		ContactPoint* cp = m_points + m_pointCount;
-		cp->fixtureA = fixtureA;
-		cp->fixtureB = fixtureB;
-		cp->position = worldManifold.points[i];
-		cp->normal = worldManifold.normal;
-		cp->state = state2[i];
-		cp->normalImpulse = manifold->points[i].normalImpulse;
-		cp->tangentImpulse = manifold->points[i].tangentImpulse;
-		++m_pointCount;
-	}
+//	const b2Manifold* manifold = contact->GetManifold();
+//
+//	if (manifold->pointCount == 0)
+//	{
+//		return;
+//	}
+//
+//	b2Fixture* fixtureA = contact->GetFixtureA();
+//	b2Fixture* fixtureB = contact->GetFixtureB();
+//
+//	b2PointState state1[b2_maxManifoldPoints], state2[b2_maxManifoldPoints];
+//	b2GetPointStates(state1, state2, oldManifold, manifold);
+//
+//	b2WorldManifold worldManifold;
+//	contact->GetWorldManifold(&worldManifold);
+//
+//	for (int32 i = 0; i < manifold->pointCount && m_pointCount < k_maxContactPoints; ++i)
+//	{
+//		ContactPoint* cp = m_points + m_pointCount;
+//		cp->fixtureA = fixtureA;
+//		cp->fixtureB = fixtureB;
+//		cp->position = worldManifold.points[i];
+//		cp->normal = worldManifold.normal;
+//		cp->state = state2[i];
+//		cp->normalImpulse = manifold->points[i].normalImpulse;
+//		cp->tangentImpulse = manifold->points[i].tangentImpulse;
+//		++m_pointCount;
+//	}
 }
 
 void Test::DrawTitle(const char *string)

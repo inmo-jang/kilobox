@@ -378,6 +378,9 @@ public:
 	/// Dump this body to a log file
 	void Dump();
 
+	// for debug draw
+	void SetColors(float r, float g, float b) { colors[0] = r; colors[1] = g; colors[2] = b; }
+
 private:
 
 	friend class b2World;
@@ -397,6 +400,11 @@ private:
 	friend class b2FrictionJoint;
 	friend class b2RopeJoint;
 
+	friend class b2CLCommonData;
+	friend class b2CLNarrowPhase;
+	friend class b2CLSolver;
+	friend class b2CLSolveTOI; 
+
 	// m_flags
 	enum
 	{
@@ -414,6 +422,9 @@ private:
 
 	void SynchronizeFixtures();
 	void SynchronizeTransform();
+
+	void SetWorldStaticFlag();
+	void SetWorldDynamicFlag();
 
 	// This is used to prevent connected bodies from colliding.
 	// It may lie, depending on the collideConnected flag.
@@ -439,6 +450,8 @@ private:
 	b2World* m_world;
 	b2Body* m_prev;
 	b2Body* m_next;
+	int32 m_uid;
+	int32 m_last_uid;
 
 	b2Fixture* m_fixtureList;
 	int32 m_fixtureCount;
@@ -458,6 +471,9 @@ private:
 	float32 m_sleepTime;
 
 	void* m_userData;
+
+	// for debug draw
+	float colors[3];
 };
 
 inline b2BodyType b2Body::GetType() const
@@ -503,6 +519,8 @@ inline void b2Body::SetLinearVelocity(const b2Vec2& v)
 	}
 
 	m_linearVelocity = v;
+
+	SetWorldDynamicFlag();
 }
 
 inline b2Vec2 b2Body::GetLinearVelocity() const
@@ -523,6 +541,8 @@ inline void b2Body::SetAngularVelocity(float32 w)
 	}
 
 	m_angularVelocity = w;
+
+	SetWorldDynamicFlag();
 }
 
 inline float32 b2Body::GetAngularVelocity() const
@@ -585,6 +605,8 @@ inline float32 b2Body::GetLinearDamping() const
 inline void b2Body::SetLinearDamping(float32 linearDamping)
 {
 	m_linearDamping = linearDamping;
+
+	SetWorldStaticFlag();
 }
 
 inline float32 b2Body::GetAngularDamping() const
@@ -595,6 +617,8 @@ inline float32 b2Body::GetAngularDamping() const
 inline void b2Body::SetAngularDamping(float32 angularDamping)
 {
 	m_angularDamping = angularDamping;
+
+	SetWorldStaticFlag();
 }
 
 inline float32 b2Body::GetGravityScale() const
@@ -605,6 +629,8 @@ inline float32 b2Body::GetGravityScale() const
 inline void b2Body::SetGravityScale(float32 scale)
 {
 	m_gravityScale = scale;
+
+	SetWorldStaticFlag();
 }
 
 inline void b2Body::SetBullet(bool flag)
@@ -756,6 +782,8 @@ inline void b2Body::ApplyForce(const b2Vec2& force, const b2Vec2& point)
 
 	m_force += force;
 	m_torque += b2Cross(point - m_sweep.c, force);
+
+	SetWorldDynamicFlag();
 }
 
 inline void b2Body::ApplyForceToCenter(const b2Vec2& force)
@@ -771,6 +799,8 @@ inline void b2Body::ApplyForceToCenter(const b2Vec2& force)
 	}
 
 	m_force += force;
+
+	SetWorldDynamicFlag();
 }
 
 inline void b2Body::ApplyTorque(float32 torque)
@@ -786,6 +816,8 @@ inline void b2Body::ApplyTorque(float32 torque)
 	}
 
 	m_torque += torque;
+
+	SetWorldDynamicFlag();
 }
 
 inline void b2Body::ApplyLinearImpulse(const b2Vec2& impulse, const b2Vec2& point)
@@ -801,6 +833,8 @@ inline void b2Body::ApplyLinearImpulse(const b2Vec2& impulse, const b2Vec2& poin
 	}
 	m_linearVelocity += m_invMass * impulse;
 	m_angularVelocity += m_invI * b2Cross(point - m_sweep.c, impulse);
+
+	SetWorldDynamicFlag();
 }
 
 inline void b2Body::ApplyAngularImpulse(float32 impulse)
@@ -815,6 +849,8 @@ inline void b2Body::ApplyAngularImpulse(float32 impulse)
 		SetAwake(true);
 	}
 	m_angularVelocity += m_invI * impulse;
+
+	SetWorldDynamicFlag();
 }
 
 inline void b2Body::SynchronizeTransform()

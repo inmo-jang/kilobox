@@ -15,7 +15,7 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #ifndef B2_SHAPE_H
 #define B2_SHAPE_H
 
@@ -51,6 +51,8 @@ public:
 		e_chain = 3,
 		e_typeCount = 4
 	};
+	//static const int contact_type_num = e_typeCount*(e_typeCount+1)/2;
+	static const int contact_type_num = 5; // only support 5 contact types now
 
 	virtual ~b2Shape() {}
 

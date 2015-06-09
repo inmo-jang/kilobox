@@ -15,7 +15,7 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #include <Box2D/Collision/b2Distance.h>
 #include <Box2D/Dynamics/b2Island.h>
 #include <Box2D/Dynamics/b2Body.h>
@@ -150,7 +150,9 @@ b2Island::b2Island(
 	int32 contactCapacity,
 	int32 jointCapacity,
 	b2StackAllocator* allocator,
-	b2ContactListener* listener)
+	b2ContactListener* listener,
+	b2World* pWorld,
+	b2CLSolver* pb2clSolver)
 {
 	m_bodyCapacity = bodyCapacity;
 	m_contactCapacity = contactCapacity;
@@ -161,6 +163,11 @@ b2Island::b2Island(
 
 	m_allocator = allocator;
 	m_listener = listener;
+	m_pWorld = pWorld;
+#if defined(SOLVER_OPENCL)
+	if (b2clGlobal_OpenCLSupported)
+		m_pb2clSolver = pb2clSolver;
+#endif
 
 	m_bodies = (b2Body**)m_allocator->Allocate(bodyCapacity * sizeof(b2Body*));
 	m_contacts = (b2Contact**)m_allocator->Allocate(contactCapacity	 * sizeof(b2Contact*));
@@ -182,149 +189,416 @@ b2Island::~b2Island()
 
 void b2Island::Solve(b2Profile* profile, const b2TimeStep& step, const b2Vec2& gravity, bool allowSleep)
 {
+#ifdef _DEBUG_TIME_SOLVER
+	b2Timer solverTimer, constraintInitCPUTimer;
+#endif
+
+	b2ContactSolver *pContactSolver = NULL;
+
 	b2Timer timer;
-
 	float32 h = step.dt;
-
-	// Integrate velocities and apply damping. Initialize the body state.
-	for (int32 i = 0; i < m_bodyCount; ++i)
-	{
-		b2Body* b = m_bodies[i];
-
-		b2Vec2 c = b->m_sweep.c;
-		float32 a = b->m_sweep.a;
-		b2Vec2 v = b->m_linearVelocity;
-		float32 w = b->m_angularVelocity;
-
-		// Store positions for continuous collision.
-		b->m_sweep.c0 = b->m_sweep.c;
-		b->m_sweep.a0 = b->m_sweep.a;
-
-		if (b->m_type == b2_dynamicBody)
-		{
-			// Integrate velocities.
-			v += h * (b->m_gravityScale * gravity + b->m_invMass * b->m_force);
-			w += h * b->m_invI * b->m_torque;
-
-			// Apply damping.
-			// ODE: dv/dt + c * v = 0
-			// Solution: v(t) = v0 * exp(-c * t)
-			// Time step: v(t + dt) = v0 * exp(-c * (t + dt)) = v0 * exp(-c * t) * exp(-c * dt) = v * exp(-c * dt)
-			// v2 = exp(-c * dt) * v1
-			// Taylor expansion:
-			// v2 = (1.0f - c * dt) * v1
-			v *= b2Clamp(1.0f - h * b->m_linearDamping, 0.0f, 1.0f);
-			w *= b2Clamp(1.0f - h * b->m_angularDamping, 0.0f, 1.0f);
-		}
-
-		m_positions[i].c = c;
-		m_positions[i].a = a;
-		m_velocities[i].v = v;
-		m_velocities[i].w = w;
-	}
-
-	timer.Reset();
-
-	// Solver data
 	b2SolverData solverData;
-	solverData.step = step;
-	solverData.positions = m_positions;
-	solverData.velocities = m_velocities;
-
-	// Initialize velocity constraints.
 	b2ContactSolverDef contactSolverDef;
-	contactSolverDef.step = step;
-	contactSolverDef.contacts = m_contacts;
-	contactSolverDef.count = m_contactCount;
-	contactSolverDef.positions = m_positions;
-	contactSolverDef.velocities = m_velocities;
-	contactSolverDef.allocator = m_allocator;
 
-	b2ContactSolver contactSolver(&contactSolverDef);
-	contactSolver.InitializeVelocityConstraints();
-
-	if (step.warmStarting)
+#if defined (SOLVER_OPENCL) && defined(NARROWPHASE_OPENCL)
+	if (!b2clGlobal_OpenCLSupported)
+#endif
 	{
-		contactSolver.WarmStart();
-	}
+		// Integrate velocities and apply damping. Initialize the body state.
+		for (int32 i = 0; i < m_bodyCount; ++i)
+		{
+			b2Body* b = m_bodies[i];
+
+			b2Vec2 c = b->m_sweep.c;
+			float32 a = b->m_sweep.a;
+			b2Vec2 v = b->m_linearVelocity;
+			float32 w = b->m_angularVelocity;
+
+			// Store positions for continuous collision.
+			b->m_sweep.c0 = b->m_sweep.c;
+			b->m_sweep.a0 = b->m_sweep.a;
+
+			if (b->m_type == b2_dynamicBody)
+			{
+				// Integrate velocities.
+				v += h * (b->m_gravityScale * gravity + b->m_invMass * b->m_force);
+				w += h * b->m_invI * b->m_torque;
+
+				// Apply damping.
+				// ODE: dv/dt + c * v = 0
+				// Solution: v(t) = v0 * exp(-c * t)
+				// Time step: v(t + dt) = v0 * exp(-c * (t + dt)) = v0 * exp(-c * t) * exp(-c * dt) = v * exp(-c * dt)
+				// v2 = exp(-c * dt) * v1
+				// Taylor expansion:
+				// v2 = (1.0f - c * dt) * v1
+				v *= b2Clamp(1.0f - h * b->m_linearDamping, 0.0f, 1.0f);
+				w *= b2Clamp(1.0f - h * b->m_angularDamping, 0.0f, 1.0f);
+			}
+
+			m_positions[i].c = c;
+			m_positions[i].a = a;
+			m_velocities[i].v = v;
+			m_velocities[i].w = w;
+		}
+
+		timer.Reset();
+
+		// Solver data
+		solverData.step = step;
+		solverData.positions = m_positions;
+		solverData.velocities = m_velocities;
+
+		// Initialize velocity constraints.
+		contactSolverDef.step = step;
+		contactSolverDef.contacts = m_contacts;
+		contactSolverDef.count = m_contactCount;
+		contactSolverDef.positions = m_positions;
+		contactSolverDef.velocities = m_velocities;
+		contactSolverDef.allocator = m_allocator;
+
+		pContactSolver = new b2ContactSolver(&contactSolverDef);
+		pContactSolver->InitializeVelocityConstraints();
+
+		if (step.warmStarting)
+		{
+			pContactSolver->WarmStart();
+		}
 	
-	for (int32 i = 0; i < m_jointCount; ++i)
-	{
-		m_joints[i]->InitVelocityConstraints(solverData);
-	}
-
-	profile->solveInit = timer.GetMilliseconds();
-
-	// Solve velocity constraints
-	timer.Reset();
-	for (int32 i = 0; i < step.velocityIterations; ++i)
-	{
-		for (int32 j = 0; j < m_jointCount; ++j)
-		{
-			m_joints[j]->SolveVelocityConstraints(solverData);
-		}
-
-		contactSolver.SolveVelocityConstraints();
-	}
-
-	// Store impulses for warm starting
-	contactSolver.StoreImpulses();
-	profile->solveVelocity = timer.GetMilliseconds();
-
-	// Integrate positions
-	for (int32 i = 0; i < m_bodyCount; ++i)
-	{
-		b2Vec2 c = m_positions[i].c;
-		float32 a = m_positions[i].a;
-		b2Vec2 v = m_velocities[i].v;
-		float32 w = m_velocities[i].w;
-
-		// Check for large velocities
-		b2Vec2 translation = h * v;
-		if (b2Dot(translation, translation) > b2_maxTranslationSquared)
-		{
-			float32 ratio = b2_maxTranslation / translation.Length();
-			v *= ratio;
-		}
-
-		float32 rotation = h * w;
-		if (rotation * rotation > b2_maxRotationSquared)
-		{
-			float32 ratio = b2_maxRotation / b2Abs(rotation);
-			w *= ratio;
-		}
-
-		// Integrate
-		c += h * v;
-		a += h * w;
-
-		m_positions[i].c = c;
-		m_positions[i].a = a;
-		m_velocities[i].v = v;
-		m_velocities[i].w = w;
-	}
-
-	// Solve position constraints
-	timer.Reset();
-	bool positionSolved = false;
-	for (int32 i = 0; i < step.positionIterations; ++i)
-	{
-		bool contactsOkay = contactSolver.SolvePositionConstraints();
-
-		bool jointsOkay = true;
 		for (int32 i = 0; i < m_jointCount; ++i)
 		{
-			bool jointOkay = m_joints[i]->SolvePositionConstraints(solverData);
-			jointsOkay = jointsOkay && jointOkay;
+			m_joints[i]->InitVelocityConstraints(solverData);
 		}
 
-		if (contactsOkay && jointsOkay)
+		profile->solveInit = timer.GetMilliseconds();
+
+	#if defined(_DEBUG_TIME_SOLVER)
+		m_pWorld->ave_valid_contact_num += m_contactCount;
+	#endif
+	}
+#if defined (SOLVER_OPENCL) && defined(NARROWPHASE_OPENCL)
+	else
+	{
+		// Integrate velocities and apply damping. Initialize the body state.
+		for (int32 i = 0; i < m_bodyCount; ++i)
 		{
-			// Exit early if the position errors are small.
-			positionSolved = true;
-			break;
+			b2Body* b = m_bodies[i];
+
+			// Store positions for continuous collision.
+			b->m_sweep.c0 = b->m_sweep.c;
+			b->m_sweep.a0 = b->m_sweep.a;
 		}
 	}
+#endif
+
+#if defined(_DEBUG_TIME_SOLVER)
+	m_pWorld->constraintInitCPUTime += constraintInitCPUTimer.GetMilliseconds();
+	b2Timer constraintSolveTimer;
+#endif
+
+#if defined(SOLVER_OPENCL)
+	if (!b2clGlobal_OpenCLSupported)
+#endif
+	{
+		// Solve velocity constraints
+		timer.Reset();
+		for (int32 i = 0; i < step.velocityIterations; ++i)
+		{
+			for (int32 j = 0; j < m_jointCount; ++j)
+			{
+				m_joints[j]->SolveVelocityConstraints(solverData);
+			}
+
+			pContactSolver->SolveVelocityConstraints();
+		}
+
+		// Store impulses for warm starting
+		pContactSolver->StoreImpulses();
+		profile->solveVelocity = timer.GetMilliseconds();
+
+		// Integrate positions
+		for (int32 i = 0; i < m_bodyCount; ++i)
+		{
+			b2Vec2 c = m_positions[i].c;
+			float32 a = m_positions[i].a;
+			b2Vec2 v = m_velocities[i].v;
+			float32 w = m_velocities[i].w;
+
+			// Check for large velocities
+			b2Vec2 translation = h * v;
+			if (b2Dot(translation, translation) > b2_maxTranslationSquared)
+			{
+				float32 ratio = b2_maxTranslation / translation.Length();
+				v *= ratio;
+			}
+
+			float32 rotation = h * w;
+			if (rotation * rotation > b2_maxRotationSquared)
+			{
+				float32 ratio = b2_maxRotation / b2Abs(rotation);
+				w *= ratio;
+			}
+
+			// Integrate
+			c += h * v;
+			a += h * w;
+
+			m_positions[i].c = c;
+			m_positions[i].a = a;
+			m_velocities[i].v = v;
+			m_velocities[i].w = w;
+		}
+
+		// Solve position constraints
+		timer.Reset();
+		bool positionSolved = false;
+		for (int32 i = 0; i < step.positionIterations; ++i)
+		{
+			bool contactsOkay = pContactSolver->SolvePositionConstraints();
+
+			bool jointsOkay = true;
+			for (int32 i = 0; i < m_jointCount; ++i)
+			{
+				bool jointOkay = m_joints[i]->SolvePositionConstraints(solverData);
+				jointsOkay = jointsOkay && jointOkay;
+			}
+
+			if (contactsOkay && jointsOkay)
+			{
+				// Exit early if the position errors are small.
+				positionSolved = true;
+				break;
+			}
+		}
+	}
+#if defined(SOLVER_OPENCL)
+	if (b2clGlobal_OpenCLSupported)
+	{
+	#ifdef _DEBUG_TIME_SOLVER
+		m_pWorld->constraintInitCPUTime += constraintInitCPUTimer.GetMilliseconds();
+		b2CLDevice::instance().finishCommandQueue();
+        b2Timer constraintInitGPUTimer;
+	#endif
+		
+		//printf("SetValues\n");
+		//printf("m_contactCount: %d\t", m_contactCount);
+		m_pb2clSolver->SetValues(m_bodyCount, m_contactCount, m_pWorld->GetGravity(), step.dt, step.dtRatio);
+	#ifdef NARROWPHASE_OPENCL
+		if (m_contactCount>0)
+		{
+			//printf("b2CLReadCompactedContacts\n");
+			m_pb2clSolver->b2CLReadCompactedContacts(m_contactCount);
+			//printf("m_contactCount: %d\n", m_contactCount);
+		}
+		//printf("b2CLInitializeSolver\n");
+		
+		m_pb2clSolver->b2CLInitializeSolver(m_bodies, m_contacts, m_velocities, m_positions, m_bodyCount, m_contactCount, gravity, step.dt, m_pWorld->GetContactManager(), m_contacts);
+
+#if defined(_DEBUG_TIME_STEP_TOTAL)
+		m_pWorld->stepColorTime  += m_pb2clSolver->colorTime; m_pb2clSolver->colorTime = 0 ;
+#endif
+	#else // Note: we have not fixed the copatibility issues in 2.1.2 for SOLVER && !NARROWPHASE case (maybe do it later)!!!
+		m_pb2clSolver->b2CLInitializeSolver(m_bodies, m_contacts, m_velocities, m_positions, m_bodyCount, m_contactCount, gravity, step.dt, m_pWorld->GetContactManager(), m_contacts, contactSolver.m_velocityConstraints, contactSolver.m_positionConstraints);
+	#endif
+
+
+	#ifdef NARROWPHASE_OPENCL
+		//printf("b2CLInitializeBodyState\n");
+		if (m_pWorld->bFirstFrame || m_pWorld->m_bBodyDynamicAttributeChanged) 
+			m_pb2clSolver->b2CLInitializeBodyStateFirstFrame();
+		else
+			m_pb2clSolver->b2CLInitializeBodyState();
+	
+        
+		//printf("b2CLInitializeVelocityConstraint\n");
+		//#ifdef SPLIT_OPENCL
+		 //   m_pb2clSolver->InitializeSplitBufferParallel ( false ) ; 
+       // #endif
+#ifdef SPLIT_OPENCL
+		m_pb2clSolver->b2CLInitializeVelocityConstraint_HasSplit(step.warmStarting, step.dtRatio);
+		//m_pb2clSolver->b2CLInitializeVelocityConstraint(step.warmStarting, step.dtRatio);
+#else
+		m_pb2clSolver->b2CLInitializeJointVelocityConstraint ( step.warmStarting, step.dt ) ;  
+		m_pb2clSolver->b2CLInitializeVelocityConstraint(step.warmStarting, step.dtRatio);
+#endif
+		//m_pb2clSolver->InitializeSplitBufferParallel ( false ) ; 
+		
+		if (m_pWorld->bFirstFrame)
+		{
+			//printf("b2ReadLastImpulsesFirstFrame\n");
+			m_pb2clSolver->b2CLReadLastImpulsesFirstFrame(step.warmStarting, step.dtRatio);
+		}
+		else
+		{
+			//printf("b2ReadLastImpulses\n");
+			m_pb2clSolver->b2CLReadLastImpulses(step.warmStarting, step.dtRatio);
+		}
+
+		if (step.warmStarting && m_pb2clSolver->GetLastContactCount()>0)
+		{
+				//printf("b2CLWarmStart\n");
+				//m_pb2clSolver->b2CLWarmStart();
+#ifdef SPLIT_OPENCL
+			   // m_pb2clSolver->b2CLTestWarmStart () ; 
+		        
+			m_pb2clSolver->b2CLWarmStartSplit() ; 
+							
+            //m_pb2clSolver->b2CLWarmStartWithColoring();
+#else
+            m_pb2clSolver->b2CLWarmStartWithColoring();
+
+#endif
+		}
+	#endif
+    
+
+   // m_pb2clSolver->InitializeSplitBufferSequential ();
+	//m_pb2clSolver->InitializeSplitBufferParallel ( false ) ; 
+	#ifdef _DEBUG_TIME_SOLVER
+		m_pWorld->ave_valid_contact_num += m_contactCount;
+		b2CLDevice::instance().finishCommandQueue();
+		m_pWorld->constraintInitGPUTime += constraintInitGPUTimer.GetMilliseconds();
+		b2Timer constraintSolveTimer;
+		// for debug
+		b2Timer testSolveVelocityConstraintTimer;
+	#endif
+
+		//printf("b2CLSolveVelocityConstraint\n");
+#ifdef SPLIT_OPENCL
+		if (m_contactCount == 0 ) {
+			m_pb2clSolver->b2CLSolveVelocityConstraint( step.velocityIterations ) ; 
+		}
+		else{
+			//m_pb2clSolver->InitializeSplitBufferSequential ();
+			//m_pb2clSolver->InitializeSplitBufferParallel ( false ) ; 
+			m_pb2clSolver->b2CLSolveSplitVelocityConstraint( step.velocityIterations ) ;
+			//m_pb2clSolver->b2CLSolveVelocityConstraint( step.velocityIterations ) ; 
+		}
+#else
+		for (int i = 0; i < step.velocityIterations; ++i)
+		{
+			m_pb2clSolver->b2CLSolveJointVelocityConstraint(1); 
+			m_pb2clSolver->b2CLSolveVelocityConstraint(1);
+		}
+#endif
+
+	#ifdef _DEBUG_TIME_SOLVER
+		// for debug
+		b2CLDevice::instance().finishCommandQueue();
+		m_pWorld->testSolveVelocityConstraintTime += testSolveVelocityConstraintTimer.GetMilliseconds();
+	#endif
+
+		if (step.warmStarting)
+		{
+		//b2Timer testSolveTimer;
+			//printf("b2CLStoreImpulses\n");
+			m_pb2clSolver->b2CLStoreImpulses();
+			//printf("SortManifoldKeys\n");
+			m_pb2clSolver->SortManifoldKeys();
+		//b2CLDevice::instance().finishCommandQueue();
+		//m_pWorld->testSolveTime += testSolveTimer.GetMilliseconds();
+		}
+
+		//for (int32 i = 0; i < step.velocityIterations; ++i)
+		//{
+		//	for (int32 j = 0; j < m_jointCount; ++j)
+		//	{
+		//		m_joints[j]->SolveVelocityConstraints(solverData);
+		//	}
+		//}
+    
+		//printf("b2CLIntegratePositions\n");
+		m_pb2clSolver->b2CLIntegratePositions();
+    
+		// Solve position constraints
+		bool positionSolved = false;
+
+		//m_pb2clSolver->b2CLCopyForTestKernel();
+	#ifdef _DEBUG_TIME_SOLVER
+		//// for debug
+		//b2CLDevice::instance().finishCommandQueue();
+		//b2Timer testSolveTestPositionConstraintTimer;
+	#endif
+		//m_pb2clSolver->b2CLTestKernel(step.positionIterations);
+	#ifdef _DEBUG_TIME_SOLVER
+		//// for debug
+		//b2CLDevice::instance().finishCommandQueue();
+		//m_pWorld->testSolveTestPositionConstraintTime += testSolveTestPositionConstraintTimer.GetMilliseconds();
+	#endif
+
+	#ifdef _DEBUG_TIME_SOLVER
+		//// for debug
+		b2CLDevice::instance().finishCommandQueue();
+		b2Timer testSolvePositionConstraintTimer;
+	#endif
+#ifdef SPLIT_OPENCL
+		if (m_contactCount == 0 ) {
+			m_pb2clSolver->b2CLSolvePositionConstraint(step.positionIterations);
+		}
+		else{
+
+			m_pb2clSolver->b2CLSolveSplitPositionConstraint(step.positionIterations);
+			//m_pb2clSolver->b2CLSolveVelocityConstraint( step.velocityIterations ) ; 
+		}
+#else
+		for (int i = 0; i < step.positionIterations; ++i)
+		{
+			m_pb2clSolver->b2CLSolvePositionConstraint(1);
+			m_pb2clSolver->b2CLSolveJointPositionConstraint(1); 
+		}
+#endif
+	//	m_pb2clSolver->b2CLSolvePositionConstraint(step.positionIterations);
+		
+		//if (this->m_pWorld->frame_num > 200)
+		//		m_pb2clSolver->b2CLSolvePositionConstraint(step.positionIterations);
+		//else 
+		//		m_pb2clSolver->b2CLSolvePositionConstraint_MergeSplittedMass(step.positionIterations);
+		//m_pb2clSolver->b2CLSolvePositionConstraint(30);
+
+	#ifdef _DEBUG_TIME_SOLVER
+		//// for debug
+		b2CLDevice::instance().finishCommandQueue();
+		m_pWorld->testSolvePositionConstraintTime += testSolvePositionConstraintTimer.GetMilliseconds();
+	#endif
+    
+	#ifdef NARROWPHASE_OPENCL
+		//printf("b2CLSynchronizeXf\n");
+		m_pb2clSolver->b2CLSynchronizeXf();
+		//printf("\n");
+	#endif
+    
+	#ifdef _DEBUG_TIME_SOLVER
+		b2CLDevice::instance().finishCommandQueue();
+		m_pWorld->constraintSolveTime += constraintSolveTimer.GetMilliseconds();
+		b2Timer constraintFinalizeTimer;
+	#endif
+
+		m_pb2clSolver->CopyResultsFromGPUForBodies();
+		//m_pb2clSolver->CopyResultsFromGPUForContacts();
+    
+		// Store impulses for warm starting
+		//m_pb2clSolver->StoreImpulses();
+
+		if (m_pWorld->bFirstFrame)
+		{
+			if (m_contactCount>0 ||   (m_contactCount == 0 && b2CLCommonData::instance().GetNumJoints() != 0 )  )
+			{
+				//printf("First frame passed!\n");
+				m_pWorld->bFirstFrame = false;
+			}
+		}
+
+        if (m_pWorld->m_bBodyDynamicAttributeChanged)
+        {
+            m_pWorld->m_bBodyDynamicAttributeChanged = false;
+        }
+
+	#ifdef _DEBUG_TIME_SOLVER
+		b2CLDevice::instance().finishCommandQueue();
+		m_pWorld->constraintFinalizeTime += constraintFinalizeTimer.GetMilliseconds();
+		m_pWorld->solverTotalTime += solverTimer.GetMilliseconds();
+	#endif
+	}
+#endif
 
 	// Copy state buffers back to the bodies
 	for (int32 i = 0; i < m_bodyCount; ++i)
@@ -339,53 +613,115 @@ void b2Island::Solve(b2Profile* profile, const b2TimeStep& step, const b2Vec2& g
 
 	profile->solvePosition = timer.GetMilliseconds();
 
-	Report(contactSolver.m_velocityConstraints);
+#if defined(SOLVER_OPENCL)
+	if (!b2clGlobal_OpenCLSupported)
+#endif
+	{
+		Report(pContactSolver->m_velocityConstraints);
+	}
+#if defined(SOLVER_OPENCL)
+	else if (m_pWorld->m_uListenerCallback & b2ContactListener::l_PostSOlve)
+	{
+		m_pb2clSolver->Report(&(m_pWorld->m_contactManager));
+	}
+#endif
 
 	if (allowSleep)
 	{
-		float32 minSleepTime = b2_maxFloat;
+		//float32 minSleepTime = b2_maxFloat;
 
-		const float32 linTolSqr = b2_linearSleepTolerance * b2_linearSleepTolerance;
-		const float32 angTolSqr = b2_angularSleepTolerance * b2_angularSleepTolerance;
+		//const float32 linTolSqr = b2_linearSleepTolerance * b2_linearSleepTolerance;
+		//const float32 angTolSqr = b2_angularSleepTolerance * b2_angularSleepTolerance;
 
-		for (int32 i = 0; i < m_bodyCount; ++i)
+		//for (int32 i = 0; i < m_bodyCount; ++i)
+		//{
+		//	b2Body* b = m_bodies[i];
+		//	if (b->GetType() == b2_staticBody)
+		//	{
+		//		continue;
+		//	}
+
+		//	if ((b->m_flags & b2Body::e_autoSleepFlag) == 0 ||
+		//		b->m_angularVelocity * b->m_angularVelocity > angTolSqr ||
+		//		b2Dot(b->m_linearVelocity, b->m_linearVelocity) > linTolSqr)
+		//	{
+		//		b->m_sleepTime = 0.0f;
+		//		minSleepTime = 0.0f;
+		//	}
+		//	else
+		//	{
+		//		b->m_sleepTime += h;
+		//		minSleepTime = b2Min(minSleepTime, b->m_sleepTime);
+		//	}
+		//}
+
+		//if (minSleepTime >= b2_timeToSleep && positionSolved)
+		//{
+		//	for (int32 i = 0; i < m_bodyCount; ++i)
+		//	{
+		//		b2Body* b = m_bodies[i];
+		//		b->SetAwake(false);
+		//	}
+		//}
+	}
+
+	delete pContactSolver;
+}
+
+
+void b2Island::gpuSolveTOI (b2Profile* profile, const b2TimeStep& step, const b2Vec2& gravity, bool allowSleep){
+#if 0
+			for (int32 i = 0; i < m_bodyCount; ++i)
 		{
 			b2Body* b = m_bodies[i];
-			if (b->GetType() == b2_staticBody)
-			{
-				continue;
-			}
 
-			if ((b->m_flags & b2Body::e_autoSleepFlag) == 0 ||
-				b->m_angularVelocity * b->m_angularVelocity > angTolSqr ||
-				b2Dot(b->m_linearVelocity, b->m_linearVelocity) > linTolSqr)
-			{
-				b->m_sleepTime = 0.0f;
-				minSleepTime = 0.0f;
-			}
-			else
-			{
-				b->m_sleepTime += h;
-				minSleepTime = b2Min(minSleepTime, b->m_sleepTime);
-			}
+			// Store positions for continuous collision.
+			b->m_sweep.c0 = b->m_sweep.c;
+			b->m_sweep.a0 = b->m_sweep.a;
 		}
-
-		if (minSleepTime >= b2_timeToSleep && positionSolved)
+		m_pb2clSolver->SetValues(m_bodyCount, m_contactCount, m_pWorld->GetGravity(), step.dt, step.dtRatio);
+		if (m_contactCount>0)
 		{
-			for (int32 i = 0; i < m_bodyCount; ++i)
-			{
-				b2Body* b = m_bodies[i];
-				b->SetAwake(false);
-			}
+			//printf("b2CLReadCompactedContacts\n");
+			m_pb2clSolver->b2CLReadCompactedContacts(m_contactCount);
+			//printf("m_contactCount: %d\n", m_contactCount);
 		}
+		//printf("b2CLInitializeSolver\n");
+		
+		m_pb2clSolver->b2CLInitializeSolver(m_bodies, m_contacts, m_velocities, m_positions, m_bodyCount, m_contactCount, gravity, step.dt, m_pWorld->GetContactManager(), m_contacts);
+
+		if (m_pWorld->bFirstFrame || m_pWorld->m_bBodyDynamicAttributeChanged) 
+			m_pb2clSolver->b2CLInitializeBodyStateFirstFrame();
+		else
+			m_pb2clSolver->b2CLInitializeBodyState();
+
+		m_pb2clSolver->b2CLInitializeJointVelocityConstraint ( step.warmStarting, step.dt ) ;  
+		m_pb2clSolver->b2CLInitializeVelocityConstraint(step.warmStarting, step.dtRatio);
+
+
+
+	// This step is unecessary
+	//for (int32 i = 0; i < m_bodyCount; ++i){b2Body* b = m_bodies[i];m_positions[i].c = b->m_sweep.c;m_positions[i].a = b->m_sweep.a;
+	//	m_velocities[i].v = b->m_linearVelocity;m_velocities[i].w = b->m_angularVelocity;}
+    
+    // Solve Position Constraints
+	for (int i = 0; i < step.positionIterations; ++i)
+	{
+		m_pb2clSolver->solveSDPosition() ; 
 	}
+	m_pb2clSolver->CopyResultsFromGPUForBodies();
+#endif
 }
+
 
 void b2Island::SolveTOI(const b2TimeStep& subStep, int32 toiIndexA, int32 toiIndexB)
 {
 	b2Assert(toiIndexA < m_bodyCount);
 	b2Assert(toiIndexB < m_bodyCount);
-
+//#if defined(SOLVER_OPENCL)
+//	if (!b2clGlobal_OpenCLSupported)
+//#endif
+  {
 	// Initialize the body state.
 	for (int32 i = 0; i < m_bodyCount; ++i)
 	{
@@ -511,6 +847,56 @@ void b2Island::SolveTOI(const b2TimeStep& subStep, int32 toiIndexA, int32 toiInd
 	}
 
 	Report(contactSolver.m_velocityConstraints);
+  }  // if  (!b2clGlobal_OpenCLSupported)
+
+  /*
+#if defined(SOLVER_OPENCL)
+	if (b2clGlobal_OpenCLSupported)
+	{
+		// Initialize the body state: Update the array m_position and m_velocities, no need to update in the parallel version because we already update it in the island::solver
+		      //m_pb2clSolver->SetValues(m_bodyCount, m_contactCount, m_pWorld->GetGravity(), step.dt, step.dtRatio);
+		
+		// Solve the TOI Position
+		        //  m_pb2clSolver->b2CLSolveTOIPositionConstraint(subStep.velocityIterations);
+				m_pb2clSolver->b2CLSolvePositionConstraint (subStep.velocityIterations) ; 
+
+		// Leap of faith to new safe state: Need to check if this step is necessary. 
+	//   m_bodies[toiIndexA]->m_sweep.c0 = m_positions[toiIndexA].c; m_bodies[toiIndexA]->m_sweep.a0 = m_positions[toiIndexA].a; m_bodies[toiIndexB]->m_sweep.c0 = m_positions[toiIndexB].c;
+
+	// No warm starting is needed for TOI events because warm
+	// starting impulses were applied in the discrete solver.
+		m_pb2clSolver->b2CLInitializeJointVelocityConstraint ( subStep.warmStarting, subStep.dt ) ;  
+		m_pb2clSolver->b2CLInitializeVelocityConstraint(subStep.warmStarting, subStep.dtRatio);
+
+	// Solve velocity constraints.
+	    for (int i = 0; i < subStep.velocityIterations; ++i){
+		     m_pb2clSolver->b2CLSolveJointVelocityConstraint(1); 
+		     m_pb2clSolver->b2CLSolveVelocityConstraint(1);
+	    }
+// Integrate positions
+		m_pb2clSolver->b2CLIntegratePositions();
+		m_pb2clSolver->CopyResultsFromGPUForBodies();
+
+
+	   for (int32 i = 0; i < m_bodyCount; ++i)
+	   {
+		    b2Body* body = m_bodies[i];
+		    body->m_sweep.c = m_positions[i].c;
+		    body->m_sweep.a = m_positions[i].a;
+		    body->m_linearVelocity = m_velocities[i].v;
+		    body->m_angularVelocity = m_velocities[i].w;
+		    body->SynchronizeTransform();
+	   }
+	   if (m_pWorld->m_uListenerCallback & b2ContactListener::l_PostSOlve)
+	   {
+		    m_pb2clSolver->Report(&(m_pWorld->m_contactManager));
+	   }
+
+	}
+#endif
+*/
+
+
 }
 
 void b2Island::Report(const b2ContactVelocityConstraint* constraints)

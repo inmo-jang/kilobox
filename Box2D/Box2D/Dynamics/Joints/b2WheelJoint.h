@@ -20,6 +20,8 @@
 #define B2_WHEEL_JOINT_H
 
 #include <Box2D/Dynamics/Joints/b2Joint.h>
+#include <Box2D/Dynamics/b2Body.h>
+#include <Box2D/Dynamics/b2World.h>
 
 /// Wheel joint definition. This requires defining a line of
 /// motion using an axis and an anchor point. The definition uses local
@@ -135,6 +137,7 @@ public:
 protected:
 
 	friend class b2Joint;
+	friend class b2CLCommonData;
 	b2WheelJoint(const b2WheelJointDef* def);
 
 	void InitVelocityConstraints(const b2SolverData& data);
@@ -193,6 +196,8 @@ inline float32 b2WheelJoint::GetMaxMotorTorque() const
 inline void b2WheelJoint::SetSpringFrequencyHz(float32 hz)
 {
 	m_frequencyHz = hz;
+
+	SET_JOINTS_UPDATED;
 }
 
 inline float32 b2WheelJoint::GetSpringFrequencyHz() const
@@ -203,6 +208,8 @@ inline float32 b2WheelJoint::GetSpringFrequencyHz() const
 inline void b2WheelJoint::SetSpringDampingRatio(float32 ratio)
 {
 	m_dampingRatio = ratio;
+
+	SET_JOINTS_UPDATED;
 }
 
 inline float32 b2WheelJoint::GetSpringDampingRatio() const

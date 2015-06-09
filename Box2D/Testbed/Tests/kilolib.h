@@ -187,17 +187,33 @@ namespace Kilolib
         b2World         *m_world;
         
 
+        
+        void print_inrange()
+        {
+            printf("ir:%3d->",kilo_uid);
+            for(int i=0; i<inrange_bots.size(); i++)
+            {
+                printf("%3d:",inrange_bots[i]->kilo_uid);
+            }
+            printf("\n");
+        }
 
         // Functions to maintain the list of other bots we are in range of
         void acquired(Kilobot *r)
         {
-            //printf("adding   %d\n", r->kb_id);
+            printf("%3d adding   %d\n", kilo_uid, r->kilo_uid);
             inrange_bots.push_back(r);
+            print_inrange();
         }
         void lost(Kilobot *r)
         {
-            //printf("removing %d\n", r->kb_id);
-            inrange_bots.erase(std::find(inrange_bots.begin(), inrange_bots.end(), r));
+            printf("%3d removing %d\n", kilo_uid, r->kilo_uid);
+            print_inrange();
+            std::vector<Kilobot*>::iterator ii;
+            if ((ii = std::find(inrange_bots.begin(), inrange_bots.end(), r)) != inrange_bots.end())
+                inrange_bots.erase(ii);
+            else
+                printf("Couldn't find %d\n", r);
         }
 
 

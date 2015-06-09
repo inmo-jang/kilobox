@@ -15,7 +15,7 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #ifndef B2_FIXTURE_H
 #define B2_FIXTURE_H
 
@@ -97,6 +97,9 @@ struct b2FixtureProxy
 	b2Fixture* fixture;
 	int32 childIndex;
 	int32 proxyId;
+
+	int32 m_uid;
+	int32 m_last_uid;
 };
 
 /// A fixture is used to attach a shape to a body for collision detection. A fixture
@@ -195,12 +198,17 @@ public:
 	/// Dump this fixture to the log file.
 	void Dump(int32 bodyIndex);
 
+	int GetUID() { return m_uid; }
+
 protected:
 
 	friend class b2Body;
 	friend class b2World;
 	friend class b2Contact;
 	friend class b2ContactManager;
+
+	friend class b2CLCommonData;
+	friend class b2CLNarrowPhase;
 
 	b2Fixture();
 
@@ -221,6 +229,8 @@ protected:
 	b2Body* m_body;
 
 	b2Shape* m_shape;
+	int32 m_uid;
+	int32 m_last_uid;
 
 	float32 m_friction;
 	float32 m_restitution;

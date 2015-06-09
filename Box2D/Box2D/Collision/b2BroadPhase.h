@@ -15,14 +15,20 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #ifndef B2_BROAD_PHASE_H
 #define B2_BROAD_PHASE_H
 
+#include <Box2D/Common/OpenCL/b2CLDevice.h>
 #include <Box2D/Common/b2Settings.h>
 #include <Box2D/Collision/b2Collision.h>
 #include <Box2D/Collision/b2DynamicTree.h>
 #include <algorithm>
+
+#define MAX_CONTACT_PER_FIXTURE 10
+
+class b2World;
+class b2CLBroadPhase;
 
 struct b2Pair
 {
@@ -71,10 +77,16 @@ public:
 
 	/// Get the number of proxies.
 	int32 GetProxyCount() const;
+    
+#ifdef BROADPHASE_OPENCL
+	bool UseListener() const;
+#endif
 
 	/// Update the pairs. This results in pair callbacks. This can only add pairs.
 	template <typename T>
 	void UpdatePairs(T* callback);
+	template <typename T>
+	void cpuUpdatePairs (T* callback); 
 
 	/// Query an AABB for overlapping proxies. The callback class
 	/// is called for each proxy that overlaps the supplied AABB.
@@ -100,9 +112,37 @@ public:
 	/// Get the quality metric of the embedded tree.
 	float32 GetTreeQuality() const;
 
+#ifdef BROADPHASE_OPENCL
+	void SetWorld(const b2World* pWorld) const { m_pWorld = pWorld; }
+#endif
+
+	void SetValues(int fixtureCount, int *pTotalContactCount, int *pContactCounts) 
+	{ 
+#ifdef BROADPHASE_OPENCL
+		if (b2clGlobal_OpenCLSupported)
+		{
+			m_fixtureCount = fixtureCount; 
+			m_pTotalContactCount = pTotalContactCount; 
+			m_pContactCounts = pContactCounts;
+		}
+#endif
+	}
+
+	void SetTimePointers(float *pUpdatePairsTime, float *pCreateGPUBuffersTime, float *pComputeAABBsTime, float *pSortAABBsTime, float *pComputePairsTime)
+	{
+#if defined (_DEBUG_TIME_BROADPHASE)
+		m_pUpdatePairsTime = pUpdatePairsTime;
+		m_pCreateGPUBuffersTime = pCreateGPUBuffersTime;
+		m_pComputeAABBsTime = pComputeAABBsTime;
+		m_pSortAABBsTime = pSortAABBsTime;
+		m_pComputePairsTime = pComputePairsTime;
+#endif
+	}
+
 private:
 
 	friend class b2DynamicTree;
+	friend class b2World;
 
 	void BufferMove(int32 proxyId);
 	void UnBufferMove(int32 proxyId);
@@ -122,6 +162,18 @@ private:
 	int32 m_pairCount;
 
 	int32 m_queryProxyId;
+
+#ifdef BROADPHASE_OPENCL
+    b2CLBroadPhase *m_pCL_broadPhase;
+	int m_fixtureCount;
+	int *m_pTotalContactCount, *m_pContactCounts;
+	mutable const b2World *m_pWorld;
+#endif
+
+#if defined (_DEBUG_TIME_BROADPHASE)
+	float *m_pUpdatePairsTime;
+	float *m_pCreateGPUBuffersTime, *m_pComputeAABBsTime, *m_pSortAABBsTime, *m_pComputePairsTime;
+#endif
 };
 
 /// This is used to sort pairs.
@@ -177,72 +229,214 @@ inline float32 b2BroadPhase::GetTreeQuality() const
 	return m_tree.GetAreaRatio();
 }
 
+#include <Box2D/Common/OpenCL/b2CLBroadPhase.h>
+
+
+template <typename T>
+void b2BroadPhase::cpuUpdatePairs(T* callback)
+{
+	m_pairCount = 0;
+
+		// Perform tree queries for all moving proxies.
+		for (int32 i = 0; i < m_moveCount; ++i)
+		{
+			m_queryProxyId = m_moveBuffer[i];
+			if (m_queryProxyId == e_nullProxy)
+			{
+				continue;
+			}
+
+			// We have to query the tree with the fat AABB so that
+			// we don't fail to create a pair that may touch later.
+			const b2AABB& fatAABB = m_tree.GetFatAABB(m_queryProxyId);
+
+			// Query tree, create pairs and add them pair buffer.
+			m_tree.Query(this, fatAABB);
+		}
+
+		// Reset move buffer
+		m_moveCount = 0;
+
+		// Sort the pair buffer to expose duplicates.
+		std::sort(m_pairBuffer, m_pairBuffer + m_pairCount, b2PairLessThan);
+
+		// Send the pairs back to the client.
+		int32 i = 0;
+		while (i < m_pairCount)
+		{
+			b2Pair* primaryPair = m_pairBuffer + i;
+			void* userDataA = m_tree.GetUserData(primaryPair->proxyIdA);
+			void* userDataB = m_tree.GetUserData(primaryPair->proxyIdB);
+
+			callback->AddPair(userDataA, userDataB);
+			++i;
+
+			// Skip any duplicate pairs.
+			while (i < m_pairCount)
+			{
+				b2Pair* pair = m_pairBuffer + i;
+				if (pair->proxyIdA != primaryPair->proxyIdA || pair->proxyIdB != primaryPair->proxyIdB)
+				{
+					break;
+				}
+				++i;
+			}
+		}
+}
+
+
+
 template <typename T>
 void b2BroadPhase::UpdatePairs(T* callback)
 {
-	// Reset pair buffer
-	m_pairCount = 0;
+#ifdef _DEBUG_TIME_BROADPHASE
+	b2Timer updatePairsTimer, CreateGPUBuffersTimer;
+#endif
 
-	// Perform tree queries for all moving proxies.
-	for (int32 i = 0; i < m_moveCount; ++i)
+#if defined(BROADPHASE_OPENCL)
+	if (!b2clGlobal_OpenCLSupported)
+#endif
 	{
-		m_queryProxyId = m_moveBuffer[i];
-		if (m_queryProxyId == e_nullProxy)
+		// Reset pair buffer
+		m_pairCount = 0;
+
+		// Perform tree queries for all moving proxies.
+		for (int32 i = 0; i < m_moveCount; ++i)
 		{
-			continue;
+			m_queryProxyId = m_moveBuffer[i];
+			if (m_queryProxyId == e_nullProxy)
+			{
+				continue;
+			}
+
+			// We have to query the tree with the fat AABB so that
+			// we don't fail to create a pair that may touch later.
+			const b2AABB& fatAABB = m_tree.GetFatAABB(m_queryProxyId);
+
+			// Query tree, create pairs and add them pair buffer.
+			m_tree.Query(this, fatAABB);
 		}
 
-		// We have to query the tree with the fat AABB so that
-		// we don't fail to create a pair that may touch later.
-		const b2AABB& fatAABB = m_tree.GetFatAABB(m_queryProxyId);
+		// Reset move buffer
+		m_moveCount = 0;
 
-		// Query tree, create pairs and add them pair buffer.
-		m_tree.Query(this, fatAABB);
-	}
+		// Sort the pair buffer to expose duplicates.
+		std::sort(m_pairBuffer, m_pairBuffer + m_pairCount, b2PairLessThan);
 
-	// Reset move buffer
-	m_moveCount = 0;
-
-	// Sort the pair buffer to expose duplicates.
-	std::sort(m_pairBuffer, m_pairBuffer + m_pairCount, b2PairLessThan);
-
-	// Send the pairs back to the client.
-	int32 i = 0;
-	while (i < m_pairCount)
-	{
-		b2Pair* primaryPair = m_pairBuffer + i;
-		void* userDataA = m_tree.GetUserData(primaryPair->proxyIdA);
-		void* userDataB = m_tree.GetUserData(primaryPair->proxyIdB);
-
-		callback->AddPair(userDataA, userDataB);
-		++i;
-
-		// Skip any duplicate pairs.
+		// Send the pairs back to the client.
+		int32 i = 0;
 		while (i < m_pairCount)
 		{
-			b2Pair* pair = m_pairBuffer + i;
-			if (pair->proxyIdA != primaryPair->proxyIdA || pair->proxyIdB != primaryPair->proxyIdB)
-			{
-				break;
-			}
-			++i;
-		}
-	}
+			b2Pair* primaryPair = m_pairBuffer + i;
+			void* userDataA = m_tree.GetUserData(primaryPair->proxyIdA);
+			void* userDataB = m_tree.GetUserData(primaryPair->proxyIdB);
 
-	// Try to keep the tree balanced.
-	//m_tree.Rebalance(4);
+			callback->AddPair(userDataA, userDataB);
+			++i;
+
+			// Skip any duplicate pairs.
+			while (i < m_pairCount)
+			{
+				b2Pair* pair = m_pairBuffer + i;
+				if (pair->proxyIdA != primaryPair->proxyIdA || pair->proxyIdB != primaryPair->proxyIdB)
+				{
+					break;
+				}
+				++i;
+			}
+		}
+
+		// Try to keep the tree balanced.
+		//m_tree.Rebalance(4);
+	}
+#if defined(BROADPHASE_OPENCL)
+	else
+	{
+		//if (m_pWorld->frame_num==108)
+		//	int a = 1;
+
+		//printf("BP: Create GPU Buffers.\n");
+		m_pCL_broadPhase->CreateGPUBuffers(m_proxyCount);
+
+	#ifdef _DEBUG_TIME_BROADPHASE
+		b2CLDevice::instance().finishCommandQueue();
+		*m_pCreateGPUBuffersTime += CreateGPUBuffersTimer.GetMilliseconds();
+		b2Timer ComputeAABBsTimer;
+	#endif
+
+		//printf("BP: Compute AABBs.\n");
+		m_pCL_broadPhase->ComputeAABBs(m_proxyCount);
+		//m_pCL_broadPhase->ComputeAABBsTOI(m_proxyCount);
+
+	#ifdef _DEBUG_TIME_BROADPHASE
+		b2CLDevice::instance().finishCommandQueue();
+		*m_pComputeAABBsTime += ComputeAABBsTimer.GetMilliseconds();
+		b2Timer SortAABBsTimer;
+	#endif
+
+		m_pCL_broadPhase->PrepareSumVariance(m_proxyCount);
+
+		m_pCL_broadPhase->InitSortingKeys(m_proxyCount);
+
+		//printf("BP: Sort AABBs.\n");
+		m_pCL_broadPhase->SortAABBs(m_proxyCount);
+
+	#ifdef _DEBUG_TIME_BROADPHASE
+		b2CLDevice::instance().finishCommandQueue();
+		*m_pSortAABBsTime += SortAABBsTimer.GetMilliseconds();
+		b2Timer ComputePairsTimer;
+	#endif
+
+		//printf("BP: Compute Pairs.\n");
+		//printf("BP: fixtureCount: %d.\n", m_fixtureCount);
+
+		m_pCL_broadPhase->ComputePairs(m_proxyCount, m_pTotalContactCount, m_pContactCounts, m_pWorld);
+		//m_pCL_broadPhase->ComputePairsNoAtomic(m_proxyCount, m_pTotalContactCount, m_pContactCounts);
+
+		//printf("BP: Compute Pairs finished.\n");
+		//printf("BP: contactCount: %d.\n", *m_pContactCount);
+
+	#ifdef _DEBUG_TIME_BROADPHASE
+		b2CLDevice::instance().finishCommandQueue();
+		*m_pComputePairsTime += ComputePairsTimer.GetMilliseconds();
+		*m_pUpdatePairsTime += updatePairsTimer.GetMilliseconds();
+	#endif
+	}    
+#endif
 }
 
 template <typename T>
 inline void b2BroadPhase::Query(T* callback, const b2AABB& aabb) const
 {
-	m_tree.Query(callback, aabb);
+#if defined(BROADPHASE_OPENCL)
+	if (!b2clGlobal_OpenCLSupported)
+#endif
+	{
+		m_tree.Query(callback, aabb);
+	}
+#if defined(BROADPHASE_OPENCL)
+	else
+	{
+		m_pCL_broadPhase->Query(callback, aabb, m_proxyCount, UseListener());
+	}
+#endif
 }
 
 template <typename T>
 inline void b2BroadPhase::RayCast(T* callback, const b2RayCastInput& input) const
 {
-	m_tree.RayCast(callback, input);
+#if defined(BROADPHASE_OPENCL)
+	if (!b2clGlobal_OpenCLSupported)
+#endif
+	{
+		m_tree.RayCast(callback, input);
+	}
+#if defined(BROADPHASE_OPENCL)
+	else
+	{
+		m_pCL_broadPhase->RayCast(callback, input, m_proxyCount, UseListener());
+	}
+#endif
 }
 
 #endif

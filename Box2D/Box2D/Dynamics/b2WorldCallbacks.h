@@ -15,7 +15,7 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #ifndef B2_WORLD_CALLBACKS_H
 #define B2_WORLD_CALLBACKS_H
 
@@ -81,6 +81,14 @@ struct b2ContactImpulse
 class b2ContactListener
 {
 public:
+	enum
+	{
+		l_BeginContact	= 0x0001,
+		l_EndContact	= 0x0002,
+		l_PreSolve		= 0x0004,
+		l_PostSOlve		= 0x0008
+	};
+
 	virtual ~b2ContactListener() {}
 
 	/// Called when two fixtures begin to touch.

@@ -15,10 +15,11 @@
 * misrepresented as being the original software.
 * 3. This notice may not be removed or altered from any source distribution.
 */
-
+// this Box2DOCL file is developed based on Box2D
 #include <Box2D/Dynamics/Joints/b2RevoluteJoint.h>
 #include <Box2D/Dynamics/b2Body.h>
 #include <Box2D/Dynamics/b2TimeStep.h>
+#include <Box2D/Dynamics/b2World.h>
 
 // Point-to-point constraint
 // C = p2 - p1
@@ -421,6 +422,8 @@ void b2RevoluteJoint::EnableMotor(bool flag)
 	m_bodyA->SetAwake(true);
 	m_bodyB->SetAwake(true);
 	m_enableMotor = flag;
+
+	SET_JOINTS_UPDATED;
 }
 
 float32 b2RevoluteJoint::GetMotorTorque(float32 inv_dt) const
@@ -433,6 +436,8 @@ void b2RevoluteJoint::SetMotorSpeed(float32 speed)
 	m_bodyA->SetAwake(true);
 	m_bodyB->SetAwake(true);
 	m_motorSpeed = speed;
+
+	SET_JOINTS_UPDATED;
 }
 
 void b2RevoluteJoint::SetMaxMotorTorque(float32 torque)
@@ -440,6 +445,8 @@ void b2RevoluteJoint::SetMaxMotorTorque(float32 torque)
 	m_bodyA->SetAwake(true);
 	m_bodyB->SetAwake(true);
 	m_maxMotorTorque = torque;
+
+	SET_JOINTS_UPDATED;
 }
 
 bool b2RevoluteJoint::IsLimitEnabled() const
@@ -456,6 +463,8 @@ void b2RevoluteJoint::EnableLimit(bool flag)
 		m_enableLimit = flag;
 		m_impulse.z = 0.0f;
 	}
+
+	SET_JOINTS_UPDATED;
 }
 
 float32 b2RevoluteJoint::GetLowerLimit() const
@@ -480,6 +489,8 @@ void b2RevoluteJoint::SetLimits(float32 lower, float32 upper)
 		m_lowerAngle = lower;
 		m_upperAngle = upper;
 	}
+
+	SET_JOINTS_UPDATED;
 }
 
 void b2RevoluteJoint::Dump()
