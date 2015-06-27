@@ -26,7 +26,10 @@ namespace Kilolib
         :
             settings(_settings),
             xsize(3.0),
-            ysize(2.0)
+            ysize(2.0),
+            xgrid(2),
+            ygrid(2),
+            gridmargin(0.2)
         {
             // Turn off gravity
             m_world->SetGravity(b2Vec2(0,0));
@@ -44,6 +47,7 @@ namespace Kilolib
         void Step(Settings* settings);
         
         void build_world();
+        void parse_worldfile(float xoffset, float yoffset);
         void make_static_box(float xsize, float ysize, float xpos, float ypos);
         void render_arena();
         void make_kilobot(float xp, float yp, float th);
@@ -60,6 +64,9 @@ namespace Kilolib
 
         float   xsize;
         float   ysize;
+        int     xgrid;
+        int     ygrid;
+        float   gridmargin;
 
         std::vector<Kilobot*>   bots;
         KBContactListener   contact_listener;
@@ -74,8 +81,8 @@ namespace Kilolib
         std::default_random_engine              gen;
 
         // arena
-        b2Body *arena;
-        b2Fixture *arena_fixture;
+        //b2Body *arena;
+        std::vector<b2Fixture *> arena_fixture;
 
         Worldfile *wf;
        

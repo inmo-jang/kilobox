@@ -66,7 +66,8 @@ void Kilobot::check_messages()
         // message attempt timestamp with a bit of randomness of 50ms
         // FIXME!! SJ we really don't know how this will affect sim fidelity
         // and perhaps this should be one of the parameters to evolve
-        last_message = t + rand(0, 200000);
+        //last_message = t + rand(0, 200000);
+        last_message = t;
         // Call the callback function to see if there is anything there
         msg = (*this.*kilo_message_tx)();
         //printf("%s sending at %u\n", pos->Token(), t);
@@ -81,7 +82,7 @@ void Kilobot::check_messages()
             // detected in the first ~250us
             (*this.*kilo_message_tx_success)();
             int s = inrange_bots.size();
-            int r = rand(0, s);
+            int r = 0;//rand(0, s);
             for(int i=0; i<s; i++)
             {
                 int j = (i + r) % s;

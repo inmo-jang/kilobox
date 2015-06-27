@@ -179,7 +179,7 @@ namespace Kilolib
             // Seed the random number generator with the unique ID
             gen.seed(kilo_uid);
 
-            kilo_ticks_real = rand(0, 100);
+            kilo_ticks_real = 0;//rand(0, 100);
             kilo_ticks      = kilo_ticks_real;
         }
         ModelPosition   *pos;

@@ -42,30 +42,9 @@ static std::vector<std::string> split(std::string s)
     return words;
 }
 
-
-void Kiloworld::build_world()
+void Kiloworld::parse_worldfile(float xoffset, float yoffset)
 {
-    // Make arena of fixed lines
-    make_static_box(xsize, ysize, 0.0, 0.0);
-    
-    // Read in the worldfile
-
-    printf("%s\n", settings->worldfile.c_str());
-    // We need to parse the worldfile, which is in Stage format, but the only
-    // things we care about are:
-    //  quit_time <number>
-    //  define <name> kilobot ( ctrl "<control_string>" )
-    //  <name> ( pose [ <x> <y> <dont_care> <angle> ] )
-    wf = new Worldfile();
-    if (!wf->Load(settings->worldfile))
-    {
-        exit(1);
-    }
-    int entity = 0;
-    //float quit_time = 0;
-    settings->quit_time = wf->ReadFloat(entity, "quit_time", settings->quit_time);
-    printf("Got quit time %f\n", settings->quit_time);
-    for(entity=1; entity < wf->GetEntityCount(); entity++)
+    for(int entity=1; entity < wf->GetEntityCount(); entity++)
     {
         const char *typestr = (char*)wf->GetEntityType(entity);
         int entity_parent = wf->GetEntityParent(entity);
@@ -98,35 +77,54 @@ void Kiloworld::build_world()
 
             // Now create the kilobot 
             ModelPosition *mod = new ModelPosition;
-            mod->pose.x = x;
-            mod->pose.y = y;
+            mod->pose.x = x + xoffset;
+            mod->pose.y = y + yoffset;
             mod->pose.a = a;
             mod->world = m_world;
             // tokenize the argument string into words
             std::vector<std::string> words = split(controller);
             bots.push_back((Kilobot*)(new Evokilo1(mod, words, "log.txt")));
-
         }
     }
-    
+}
 
-//    // Now create kilobots randomly distributed
-//    for(int i=0;i<100;i++)
-//    {
-//        ModelPosition *mod = new ModelPosition;
-//        mod->pose.x = rand(-xsize/2+0.03,+xsize/2-0.03);
-//        mod->pose.y = rand(-ysize/2+0.03,+ysize/2-0.03);
-//        mod->pose.a = rand(-M_PI, M_PI);
-//        mod->world = m_world;
-//        std::vector<std::string> words = {"evokilo1",
-//            "-0.686275", "0.294118", "-3.000000", "1.196078",
-//            "-3.039216", "-2.372549", "2.294118", "-4.529412",
-//            "-4.333333", "3.941176", "-2.411765", "-3.745098",
-//            "0.215686", "0.098039", "-4.882353", "3.862745",
-//            "0.725490", "-3.901961", "3.588235", "0.882353",
-//            "-2.372549", "1.980392", "3.274510", "-4.725490"};
-//        bots.push_back((Kilobot*)(new Evokilo1(mod, words, "log.txt")));
-//    }
+void Kiloworld::build_world()
+{
+
+    
+    // Read in the worldfile
+
+    printf("%s\n", settings->worldfile.c_str());
+    // We need to parse the worldfile, which is in Stage format, but the only
+    // things we care about are:
+    //  quit_time <number>
+    //  define <name> kilobot ( ctrl "<control_string>" )
+    //  <name> ( pose [ <x> <y> <dont_care> <angle> ] )
+    wf = new Worldfile();
+    if (!wf->Load(settings->worldfile))
+    {
+        exit(1);
+    }
+    int entity = 0;
+    //float quit_time = 0;
+    // entity 0 is the world, which all settings are attached to
+    settings->quit_time = wf->ReadFloat(entity, "quit_time", settings->quit_time);
+    printf("Got quit time %f\n", settings->quit_time);
+
+    
+    // Make a grid of arenas
+    for(int y=0; y<ygrid; y++)
+    {
+        for(int x=0; x<xgrid; x++)
+        {
+            // Make arena of fixed lines
+            float xp = (xsize + gridmargin) * x;
+            float yp = (ysize + gridmargin) * y;
+            make_static_box(xsize, ysize, xp, yp);
+            parse_worldfile(xp, yp);
+        }
+    }
+
 }
 
 
@@ -150,30 +148,33 @@ void Kiloworld::make_static_box(float xs, float ys, float xp, float yp)
     // The fixture is created directly from the shape because
     // we are not altering the default properties of the created
     // fixture
-    arena_fixture = arena->CreateFixture(&perimeter, 0);
+    arena_fixture.push_back(arena->CreateFixture(&perimeter, 0));
 }
 
 
 void Kiloworld::render_arena()
 {
-    b2ChainShape *chain = (b2ChainShape*)arena_fixture->GetShape();
-	int32 count = chain->m_count;
-    const b2Vec2* vertices = chain->m_vertices;
-
-    b2Vec2 v1 = vertices[0];
-
-    glColor3f(0.0f, 1.0f, 0.0f);
-    glBegin(GL_LINES);
-    for (int32 i = 1; i < count; ++i)
+    for(int i=0; i<arena_fixture.size(); i++)
     {
-        b2Vec2 v2 = vertices[i];
-        glVertex2f(v1.x, v1.y);
-        glVertex2f(v2.x, v2.y);
-        //m_debugDraw.DrawSegment(v1, v2, color);
-        //m_debugDraw.DrawCircle(v1, 0.05f, color);
-        v1 = v2;
+        b2ChainShape *chain = (b2ChainShape*)arena_fixture[i]->GetShape();
+        int32 count = chain->m_count;
+        const b2Vec2* vertices = chain->m_vertices;
+
+        b2Vec2 v1 = vertices[0];
+
+        glColor3f(0.0f, 1.0f, 0.0f);
+        glBegin(GL_LINES);
+        for (int32 i = 1; i < count; ++i)
+        {
+            b2Vec2 v2 = vertices[i];
+            glVertex2f(v1.x, v1.y);
+            glVertex2f(v2.x, v2.y);
+            //m_debugDraw.DrawSegment(v1, v2, color);
+            //m_debugDraw.DrawCircle(v1, 0.05f, color);
+            v1 = v2;
+        }
+        glEnd();
     }
-    glEnd();
 }
 
 
