@@ -216,6 +216,7 @@ void Evokilo1::loop()
         avg_message = 0;
     }
 
+    
 
     //===========================================================================
     // Stage only, non kilobot logging
