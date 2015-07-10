@@ -85,6 +85,8 @@ namespace Kilolib
         std::vector<b2Fixture *> arena_fixture;
 
         Worldfile *wf;
+
+        std::vector<std::string> ctrlarg_words;
        
     };
 
