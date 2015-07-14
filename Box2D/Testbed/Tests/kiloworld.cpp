@@ -15,11 +15,15 @@ void Kiloworld::Step(Settings* settings)
 {
     float dt = settings->hz > 0.0f ? 1.0f / settings->hz : float32(0.0f);
 
+
+
+    // Jiggle and render
+    if (!settings->pause || (settings->pause && settings->singleStep))
+        for(int i=0; i<bots.size(); i++)
+            bots[i]->update(dt);
+            
     //run the default physics and rendering
     Test::Step(settings);
-    // Jiggle and render
-    for(int i=0; i<bots.size(); i++)
-        bots[i]->update(dt);
     // Show some text in the main screen
     
     if (settings->time_to_draw)
