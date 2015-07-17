@@ -87,7 +87,7 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
             mod->world = m_world;
             // tokenize the argument string into words
             std::vector<std::string> words = split(controller);
-            printf("ctrargs is %s %s\n", ctrlarg_words[0].c_str(), ctrlarg_words[1].c_str());
+            //printf("ctrargs is %s %s\n", ctrlarg_words[0].c_str(), ctrlarg_words[1].c_str());
             std::string logfile = "";
             if (ctrlarg_words.size() == 2 && ctrlarg_words[0] == "log")
                 logfile = ctrlarg_words[1];
