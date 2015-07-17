@@ -142,7 +142,7 @@ public:
         lfp = NULL;
     }
     
-    void finish();
+    //void finish();
     std::vector<std::string> words;
     std::string logfile;
     

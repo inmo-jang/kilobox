@@ -216,6 +216,7 @@ void Evokilo1::loop()
         avg_message = 0;
     }
 
+    
 
     //===========================================================================
     // Stage only, non kilobot logging
@@ -232,53 +233,4 @@ void Evokilo1::loop()
     }
     
 }
-
-void Evokilo1::finish()
-{
-    //printf("[stats] %s %8d %8f %8d\n", pos->Token(), total_food, total_trail, total_pickup);
-}
-
-std::vector<std::string> split(std::string s)
-{
-    // Quite frankly, this is inpenetrable, found on stackoverflow, but at least it doesn't require boost
-    // Apparently an istream iterator of type string regards whitespace as the separator..
-    std::vector<std::string> words;
-    std::istringstream iss(s);
-    std::copy (std::istream_iterator<std::string>(iss), std::istream_iterator<std::string>(), back_inserter(words));
-    return words;
-}
-
-// Stage calls this when the model starts up, once for each model with this controller
-extern "C" int Init( ModelPosition* mod, CtrlArgs* args )
-{
-    printf("Initialisation %s:%s\n", args->worldfile.c_str(), args->cmdline.c_str());
-    // tokenize the argument string into words
-    std::vector<std::string> words = split(args->worldfile);
-
-    //boost::split( words, args->worldfile, boost::is_any_of(" \t"));
-    
-    // Parse arguments passed on the command line, this currently only consists of
-    // "log <filename>" to log the robot states for later analysis
-    std::vector<std::string> cargs = split(args->cmdline);
-    std::string logfile = "";
-    if (cargs.size() == 2 && cargs[0] == "log")
-    {
-        logfile = cargs[1];
-        printf("Logging state to %s\n", logfile.c_str());
-    }
-
-    
-    // Create a new controller and pass this to a new master. The master is called
-    // by stage during the update phase of simulation. The master subsequently calls
-    // the controller as a coroutine, which allows the controller to Detach back to the
-    // master during the delay() function and resume running at that point once sufficent
-    // time has passed. This allows the single-threaded code that would run on an actual
-    // kilobot be used more-or-less unchanged
-    
-    Kilobot *ctrl = new Evokilo1(mod, words, logfile);
-    new KBMaster(mod, (Kilobot*)ctrl, false);
-    
-    return 0;
-}
-
 

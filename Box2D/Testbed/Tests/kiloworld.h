@@ -27,8 +27,8 @@ namespace Kilolib
             settings(_settings),
             xsize(3.0),
             ysize(2.0),
-            xgrid(2),
-            ygrid(2),
+            xgrid(1),
+            ygrid(1),
             gridmargin(0.2)
         {
             // Turn off gravity
@@ -85,6 +85,8 @@ namespace Kilolib
         std::vector<b2Fixture *> arena_fixture;
 
         Worldfile *wf;
+
+        std::vector<std::string> ctrlarg_words;
        
     };
 

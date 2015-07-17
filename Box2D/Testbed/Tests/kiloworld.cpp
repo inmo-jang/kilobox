@@ -87,7 +87,11 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
             mod->world = m_world;
             // tokenize the argument string into words
             std::vector<std::string> words = split(controller);
-            bots.push_back((Kilobot*)(new Evokilo1(mod, words, "log.txt")));
+            printf("ctrargs is %s %s\n", ctrlarg_words[0].c_str(), ctrlarg_words[1].c_str());
+            std::string logfile = "";
+            if (ctrlarg_words.size() == 2 && ctrlarg_words[0] == "log")
+                logfile = ctrlarg_words[1];
+            bots.push_back((Kilobot*)(new Evokilo1(mod, words, logfile.c_str())));
         }
     }
 }
@@ -115,6 +119,8 @@ void Kiloworld::build_world()
     settings->quit_time = wf->ReadFloat(entity, "quit_time", settings->quit_time);
     printf("Got quit time %f\n", settings->quit_time);
 
+    // Get any command line args for the controllers
+    ctrlarg_words = split(settings->ctrlargs);
     
     // Make a grid of arenas
     for(int y=0; y<ygrid; y++)
