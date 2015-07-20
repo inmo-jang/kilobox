@@ -28,18 +28,18 @@ void Kilobot::make_kilobot(float xp, float yp, float th)
     b2CircleShape c;
     b2FixtureDef kfdef;
     // Create the shape
-    c.m_radius = kbdia/2.0;
+    c.m_radius = settings->kbdia/2.0;
     // Create the fixture for the body
     kfdef.shape             = &c;
-    kfdef.density           = kbdensity;
-    kfdef.friction          = kbfriction;
-    kfdef.restitution       = kbrestitution;
+    kfdef.density           = settings->kbdensity;
+    kfdef.friction          = settings->kbfriction;
+    kfdef.restitution       = settings->kbrestitution;
     kfdef.filter.categoryBits   = KILOBOT;
     kfdef.filter.maskBits       = KILOBOT | MESSAGE;
     m_body->CreateFixture(&kfdef);
     
     // Now do the fixture for the sensor
-    c.m_radius              = kbsenserad;
+    c.m_radius              = settings->kbsenserad;
     kfdef.shape             = &c;
     kfdef.isSensor          = true;
     kfdef.density           = 0;
@@ -119,8 +119,40 @@ void Kilobot::check_messages()
  
 }
 
+void Kilobot::set_motors(int left_m, int right_m)
+{
+    // Speed constant, we know from \cite{rubenstein2012kilobot} that the speed
+    // of the kilobot is approximately 0.01ms^-1, and the recommended
+    // maximum motor power is ~100, so giving the constant
+    const double k  = settings->kbspeedconst;     // Speed constant
+    const double o  = settings->kbwheeloffset;     // Offset of turning center from oject centre
+    // The angular velocity  of the kilobot is ~45deg/s = 0.8rad/s
+    // Only one motor is running during rotation, giving an effective
+    // distance between the wheels of 12.5mm
+    const double l  = settings->kbwheeldist;    // distance between centres of wheels
+    
+    // Generate noise terms for velocity goals
+    // Motion noise arises from the behaviour of the vibrating motors. Don't
+    // inject noise when the commanded motor values are zero, the kilobots will be
+    // subject to jiggling from others but won't have noise at zero motor speed
+    float xdot_noise = 0.0;
+    float omega_noise = 0.0;
+    if (left_m || right_m)
+    {
+        xdot_noise = rand_gaussian(settings->kbxdotsigma);
+        omega_noise = rand_gaussian(settings->kbomegasigma);
+    }
+    // Omega and xdot are our desired angular and forward linear velocities
+    xdot_goal   = ((left_m * k + right_m * k) / 2) + xdot_noise;
+    omega_goal  = ((left_m * k - right_m * k) / l) + omega_noise;
+    // ydot is the effect of rotation off centre on the centre velocity
+    ydot_goal   = o * omega_goal;
+    
+    
+}
 
-void Kilobot::update(float delta_t)
+
+void Kilobot::update(float delta_t, float simtime)
 {
     dt = delta_t;
     // Update the kilobot tick counter
@@ -129,12 +161,15 @@ void Kilobot::update(float delta_t)
     // time. If so, adjust the internal time. The tick frequency is about
     // 30Hz, so for an update rate of 10Hz it should only ever differ by 3,
     // for an update rate of 60Hz, should only differ by 1
-    simtime += dt * 1e6;
-    kilo_ticks_real += dt * 1e6 / master_tick_period;
-    if (abs(kilo_ticks_real - kilo_ticks) > 3)
-        kilo_ticks_real = kilo_ticks;
-    else
+    usec_t us_simtime = simtime * 1e6;
+    kilo_ticks_real = us_simtime / master_tick_period;
+    // ##FIXME!! SJ this doesn't work, we don't care at this point since we do not
+    // alter kilo_ticks in user code
+    //if (abs(kilo_ticks_real - kilo_ticks) > 3)
+    //    kilo_ticks_real = kilo_ticks;
+    //else
         kilo_ticks = kilo_ticks_real;
+    
 
     // Update our fake ModelPosition that the controller can see
     b2Vec2 p    = m_body->GetPosition();
@@ -142,7 +177,7 @@ void Kilobot::update(float delta_t)
     pos->pose.y = p.y;
     float a     = m_body->GetAngle();
     pos->pose.a = a;
-    pos->fake_world.simtime = (usec_t) simtime;
+    pos->fake_world.simtime = (usec_t) us_simtime;
 
     // Handle message system
     check_messages();
@@ -176,9 +211,9 @@ void Kilobot::update(float delta_t)
     // Calculate the forces using damping from current velocity counteracted 
     // by the goal velocity
     //xd = yd = omega_goal = 0.0;
-    xf      += (-v.x + xd) * kblineardamp * m;
-    yf      += (-v.y + yd) * kblineardamp * m;
-    torque  += (-omega + omega_goal) * kbangulardamp * i;
+    xf      += (-v.x + xd) * settings->kblineardamp * m;
+    yf      += (-v.y + yd) * settings->kblineardamp * m;
+    torque  += (-omega + omega_goal) * settings->kbangulardamp * i;
     
     // Apply the force to the kilobot body
     m_body->ApplyForceToCenter(b2Vec2(xf, yf), true);
@@ -235,13 +270,13 @@ void DrawSolidCircle(const b2Vec2& center, float32 radius, const b2Vec2& axis, c
 void Kilobot::render()
 {
     b2Vec2 mypos = m_body->GetPosition();
-    float a = m_body->GetAngle();
+    //float a = m_body->GetAngle();
     const b2Transform &xf = m_body->GetTransform();
     //printf("##id:%5d x:%8.4f y:%8.4f\n", kilo_uid, mypos.x, mypos.y);
 
 
-    DrawSolidCircle(mypos, kbsenserad, b2Mul(xf, b2Vec2(1.0f, 0.0f)), b2Color(0.1, 0.0, 1.0), false, false);
-    DrawSolidCircle(mypos, kbdia/2, b2Mul(xf, b2Vec2(1.0f, 0.0f)), b2Color(0.9, 0.7, 0.7), true, true);
+    DrawSolidCircle(mypos, settings->kbsenserad, b2Mul(xf, b2Vec2(1.0f, 0.0f)), b2Color(0.1, 0.0, 1.0), false, false);
+    DrawSolidCircle(mypos, settings->kbdia/2, b2Mul(xf, b2Vec2(1.0f, 0.0f)), b2Color(0.9, 0.7, 0.7), true, true);
 
 
     glColor3f(1,1,1);//white

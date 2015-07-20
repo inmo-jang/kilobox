@@ -396,17 +396,22 @@ const char* USAGE =
   "  -c             : equivalent to --clock\n"
   "  --gui          : run without a GUI\n"
   "  -g             : equivalent to --gui\n"
-  "  --help         : print this message\n"
   "  --args \"str\"   : define an argument string to be passed to all controllers\n"
-  "  -a \"str\"       : equivalent to --args \"str\"\n"
+  "  --help         : print this message\n"
   "  -h             : equivalent to --help\n"
-  "  -?             : equivalent to --help";
+  "  -?             : equivalent to --help\n"
+  "  --seed <num>   : random seed\n"
+  "  --params \"p1 p2 ... p12\" : Set simulator parameters (floating point numbers)"
+
+;
 
 static struct option longopts[] = {
 	{ "gui",  optional_argument,   NULL,  'g' },
 	{ "clock",  optional_argument,   NULL,  'c' },
 	{ "help",  optional_argument,   NULL,  'h' },
 	{ "args",  required_argument,   NULL,  'a' },
+	{ "seed",  required_argument,   NULL,  's' },
+	{ "params",  required_argument,   NULL,  'p' },
 	{ NULL, 0, NULL, 0 }
 };
 
@@ -442,6 +447,16 @@ int main(int argc, char** argv)
             case '?':  
                 puts( USAGE );
                 break;
+            case 's':
+                settings.seed = strtol(optarg, 0, 0);
+                printf("Set random seed to %d\n", settings.seed);
+                break;
+            case 'p':
+            {
+                settings.params = std::string(optarg);
+                printf("params %s\n", settings.params.c_str());
+                break;
+            }
             default:
                 printf("unhandled option %c\n", ch );
                 puts( USAGE );

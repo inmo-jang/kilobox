@@ -135,27 +135,17 @@ namespace Kilolib
         MESSAGE         = 0x0002,
     };
 
-    class KBMaster
-    {
-    public:
-        KBMaster(ModelPosition *_pos, Kilobot *_kbc, bool _coro = false){}
-    };
+
 
     class Kilobot
     {
     public:
         static int ids;
-        Kilobot(ModelPosition *_pos)
+        Kilobot(ModelPosition *_pos, Settings *_settings)
         :
             pos                 (_pos),
             m_world             (_pos->world),
-            kbdia               (0.031),
-            kbdensity           (10.0),
-            kblineardamp        (10.0),
-            kbangulardamp       (10.0),
-            kbfriction          (1.0),
-            kbrestitution       (1.0),
-            kbsenserad          (0.1),
+            settings            (_settings),
             omega_goal          (0.0),
             xdot_goal           (0.0),
             ydot_goal           (0.0),
@@ -164,10 +154,10 @@ namespace Kilolib
             master_tick_period  (32768),
             kilo_tx_period      (3906),
             message_period      (kilo_tx_period/timer0_freq),
-            kilo_straight_left  (50),
-            kilo_straight_right (50),
-            kilo_turn_left      (40),
-            kilo_turn_right     (40)
+            kilo_straight_left  (70),
+            kilo_straight_right (70),
+            kilo_turn_left      (70),
+            kilo_turn_right     (70)
         {
             // Generate a unique ID, pre-increment so that first ID is 1
             kilo_uid = ++ids;
@@ -177,7 +167,7 @@ namespace Kilolib
             pos->token = string_format("kilobot:%d", kilo_uid);
 
             // Seed the random number generator with the unique ID
-            gen.seed(kilo_uid);
+            gen.seed(settings->seed + kilo_uid);
 
             kilo_ticks_real = 0;//rand(0, 100);
             kilo_ticks      = kilo_ticks_real;
@@ -185,7 +175,7 @@ namespace Kilolib
         ModelPosition   *pos;
         b2Body          *m_body;
         b2World         *m_world;
-        
+        Settings        *settings;
 
 
         // Functions to maintain the list of other bots we are in range of
@@ -204,7 +194,7 @@ namespace Kilolib
 
 
         void render();
-        void update(float delta_t);
+        void update(float delta_t, float simtime);
 
     private:
         void make_kilobot(float xp, float yp, float th);
@@ -212,13 +202,7 @@ namespace Kilolib
         
         float   dt;
         double  simtime;
-        float   kbdia;
-        float   kbdensity;
-        float   kblineardamp;
-        float   kbangulardamp;
-        float   kbfriction;
-        float   kbrestitution;
-        float   kbsenserad;
+
         
         // Each kilobot has its own random number generator
         std::default_random_engine  gen;
@@ -237,9 +221,14 @@ namespace Kilolib
 
 
     protected:
-        int   rand(int low, int high)
+        int   rand_intrange(int low, int high)
         {
             std::uniform_int_distribution<>   dist(low, high);
+            return dist(gen);
+        }
+        float rand_gaussian(float sigma)
+        {
+            std::normal_distribution<float> dist(0.0, sigma);
             return dist(gen);
         }
 
@@ -379,8 +368,8 @@ namespace Kilolib
             return dist->low_gain;
         }
         
-        uint8_t rand_hard()             {return rand(0,255);}
-        uint8_t rand_soft()             {return rand(0,255);}
+        uint8_t rand_hard()             {return rand_intrange(0,255);}
+        uint8_t rand_soft()             {return rand_intrange(0,255);}
 
         void    rand_seed(uint16_t s)    {
             gen.seed(s);
@@ -408,25 +397,8 @@ namespace Kilolib
         //-------------------------------------------------
 
 
-        void set_motors(int left_m, int right_m)
-        {
-            // Speed constant, we know from \cite{rubenstein2012kilobot} that the speed
-            // of the kilobot is approximately 0.01ms^-1, and the recommended
-            // maximum motor power is ~100, so giving the constant
-            const double k  = 2e-4;     // Speed constant
-            const double o  = 0.01;     // Offset of turning center from oject centre
-            // The angular velocity  of the kilobot is ~45deg/s = 0.8rad/s
-            // Only one motor is running during rotation, giving an effective
-            // distance between the wheels of 12.5mm
-            const double l  = 0.025;    // distance between centres of wheels
-            // Omega and xdot are our desired angular and forward linear velocities
-            omega_goal  = (left_m * k - right_m * k) / l;
-            xdot_goal   = (left_m * k + right_m * k) / 2;
-            // ydot is the effect of rotation off centre on the centre velocity
-            ydot_goal   = o * omega_goal;
+        void set_motors(int left_m, int right_m);
 
-
-        }
 
 // We are not going to support delay, it needs nasty hacks like coroutines
 // and the restriction the lack of it places on coding the kilobot is minimal.

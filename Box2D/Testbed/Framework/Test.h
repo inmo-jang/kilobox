@@ -57,32 +57,48 @@ struct Settings
 	Settings()
 	{
 		viewCenter.Set(0.0f, 0.0f);
-		hz = 60.0f;
-		velocityIterations = 8;
-		positionIterations = 3;
-		drawShapes = 0;
-		drawJoints = 0;
-		drawAABBs = 0;
-		drawContactPoints = 0;
-		drawContactNormals = 0;
-		drawContactImpulse = 0;
+		hz                  = 60.0f;
+		velocityIterations  = 8;
+		positionIterations  = 3;
+		drawShapes          = 0;
+		drawJoints          = 0;
+		drawAABBs           = 0;
+		drawContactPoints   = 0;
+		drawContactNormals  = 0;
+		drawContactImpulse  = 0;
 		drawFrictionImpulse = 0;
-		drawCOMs = 0;
-		drawStats = 0;
-		drawProfile = 0;
-		enableWarmStarting = 1;
-		enableContinuous = 1;
-		enableSubStepping = 0;
-		enableSleep = 1;
-		pause = 1;
-		singleStep = 0;
-        time_to_draw = 1;
-        ctrlargs = std::string("");
-        worldfile = std::string("");
-        usegui = true;
-        quit_time = 300;
-        elapsed_time = 0;
-        show_time = false;
+		drawCOMs            = 0;
+		drawStats           = 0;
+		drawProfile         = 0;
+		enableWarmStarting  = 1;
+		enableContinuous    = 1;
+		enableSubStepping   = 0;
+		enableSleep         = 1;
+		pause               = 1;
+		singleStep          = 0;
+        time_to_draw        = 1;
+        ctrlargs            = std::string("");
+        worldfile           = std::string("");
+        params              = std::string("");
+        usegui              = true;
+        quit_time           = 300;
+        elapsed_time        = 0;
+        show_time           = false;
+        seed                = 1;
+        //-----------------------
+        // Specific kilobot settings
+        kbxdotsigma         = 0.0;
+        kbomegasigma        = 0.0;
+        kbdia               = 0.031;
+        kbdensity           = 10.0;
+        kblineardamp        = 10.0;
+        kbangulardamp       = 10.0;
+        kbfriction          = 1.0;
+        kbrestitution       = 1.0;
+        kbsenserad          = 0.1;
+        kbspeedconst        = 1e-4;
+        kbwheeloffset       = 0.01;
+        kbwheeldist         = 0.025;
 	}
 
 	b2Vec2 viewCenter;
@@ -106,12 +122,29 @@ struct Settings
 	int32 pause;
 	int32 singleStep;
     int32 time_to_draw;
+    int32 seed;
     std::string ctrlargs;
     std::string worldfile;
+    std::string params;
     bool usegui;
     float quit_time;
     float elapsed_time;
     bool show_time;
+    // kilobot sim parameters
+    float   kbdia;
+    float   kbdensity;
+    float   kblineardamp;
+    float   kbangulardamp;
+    float   kbfriction;
+    float   kbrestitution;
+    float   kbsenserad;
+    float   kbxdotsigma;
+    float   kbomegasigma;
+    float   kbspeedconst;
+    float   kbwheeloffset;
+    float   kbwheeldist;
+    
+    
 };
 
 struct TestEntry

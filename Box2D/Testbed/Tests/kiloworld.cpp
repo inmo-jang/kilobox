@@ -14,20 +14,29 @@ using namespace Kilolib;
 void Kiloworld::Step(Settings* settings)
 {
     float dt = settings->hz > 0.0f ? 1.0f / settings->hz : float32(0.0f);
+    
 
+    // Jiggle and render if we are actually moving forward in time
+    if (!settings->pause || (settings->pause && settings->singleStep))
+    {
+        // Calculate this way otherwise we accumulate floating point error
+        steps++;
+        simtime = dt * steps;
+        for(int i=0; i<bots.size(); i++)
+            bots[i]->update(dt, simtime);
+    }
     //run the default physics and rendering
     Test::Step(settings);
-    // Jiggle and render
-    for(int i=0; i<bots.size(); i++)
-        bots[i]->update(dt);
-    // Show some text in the main screen
     
+    // Show some text in the main screen
     if (settings->time_to_draw)
     {
         render_arena();
         for(int i=0; i<bots.size(); i++)
             bots[i]->render();
-        m_debugDraw.DrawString(5, m_textLine, "Kilobot");
+
+        std::string s = string_format("Time:%8.2f", simtime);
+        m_debugDraw.DrawString(5, m_textLine, s.c_str());
         m_textLine += 15;
     }
 }
@@ -83,11 +92,11 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
             mod->world = m_world;
             // tokenize the argument string into words
             std::vector<std::string> words = split(controller);
-            printf("ctrargs is %s %s\n", ctrlarg_words[0].c_str(), ctrlarg_words[1].c_str());
+            //printf("ctrargs is %s %s\n", ctrlarg_words[0].c_str(), ctrlarg_words[1].c_str());
             std::string logfile = "";
             if (ctrlarg_words.size() == 2 && ctrlarg_words[0] == "log")
                 logfile = ctrlarg_words[1];
-            bots.push_back((Kilobot*)(new Evokilo1(mod, words, logfile.c_str())));
+            bots.push_back((Kilobot*)(new Evokilo1(mod, settings, words, logfile.c_str())));
         }
     }
 }
@@ -115,6 +124,46 @@ void Kiloworld::build_world()
     settings->quit_time = wf->ReadFloat(entity, "quit_time", settings->quit_time);
     printf("Got quit time %f\n", settings->quit_time);
 
+    if (settings->params != "")
+    {
+        printf("Got non-default kilobot parameters %s\n", settings->params.c_str());
+        std::vector<std::string> params = split(settings->params);
+        if ((params.size() != 12) && (params.size() != 2))
+        {
+            printf("Invalid parameter argument, should be 2 or 12 numbers, exitting..\n");
+            exit(1);
+        }
+        
+        settings->kbxdotsigma         = std::stof(params[0]);
+        settings->kbomegasigma        = std::stof(params[1]);
+        if (params.size() == 12)
+        {
+            settings->kbdia               = std::stof(params[2]);
+            settings->kbdensity           = std::stof(params[3]);
+            settings->kblineardamp        = std::stof(params[4]);
+            settings->kbangulardamp       = std::stof(params[5]);
+            settings->kbfriction          = std::stof(params[6]);
+            settings->kbrestitution       = std::stof(params[7]);
+            settings->kbsenserad          = std::stof(params[8]);
+            settings->kbspeedconst        = std::stof(params[9]);
+            settings->kbwheeloffset       = std::stof(params[10]);
+            settings->kbwheeldist         = std::stof(params[11]);
+        }
+        printf("Params are:\n");
+        printf("kbxdotsigma     %f\n",settings->kbxdotsigma);
+        printf("kbomegasigma    %f\n",settings->kbomegasigma);
+        printf("kbdia           %f\n",settings->kbdia);
+        printf("kbdensity       %f\n",settings->kbdensity);
+        printf("kblineardamp    %f\n",settings->kblineardamp);
+        printf("kbangulardamp   %f\n",settings->kbangulardamp);
+        printf("kbfriction      %f\n",settings->kbfriction);
+        printf("kbrestitution   %f\n",settings->kbrestitution);
+        printf("kbsenserad      %f\n",settings->kbsenserad);
+        printf("kbspeedconst    %f\n",settings->kbspeedconst);
+        printf("kbwheeloffset   %f\n",settings->kbwheeloffset);
+        printf("kbwheeldist     %f\n",settings->kbwheeldist);
+    }
+    
     // Get any command line args for the controllers
     ctrlarg_words = split(settings->ctrlargs);
     

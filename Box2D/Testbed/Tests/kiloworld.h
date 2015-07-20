@@ -29,7 +29,9 @@ namespace Kilolib
             ysize(2.0),
             xgrid(1),
             ygrid(1),
-            gridmargin(0.2)
+            gridmargin(0.2),
+            simtime(0.0),
+            steps(0)
         {
             // Turn off gravity
             m_world->SetGravity(b2Vec2(0,0));
@@ -67,11 +69,13 @@ namespace Kilolib
         int     xgrid;
         int     ygrid;
         float   gridmargin;
+        float   simtime;
+        int     steps;
 
         std::vector<Kilobot*>   bots;
         KBContactListener   contact_listener;
 
-        float   rand(float low, float high)
+        float   rand_intrange(float low, float high)
         {
             std::uniform_real_distribution<float>   dist(low, high);
             return dist(gen);

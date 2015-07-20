@@ -76,8 +76,9 @@ class Evokilo1 : public Kilobot
 {
 public:
     // Pass the model reference up to the parent constructor
-    Evokilo1(ModelPosition *_pos, std::vector<std::string> _words, std::string _logfile = "") :
-    Kilobot (_pos),
+    Evokilo1(ModelPosition *_pos, Settings *_settings,
+            std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
     words   (_words),
     logfile (_logfile),
     // Set the size of the neural net
@@ -86,11 +87,8 @@ public:
     outputs (3)
     {
         std::vector<float> w;
-        if ((words.size() == 2) && (words[1] == "random"))
-            for(int i=0; i<nn.num_weights; i++)
-                w.push_back(rand(-1.0,1.0));
-                            
-        else if (words.size()-1 == nn.num_weights)
+        
+        if (words.size()-1 == nn.num_weights)
             for(int i=0; i<nn.num_weights; i++)
                 w.push_back(atof(words[i+1].c_str()));
         
