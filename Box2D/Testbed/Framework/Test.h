@@ -99,6 +99,8 @@ struct Settings
         kbspeedconst        = 1e-4;
         kbwheeloffset       = 0.01;
         kbwheeldist         = 0.025;
+        //
+        kbnestfoodsep       = 0.2;
 	}
 
 	b2Vec2 viewCenter;
@@ -143,6 +145,7 @@ struct Settings
     float   kbspeedconst;
     float   kbwheeloffset;
     float   kbwheeldist;
+    float   kbnestfoodsep;
     
     
 };

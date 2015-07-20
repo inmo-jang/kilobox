@@ -150,6 +150,9 @@ namespace Kilolib
             xdot_goal           (0.0),
             ydot_goal           (0.0),
             ambient             (ModelStigmergy::colour_t(0,0,0,0)),
+            led_r               (1.0),
+            led_g               (1.0),
+            led_b               (1.0),
             timer0_freq         (8e6/1024),
             master_tick_period  (32768),
             kilo_tx_period      (3906),
@@ -211,13 +214,17 @@ namespace Kilolib
         std::vector<Kilobot*>       inrange_bots;
 
         // Controller velocity goal, set by set_motor() based on two-wheel kinematics
-        double                      omega_goal;
-        double                      xdot_goal;
-        double                      ydot_goal;
+        float                      omega_goal;
+        float                      xdot_goal;
+        float                      ydot_goal;
         // Pheromone strength
-        double                      pheromone;
+        float                      pheromone;
         ModelStigmergy::colour_t    ambient;
 
+        // LED colour
+        float led_r, led_g, led_b;
+        
+        
 
 
     protected:
@@ -376,8 +383,17 @@ namespace Kilolib
         }
         int16_t get_ambientlight()
         {
-            // Average of 3 colour channels
-            return int((ambient.a + ambient.g + ambient.b)*32767/3.0);
+            // ADC is 10 bits
+            //
+            // Return a low value for nest region, to the left,
+            // a high value for the food region, to the right,
+            // and zero for the wasteland in between
+            float d = settings->kbnestfoodsep / 2.0;
+            if (pos->pose.x < -d)
+                return 100;
+            if (pos->pose.x > d)
+                return 900;
+            return 0;
         }
         int16_t get_voltage()           {return 0;}
         int16_t get_temperature()       {return 0;}
@@ -422,14 +438,15 @@ namespace Kilolib
 //        }
         
         void spinup_motors() {}
+
+// Macro for easy use of set_color
+#define RGB(r,g,b) (r&3)|(((g&3)<<2))|((b&3)<<4)
         
         void set_color(uint8_t rgb)
         {
-            double r = (rgb&0x3)/3.0;
-            double g = ((rgb>>2)&0x3)/3.0;
-            double b = ((rgb>>4)&0x3)/3.0;
-            //led->SetColor( Color(r, g, b));
-            //pheromone = rgb/64.0;
+            led_r = (rgb&0x3)/3.0;
+            led_g = ((rgb>>2)&0x3)/3.0;
+            led_b = ((rgb>>4)&0x3)/3.0;
         }
       
         

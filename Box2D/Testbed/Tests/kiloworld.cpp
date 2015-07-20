@@ -230,6 +230,14 @@ void Kiloworld::render_arena()
         }
         glEnd();
     }
+    // Draw lines for the nest, food regions
+    glColor3f(1.0f, 0.0f, 0.0f);
+    glBegin(GL_LINES);
+    glVertex2f(-settings->kbnestfoodsep / 2.0, -ysize / 2.0);
+    glVertex2f(-settings->kbnestfoodsep / 2.0,  ysize / 2.0);
+    glVertex2f( settings->kbnestfoodsep / 2.0, -ysize / 2.0);
+    glVertex2f( settings->kbnestfoodsep / 2.0,  ysize / 2.0);
+    glEnd();
 }
 
 

@@ -127,10 +127,9 @@ void Evokilo1::loop()
         // Every cycle, build the inputs to the neuron net, compute the outputs
         // and set the actuators using the outputs
 
-        colour_t amb    = get_ambient();
-        nest            = amb.g > 0.5 ? 1.0 : -1.0;
-        food            = amb.b > 0.5 ? 1.0 : -1.0;
-        pheromone       = amb.r;
+        float light     = get_ambientlight();
+        nest            = (light > 50)  && (light < 512)    ? 1.0 : -1.0;
+        food            = (light > 512) && (light < 1000)   ? 1.0 : -1.0;
         
         // Little state machine for food transport: always collect food if in food area
         // and deposit it if in nest area
@@ -149,21 +148,22 @@ void Evokilo1::loop()
         
         // Bias
         inputs[0]   = 1.0;
-        // Average distance to neighbours
-        inputs[1]   = min_dist;
-        // Number of neighbours
-        inputs[2]   = messages;
-        // Average message
-        //inputs[3]   = avg_message;
-
-        // Pheromone
-        //inputs[3]   = pheromone;
-        // Food
-        //inputs[4]   = food;
+        // Random
+        inputs[1]   = rand_gaussian(1.0);
         // Nest
-        //inputs[5]   = nest;
-        // Carrying
-        //inputs[6]   = carrying ? 1.0 : -1.0;
+        inputs[2]   = nest;
+        // Food
+        inputs[3]   = food;
+        // carrying food
+        inputs[4]   = carrying ? 1.0 : -1.0;
+        
+        
+        // Average distance to neighbours
+        //inputs[5]   = min_dist;
+        // Number of neighbours
+        //inputs[6]   = messages;
+  
+
 
         
         // Run the neural net
@@ -189,24 +189,12 @@ void Evokilo1::loop()
                 break;
         }
 
-        // Output 2 is the message to send, scaled from -1:+1 -> 0-255
-        //int m = outputs[2] < -1 ? 0 : outputs[2] > 1 ? 255 : int((outputs[2]+1)*127);
-        //msg.data[0] = m;
-        //msg.crc     = message_crc(&msg);
-
-        // Pheromone
-        //set_pheromone(outputs[2]);
         
-        // Generate a fitness rating based on distance travelled on pheromone trail,
-        // favouring straight line
-        if (d > 0)
-            total_trail += (d == 3) ? pheromone : pheromone/100;
-        //==================================================
+        // visualise the internal state
+        set_color(RGB(carrying?3:0, nest>0?3:0, food>0?3:0));
 
-        // Stage only - colour the kilobot body according to average distance
-        float col = (150-min_dist)/120;
-        //printf("%s %f %d\n", pos->Token(), min_dist, messages);
-        pos->SetColor(Color(col));
+        
+
         
         
         // Clear the message count
@@ -226,8 +214,8 @@ void Evokilo1::loop()
         {
             last_time += 1e6;
             char buf[1024];
-            snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
-                     pos->GetPose().x, pos->GetPose().y, inputs[1],inputs[2],outputs[0],outputs[1]);
+            snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
+                     pos->GetPose().x, pos->GetPose().y, inputs[2],inputs[3],inputs[4], outputs[0],outputs[1]);
             Evokilo1::log(buf);
         }
     }

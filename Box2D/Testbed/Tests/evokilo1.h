@@ -82,9 +82,9 @@ public:
     words   (_words),
     logfile (_logfile),
     // Set the size of the neural net
-    nn      (3, 3, 2, true),
-    inputs  (3,0),
-    outputs (3)
+    nn      (5, 5, 2, true),
+    inputs  (5, 0),
+    outputs (2)
     {
         std::vector<float> w;
         

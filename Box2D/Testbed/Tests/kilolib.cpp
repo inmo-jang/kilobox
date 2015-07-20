@@ -276,7 +276,7 @@ void Kilobot::render()
 
 
     DrawSolidCircle(mypos, settings->kbsenserad, b2Mul(xf, b2Vec2(1.0f, 0.0f)), b2Color(0.1, 0.0, 1.0), false, false);
-    DrawSolidCircle(mypos, settings->kbdia/2, b2Mul(xf, b2Vec2(1.0f, 0.0f)), b2Color(0.9, 0.7, 0.7), true, true);
+    DrawSolidCircle(mypos, settings->kbdia/2, b2Mul(xf, b2Vec2(1.0f, 0.0f)), b2Color(led_r, led_g, led_b), true, true);
 
 
     glColor3f(1,1,1);//white
