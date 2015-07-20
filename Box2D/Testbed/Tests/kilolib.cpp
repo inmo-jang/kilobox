@@ -131,9 +131,11 @@ void Kilobot::update(float delta_t)
     // for an update rate of 60Hz, should only differ by 1
     simtime += dt * 1e6;
     kilo_ticks_real += dt * 1e6 / master_tick_period;
-    if (abs(kilo_ticks_real - kilo_ticks) > 3)
-        kilo_ticks_real = kilo_ticks;
-    else
+    // ##FIXME!! SJ this doesn't work, we don't care at this point since we do not
+    // alter kilo_ticks in user code
+    //if (abs(kilo_ticks_real - kilo_ticks) > 3)
+    //    kilo_ticks_real = kilo_ticks;
+    //else
         kilo_ticks = kilo_ticks_real;
 
     // Update our fake ModelPosition that the controller can see
