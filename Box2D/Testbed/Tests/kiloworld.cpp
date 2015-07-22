@@ -96,7 +96,12 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
             std::string logfile = "";
             if (ctrlarg_words.size() == 2 && ctrlarg_words[0] == "log")
                 logfile = ctrlarg_words[1];
-            bots.push_back((Kilobot*)(new Evokilo1(mod, settings, words, logfile.c_str())));
+            
+            if (words[0] == "evokilo1")
+                bots.push_back((Kilobot*)(new Evokilo1(mod, settings, words, logfile.c_str())));
+            if (words[0] == "evokilo2")
+                bots.push_back((Kilobot*)(new Evokilo2(mod, settings, words, logfile.c_str())));
+            
         }
     }
 }
