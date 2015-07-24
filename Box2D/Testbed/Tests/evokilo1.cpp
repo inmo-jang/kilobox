@@ -26,152 +26,86 @@ using namespace Kilolib;
 FILE *Evokilo1::lfp = NULL;
 FILE *Evokilo2::lfp = NULL;
 
-std::vector<float> Neural_net::update(std::vector<float> inputs)
+
+float sigmoid(float x) {return tanh(x);}
+
+float *NN::nn_update(float *inputs)
 {
-    if (inputs.size() != input_nodes)
-    {
-        printf("mismatch on number of inputs to NN\n");
-        exit(1);
-    }
-    // Work out new values for hidden neurons. Because this is a recurrant
-    // neural net, the hidden nodes previous value is also included in the
-    // weighted sum
-    for(int i=0; i<hidden_nodes; i++)
+    float *ptr=&nn_weights[0];
+    for(int i=0; i<NN_NUM_HIDDEN; i++)
     {
         float sum = 0;
         // First the input nodes
-        for(int j=0; j<input_nodes; j++)
-            sum += inputs[j] * hidden.neurons[i].weights[j];
+        for(int j=0; j<NN_NUM_INPUTS; j++)
+            sum += inputs[j] * (*ptr++);
         // Then the hidden nodes
-        for(int j=0; j<hidden_nodes; j++)
-            sum += hidden.neurons[j].value * hidden.neurons[i].weights[j + input_nodes];
+        for(int j=0; j<NN_NUM_HIDDEN; j++)
+            sum += nn_hidden[j] * (*ptr++);
         // Update the neuron value with the weighted input pushed through the transfer function
-        hidden.neurons[i].value = sigmoid(sum);
+        nn_hidden[i] = sigmoid(sum);
     }
     // Work out the output node values
-    std::vector<float> out;
-    for(int i=0; i<output_nodes; i++)
+    for(int i=0; i<NN_NUM_OUTPUTS; i++)
     {
         float sum = 0;
-        for(int j=0; j<hidden_nodes; j++)
-            sum += hidden.neurons[j].value * output.neurons[i].weights[j];
-        out.push_back(sigmoid(sum));
+        for(int j=0; j<NN_NUM_HIDDEN; j++)
+            sum += nn_hidden[j] * (*ptr++);
+        nn_outputs[i] = sigmoid(sum);
     }
-    return out;
+    return &nn_outputs[0];
+    
 }
 
-void Neural_net::set_weights(std::vector<float> w)
-{
-    int idx = 0;
-    for(int i=0; i<hidden_nodes; i++)
-        for(int j=0; j<hidden.neurons[i].num_inputs; j++)
-            hidden.neurons[i].weights[j] = w[idx++];
-    for(int i=0; i<output_nodes; i++)
-        for(int j=0; j<output.neurons[i].num_inputs; j++)
-            output.neurons[i].weights[j] = w[idx++];
-}
 
-std::vector<float> Neural_net::get_weights()
-{
-    std::vector<float> w;
-    for(int i=0; i<hidden_nodes; i++)
-        for(int j=0; j<hidden.neurons[i].num_inputs; j++)
-            w.push_back(hidden.neurons[i].weights[j]);
-    for(int i=0; i<output_nodes; i++)
-        for(int j=0; j<output.neurons[i].num_inputs; j++)
-            w.push_back(output.neurons[i].weights[j]);
-    return w;
-}
-
+#define NEST 1
+#define FOOD 2
 
 
 void Evokilo1::setup()
 {
-    // Set the callbacks
-    kilo_message_tx         = (message_tx_t)&Evokilo1::tx_message;
-    kilo_message_tx_success = (message_tx_success_t)&Evokilo1::tx_message_success;
-    kilo_message_rx         = (message_rx_t)&Evokilo1::message_rx;
-    
-    // Construct a valid message
-    msg.type    = NORMAL;
-    msg.crc     = message_crc(&msg);
-    
-    sent_message    = 0;
-    send_message    = 1;
-    messages        = 0;
-    avg_dist        = 150;
-    min_dist        = 150;
-    avg_message     = 0;
-    
-    carrying    = 0;
-    total_food  = 0;
-    total_trail = 0;
-    total_pickup= 0;
-    last_update = 0;
-    
-    nest        = 0;
-    food        = 0;
-    pheromone   = 0;
-    
-    //printf("%3d evokilo setup\n", kilo_uid);
+    last_update     = kilo_ticks;
 }
 
 void Evokilo1::loop()
 {
     // Run the NN at the same rate as the message send, roughly twice a second
     // Always send a message
-    
+    int region = 0;
     if (kilo_ticks > last_update + 16)
     {
         last_update = kilo_ticks;
-        
+        last_region = region;
+        region = get_environment();
+
         // Every cycle, build the inputs to the neuron net, compute the outputs
         // and set the actuators using the outputs
-        
-        float light     = get_ambientlight();
-        nest            = (light > 50)  && (light < 512)    ? 1.0 : -1.0;
-        food            = (light > 512) && (light < 1000)   ? 1.0 : -1.0;
-        
+
         // Little state machine for food transport: always collect food if in food area
-        // and deposit it if in nest area
-        if ((nest > 0) && carrying)
+        // and deposit it if in nest area. To reduce effect of noise, only trigger
+        // change of state with two successive region values that are the same
+        if (carrying && (region == NEST) && (last_region == NEST))
         {
             carrying = 0;
             total_food++;
-            //printf("%s food:%d\n",pos->Token(), total_food);
         }
-        else if ((food > 0) && !carrying)
+        else if (!carrying && (region == FOOD) && (last_region == FOOD))
         {
             carrying = 1;
             total_pickup++;
-            
         }
         
         // Bias
         inputs[0]   = 1.0;
-        // Random
-        inputs[1]   = rand_gaussian(1.0);
         // Nest
-        inputs[2]   = nest;
+        inputs[1]   = (region == NEST) ? 1.0 : -1.0;
         // Food
-        inputs[3]   = food;
+        inputs[2]   = (region == FOOD) ? 1.0 : -1.0;
         // carrying food
-        inputs[4]   = carrying ? 1.0 : -1.0;
-        
-        
-        // Average distance to neighbours
-        //inputs[5]   = min_dist;
-        // Number of neighbours
-        //inputs[6]   = messages;
-        
-        
-        
+        inputs[3]   = carrying ? 1.0 : -1.0;
         
         // Run the neural net
-        outputs     = nn.update(inputs);
-        
-        //printf("%s: %8.5f %8.5f %8.5f %8.5f\n", pos->Token(), outputs[0], outputs[1], outputs[2], outputs[3]);
-        
+        outputs     = nn.nn_update(&inputs[0]);
+
         // Motor control
         int d = (outputs[0] >= 0 ? 1 : 0) | (outputs[1] >= 0 ? 2 : 0);
         switch(d)
@@ -189,22 +123,16 @@ void Evokilo1::loop()
                 set_motors(kilo_straight_left, kilo_straight_right);
                 break;
         }
-        
-        
+
         // visualise the internal state
-        set_color(RGB(carrying?3:0, nest>0?3:0, food>0?3:0));
-        
-        
-        
-        
-        
-        // Clear the message count
-        messages = 0;
-        avg_dist = 150;
-        min_dist = 150;
-        avg_message = 0;
+        set_color(RGB(carrying?3:0, (region==NEST)?3:0, (region==FOOD)?3:0));
+                
+
+#ifdef DEBUG
+        printf("%lu %d %d\r\n", kilo_ticks,region,carrying);
+#endif
     }
-    
+
     
     
     //===========================================================================
@@ -226,32 +154,12 @@ void Evokilo1::loop()
 void Evokilo2::setup()
 {
     // Set the callbacks
-    kilo_message_tx         = (message_tx_t)&Evokilo1::tx_message;
-    kilo_message_tx_success = (message_tx_success_t)&Evokilo1::tx_message_success;
-    kilo_message_rx         = (message_rx_t)&Evokilo1::message_rx;
+    kilo_message_tx         = (message_tx_t)&Evokilo2::tx_message;
+    kilo_message_rx         = (message_rx_t)&Evokilo2::message_rx;
     
     // Construct a valid message
     msg.type    = NORMAL;
     msg.crc     = message_crc(&msg);
-    
-    sent_message    = 0;
-    send_message    = 1;
-    messages        = 0;
-    avg_dist        = 150;
-    min_dist        = 150;
-    avg_message     = 0;
-    
-    carrying    = 0;
-    total_food  = 0;
-    total_trail = 0;
-    total_pickup= 0;
-    last_update = 0;
-    
-    nest        = 0;
-    food        = 0;
-    pheromone   = 0;
-    
-    //printf("%3d evokilo setup\n", kilo_uid);
 }
 
 void Evokilo2::loop()
@@ -259,56 +167,45 @@ void Evokilo2::loop()
     // Run the NN at the same rate as the message send, roughly twice a second
     // Always send a message
     
+    int region = 0;
     if (kilo_ticks > last_update + 16)
     {
         last_update = kilo_ticks;
+        last_region = region;
+        region      = get_environment();
         
         // Every cycle, build the inputs to the neuron net, compute the outputs
         // and set the actuators using the outputs
         
-        float light     = get_ambientlight();
-        nest            = (light > 50)  && (light < 512)    ? 1.0 : -1.0;
-        food            = (light > 512) && (light < 1000)   ? 1.0 : -1.0;
-        
         // Little state machine for food transport: always collect food if in food area
         // and deposit it if in nest area
-        if ((nest > 0) && carrying)
+        if (carrying && (region == NEST) && (last_region == NEST))
         {
             carrying = 0;
             total_food++;
-            //printf("%s food:%d\n",pos->Token(), total_food);
         }
-        else if ((food > 0) && !carrying)
+        else if (!carrying && (region == FOOD) && (last_region == FOOD))
         {
             carrying = 1;
             total_pickup++;
-            
         }
         
         // Bias
         inputs[0]   = 1.0;
-        // Random
-        inputs[1]   = rand_gaussian(1.0);
         // Nest
-        inputs[2]   = nest;
+        inputs[1]   = (region == NEST) ? 1.0 : -1.0;
         // Food
-        inputs[3]   = food;
+        inputs[2]   = (region == FOOD) ? 1.0 : -1.0;
         // carrying food
-        inputs[4]   = carrying ? 1.0 : -1.0;
-        
+        inputs[3]   = carrying ? 1.0 : -1.0;
         
         // Distance to nearest neighbours
-        inputs[5]   = min_dist;
+        inputs[4]   = min_dist;
         // Number of neighbours
-        inputs[6]   = messages;
-        
-        
-        
+        inputs[5]   = messages;
         
         // Run the neural net
-        outputs     = nn.update(inputs);
-        
-        //printf("%s: %8.5f %8.5f %8.5f %8.5f\n", pos->Token(), outputs[0], outputs[1], outputs[2], outputs[3]);
+        outputs     = nn.nn_update(&inputs[0]);
         
         // Motor control
         int d = (outputs[0] >= 0 ? 1 : 0) | (outputs[1] >= 0 ? 2 : 0);
@@ -328,19 +225,12 @@ void Evokilo2::loop()
                 break;
         }
         
-        
         // visualise the internal state
-        set_color(RGB(carrying?3:0, nest>0?3:0, food>0?3:0));
-        
-        
-        
-        
+        set_color(RGB(carrying?3:0, (region==NEST)?3:0, (region==FOOD)?3:0));
         
         // Clear the message count
         messages = 0;
-        avg_dist = 150;
         min_dist = 150;
-        avg_message = 0;
     }
     
     

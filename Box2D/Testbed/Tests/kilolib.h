@@ -400,16 +400,21 @@ namespace Kilolib
 
         typedef ModelStigmergy::colour_t colour_t;
         //-------------------------------------------------
-        colour_t get_ambient()
+        int16_t get_environment()
         {
             // THIS IS NOT PART OF THE STANDARD API!!
             // To be implemented using some sort of modulation
             // scheme on the ambient light sensing
-            return ambient;
-            //return colour_t(0,0,0,0);
+            //
+            // Now actually implemented based on the modulation pattern
+            // of the DLP projector
+            float d = settings->kbnestfoodsep / 2.0;
+            if (pos->pose.x < -d)
+                return 1;
+            if (pos->pose.x > d)
+                return 2;
+            return 3;
         }
-        void set_pheromone(double p) {pheromone = p;}
-
         //-------------------------------------------------
 
 

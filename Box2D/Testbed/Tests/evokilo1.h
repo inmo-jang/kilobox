@@ -12,70 +12,40 @@
 
 using namespace Kilolib;
 
-struct Neuron
-{
-    Neuron(int _num_inputs) : num_inputs(_num_inputs)
-    {
-        // Every neuron has weighted inputs and a bias
-        for(int i=0; i<num_inputs; i++)
-            weights.push_back(0);
-        value = 0;
-    }
-    int num_inputs;
-    std::vector<float> weights;
-    float value;
-};
+#define W(i,h,o) ((i)*(h)+(h)*(h)+(h)*(o))
 
-struct Neuron_layer
-{
-    Neuron_layer(int _num_neurons, int num_inputs) : num_neurons(_num_neurons)
-    {
-        for(int i=0; i<num_neurons; i++)
-            neurons.push_back(Neuron(num_inputs));
-    }
-    int num_neurons;
-    std::vector<Neuron> neurons;
-};
 
-class Neural_net
+class NN
 {
 public:
-    // Fully recurrent neural net.
-    Neural_net(int _input_nodes, int _hidden_nodes, int _output_nodes, bool _recurrent) :
-    input_nodes     (_input_nodes),
-    hidden_nodes    (_hidden_nodes),
-    output_nodes    (_output_nodes),
-    hidden          (Neuron_layer(hidden_nodes,
-                        _recurrent ? hidden_nodes + input_nodes : input_nodes)),
-    output          (Neuron_layer(output_nodes, hidden_nodes)),
-    recurrent       (_recurrent)
+    NN(int _nn_num_inputs, int _nn_num_hidden, int _nn_num_outputs)
+    :   NN_NUM_INPUTS   (_nn_num_inputs),
+        NN_NUM_HIDDEN   (_nn_num_hidden),
+        NN_NUM_OUTPUTS  (_nn_num_outputs),
+        NN_NUM_WEIGHTS  (W(_nn_num_inputs, _nn_num_hidden, _nn_num_outputs)),
+        nn_hidden       (NN_NUM_HIDDEN, 0.0),
+        nn_outputs      (NN_NUM_OUTPUTS),
+        nn_weights      (NN_NUM_WEIGHTS)
     {
-        int ni  = hidden.neurons[0].num_inputs;
-        int nn  = hidden.num_neurons;
-        num_weights = hidden_nodes * ni + output_nodes * nn;
+        
     }
-    int input_nodes;
-    int hidden_nodes;
-    int output_nodes;
-    int num_weights;
-    Neuron_layer hidden;
-    Neuron_layer output;
-    bool recurrent;
-    
-    std::vector<float> update(std::vector<float> inputs);
-    float sigmoid(float x) {return tanh(x);}
-    
-    void set_weights(std::vector<float> w);
-    std::vector<float> get_weights();
-    
+    int     NN_NUM_INPUTS;
+    int     NN_NUM_HIDDEN;
+    int     NN_NUM_OUTPUTS;
+    int     NN_NUM_WEIGHTS;
+    std::vector<float>  nn_hidden;
+    std::vector<float>  nn_outputs;
+    std::vector<float>  nn_weights;
+    float *nn_update(float *inputs);
 };
+
 
 
 
 class Evokilo1 : public Kilobot
 {
 public:
-    // Foraging kilobot using only loctal information, no messages
+    // Foraging kilobot using only local information, no messages
     //
     // Pass the model reference up to the parent constructor
     Evokilo1(ModelPosition *_pos, Settings *_settings,
@@ -84,28 +54,17 @@ public:
     words   (_words),
     logfile (_logfile),
     // Set the size of the neural net
-    nn      (5, 5, 2, true),
-    inputs  (5, 0),
-    outputs (2)
+    nn      (4, 4, 2),
+    inputs  (4)
     {
-        std::vector<float> w;
-        
-        if (words.size()-1 == nn.num_weights)
-            for(int i=0; i<nn.num_weights; i++)
-                w.push_back(atof(words[i+1].c_str()));
-        
+        if (words.size()-1 == nn.NN_NUM_WEIGHTS)
+            for(int i=0; i<nn.NN_NUM_WEIGHTS; i++)
+                nn.nn_weights[i] = atof(words[i+1].c_str());
         else
         {
-            printf("Wrong number of weights in controller arguments, got %lu should be %d\n", words.size()-1, nn.num_weights );
+            printf("Wrong number of weights in controller arguments, got %lu should be %d\n", words.size()-1, nn.NN_NUM_WEIGHTS);
             exit(1);
         }
-        nn.set_weights(w);
-        
-        std::vector<float> x = nn.get_weights();
-        //        printf("%s:%d:",pos->Token(), pos->GetId());
-        //        for(int i=0; i<x.size(); i++)
-        //            printf("%f ", x[i]);
-        //        printf("\n");
         
         if (logfile != "")
         {
@@ -113,7 +72,6 @@ public:
             log_open(logfile);
         }
         
-        last_time = 0;
         setup();
     }
     ~Evokilo1()
@@ -145,7 +103,10 @@ public:
     //void finish();
     std::vector<std::string> words;
     std::string logfile;
-    
+
+    // Hold usecs so we can log every second
+    int last_time = 0;
+
     //------------------------------------------------------------
     // Kilobot user functions
     //------------------------------------------------------------
@@ -153,63 +114,17 @@ public:
     void setup();
     void loop();
     
-    Neural_net nn;
+    NN          nn;
     
-    message_t   msg;
-    uint8_t     sent_message;
-    int         messages;
-    uint8_t     send_message;
-    float       dist;
-    uint8_t     message;
-    uint8_t     carrying;
-    int         total_food;
-    float       total_trail;
-    int         total_pickup;
-    usec_t      last_time;
-    float       avg_dist;
-    float       avg_message;
-    float       min_dist;
-    uint32_t    last_update;
+    uint32_t    last_update     = 0;
+    int         last_region     = 0;
+
+    uint8_t     carrying        = 0;
+    int         total_food      = 0;
+    int         total_pickup    = 0;
     
-    float       nest;
-    float       food;
-    float       pheromone;
     std::vector<float> inputs;
-    std::vector<float> outputs;
-    
-    
-    // Message transmission callback
-    message_t *tx_message()
-    {
-        if (send_message)
-            return &msg;
-        else
-            return 0;
-    }
-    
-    // Successful transmission callback
-    void tx_message_success()
-    {
-        sent_message = 1;
-    }
-    
-    void message_rx(message_t *m, distance_measurement_t *d)
-    {
-        //printf("in message_rx %s\n",__PRETTY_FUNCTION__);
-        // Keep running average of message distance
-        avg_dist    *= messages;
-        avg_message *= messages;
-        int dist = estimate_distance(d);
-        if (dist < min_dist)
-            min_dist = dist;
-        avg_dist += dist;
-        float msg = m->data[0];
-        avg_message += (msg-128)/128;
-        messages ++;
-        avg_dist    /= messages;
-        avg_message /= messages;
-        //printf("%s got message at %d %d %f\n", pos->Token(), dist, messages, avg_dist);
-    }
+    float       *outputs;
     
     
     
@@ -228,28 +143,17 @@ public:
     words   (_words),
     logfile (_logfile),
     // Set the size of the neural net
-    nn      (7, 7, 2, true),
-    inputs  (7, 0),
-    outputs (2)
+    nn      (6, 6, 2),
+    inputs  (6)
     {
-        std::vector<float> w;
-        
-        if (words.size()-1 == nn.num_weights)
-            for(int i=0; i<nn.num_weights; i++)
-                w.push_back(atof(words[i+1].c_str()));
-        
+        if (words.size()-1 == nn.NN_NUM_WEIGHTS)
+            for(int i=0; i<nn.NN_NUM_WEIGHTS; i++)
+                nn.nn_weights[i] = atof(words[i+1].c_str());
         else
         {
-            printf("Wrong number of weights in controller arguments, got %lu should be %d\n", words.size()-1, nn.num_weights );
+            printf("Wrong number of weights in controller arguments, got %lu should be %d\n", words.size()-1, nn.NN_NUM_WEIGHTS );
             exit(1);
         }
-        nn.set_weights(w);
-        
-        std::vector<float> x = nn.get_weights();
-        //        printf("%s:%d:",pos->Token(), pos->GetId());
-        //        for(int i=0; i<x.size(); i++)
-        //            printf("%f ", x[i]);
-        //        printf("\n");
         
         if (logfile != "")
         {
@@ -257,7 +161,6 @@ public:
             log_open(logfile);
         }
         
-        last_time = 0;
         setup();
     }
     ~Evokilo2()
@@ -289,7 +192,10 @@ public:
     //void finish();
     std::vector<std::string> words;
     std::string logfile;
-    
+
+    // Hold usecs so we can log every second
+    int last_time = 0;  
+
     //------------------------------------------------------------
     // Kilobot user functions
     //------------------------------------------------------------
@@ -297,62 +203,39 @@ public:
     void setup();
     void loop();
     
-    Neural_net nn;
-    
+    NN          nn;
+     
+    uint32_t    last_update     = 0;
+    int         last_region     = 0;   
+
     message_t   msg;
-    uint8_t     sent_message;
-    int         messages;
-    uint8_t     send_message;
-    float       dist;
-    uint8_t     message;
-    uint8_t     carrying;
-    int         total_food;
-    float       total_trail;
-    int         total_pickup;
-    usec_t      last_time;
-    float       avg_dist;
-    float       avg_message;
-    float       min_dist;
-    uint32_t    last_update;
-    
-    float       nest;
-    float       food;
-    float       pheromone;
+    int         messages        = 0;
+    float       min_dist        = 150;
+
+    uint8_t     carrying        = 0;
+    int         total_food      = 0;
+    int         total_pickup    = 0;
+
     std::vector<float> inputs;
-    std::vector<float> outputs;
+    float       *outputs;
     
     
     // Message transmission callback
     message_t *tx_message()
     {
-        if (send_message)
-            return &msg;
-        else
-            return 0;
+        return &msg;
     }
     
-    // Successful transmission callback
-    void tx_message_success()
-    {
-        sent_message = 1;
-    }
-    
+
     void message_rx(message_t *m, distance_measurement_t *d)
     {
         //printf("in message_rx %s\n",__PRETTY_FUNCTION__);
         // Keep running average of message distance
-        avg_dist    *= messages;
-        avg_message *= messages;
         int dist = estimate_distance(d);
         if (dist < min_dist)
             min_dist = dist;
-        avg_dist += dist;
         float msg = m->data[0];
-        avg_message += (msg-128)/128;
         messages ++;
-        avg_dist    /= messages;
-        avg_message /= messages;
-        //printf("%s got message at %d %d %f\n", pos->Token(), dist, messages, avg_dist);
     }
     
     
