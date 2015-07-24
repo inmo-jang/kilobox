@@ -64,6 +64,7 @@ float *NN::nn_update(float *inputs)
 void Evokilo1::setup()
 {
     last_update     = kilo_ticks;
+    last_region     = 0;
 }
 
 void Evokilo1::loop()
@@ -74,7 +75,6 @@ void Evokilo1::loop()
     if (kilo_ticks > last_update + 16)
     {
         last_update = kilo_ticks;
-        last_region = region;
         region = get_environment();
 
         // Every cycle, build the inputs to the neuron net, compute the outputs
@@ -127,6 +127,9 @@ void Evokilo1::loop()
         // visualise the internal state
         set_color(RGB(carrying?3:0, (region==NEST)?3:0, (region==FOOD)?3:0));
                 
+
+        // remember where we were
+        last_region = region;
 
 #ifdef DEBUG
         printf("%lu %d %d\r\n", kilo_ticks,region,carrying);
