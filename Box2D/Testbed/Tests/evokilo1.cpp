@@ -163,6 +163,8 @@ void Evokilo2::setup()
     // Construct a valid message
     msg.type    = NORMAL;
     msg.crc     = message_crc(&msg);
+    
+    last_region = 0;
 }
 
 void Evokilo2::loop()
@@ -174,7 +176,6 @@ void Evokilo2::loop()
     if (kilo_ticks > last_update + 16)
     {
         last_update = kilo_ticks;
-        last_region = region;
         region      = get_environment();
         
         // Every cycle, build the inputs to the neuron net, compute the outputs
@@ -236,7 +237,9 @@ void Evokilo2::loop()
         min_dist = 150;
     }
     
-    
+    // remember last region visited
+    last_region = region;
+
     
     //===========================================================================
     // Stage only, non kilobot logging
