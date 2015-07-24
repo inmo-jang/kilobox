@@ -71,8 +71,11 @@ public:
             //printf("Logfile is %s\n", logfile.c_str());
             log_open(logfile);
         }
-        
+        kilo_message_tx         = (message_tx_t)&Evokilo1::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&Evokilo1::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&Evokilo1::message_tx_success_dummy;
         setup();
+        
     }
     ~Evokilo1()
     {
@@ -160,7 +163,9 @@ public:
             //printf("Logfile is %s\n", logfile.c_str());
             log_open(logfile);
         }
-        
+        kilo_message_tx         = (message_tx_t)&Evokilo2::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&Evokilo2::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&Evokilo2::message_tx_success_dummy;
         setup();
     }
     ~Evokilo2()
