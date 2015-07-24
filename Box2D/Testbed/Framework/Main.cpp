@@ -57,6 +57,9 @@ namespace
 	int tx, ty, tw, th;
 	bool rMouseDown;
 	b2Vec2 lastp;
+
+    double realtime = 0.0;
+    double simtime = 0.0;
 }
 
 static void Resize(int32 w, int32 h)
@@ -107,11 +110,29 @@ static void Timer(int)
 	glutTimerFunc(framePeriod, Timer, 0);
 }
 
+void simstep()
+{
+    if (!settings.enableRealtime || (simtime < realtime))
+    {
+        test->Step(&settings);
+        if (!settings.pause)
+            simtime += 1.0/settingsHz;
+    }
+    else
+    {
+        int p = settings.pause;
+        settings.pause = 1;
+        test->Step(&settings);
+        settings.pause = p;
+    }
+}
+
 static void SimulationAdvance()
 {
     //STAMP("Advance");
     settings.time_to_draw = 0;
-	test->Step(&settings);
+    simstep();
+    printf("sim:%f real:%f\n",simtime, realtime);
 }
 
 static void SimulationDisplay()
@@ -127,15 +148,14 @@ static void SimulationDisplay()
 	settings.hz = settingsHz;
     
     settings.time_to_draw = 1;
-	test->Step(&settings);
-    
-	if (oldCenter.x != settings.viewCenter.x || oldCenter.y != settings.viewCenter.y)
-	{
-		Resize(width, height);
-	}
-    
+    simstep();
+
 	test->DrawTitle(entry->name);
     
+    if (!settings.pause)
+        realtime += 0.001 * framePeriod;
+
+    printf("sim:%f real:%f\n",simtime, realtime);
 	glutSwapBuffers();
     
 }
@@ -564,6 +584,10 @@ void rungui(int argc, char** argv)
 	glui->add_checkbox_to_panel(drawPanel, "Center of Masses", &settings.drawCOMs);
 	glui->add_checkbox_to_panel(drawPanel, "Statistics", &settings.drawStats);
 	glui->add_checkbox_to_panel(drawPanel, "Profile", &settings.drawProfile);
+
+	glui->add_separator();
+	glui->add_checkbox("Realtime", &settings.enableRealtime);
+	glui->add_separator();
 
 	int32 testCount = 0;
 	TestEntry* e = g_testEntries;

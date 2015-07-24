@@ -74,6 +74,7 @@ struct Settings
 		enableContinuous    = 1;
 		enableSubStepping   = 0;
 		enableSleep         = 1;
+        enableRealtime      = 0;
 		pause               = 1;
 		singleStep          = 0;
         time_to_draw        = 1;
@@ -121,6 +122,7 @@ struct Settings
 	int32 enableContinuous;
 	int32 enableSubStepping;
 	int32 enableSleep;
+    int32 enableRealtime;
 	int32 pause;
 	int32 singleStep;
     int32 time_to_draw;
