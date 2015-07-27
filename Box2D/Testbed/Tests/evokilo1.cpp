@@ -57,6 +57,9 @@ float *NN::nn_update(float *inputs)
 }
 
 
+
+//#define DEBUG
+
 #define NEST 1
 #define FOOD 2
 
@@ -147,7 +150,7 @@ void Evokilo1::loop()
             last_time += 1e6;
             char buf[1024];
             snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
-                     pos->GetPose().x, pos->GetPose().y, inputs[2],inputs[3],inputs[4], outputs[0],outputs[1]);
+                     pos->GetPose().x, pos->GetPose().y, inputs[1],inputs[2],inputs[3], outputs[0],outputs[1]);
             Evokilo1::log(buf);
         }
     }
@@ -235,12 +238,20 @@ void Evokilo2::loop()
         // Clear the message count
         messages = 0;
         min_dist = 150;
+
+        // remember last region visited
+        last_region = region;
+
+#ifdef DEBUG
+        printf("%lu %d %d\r\n", kilo_ticks,region,carrying);
+#endif
+
+
     }
     
-    // remember last region visited
-    last_region = region;
 
-    
+
+
     //===========================================================================
     // Stage only, non kilobot logging
     {
@@ -250,7 +261,7 @@ void Evokilo2::loop()
             last_time += 1e6;
             char buf[1024];
             snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
-                     pos->GetPose().x, pos->GetPose().y, inputs[2],inputs[3],inputs[4], outputs[0],outputs[1]);
+                     pos->GetPose().x, pos->GetPose().y, inputs[1],inputs[2],inputs[3], outputs[0],outputs[1]);
             Evokilo2::log(buf);
         }
     }

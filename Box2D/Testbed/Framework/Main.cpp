@@ -132,7 +132,7 @@ static void SimulationAdvance()
     //STAMP("Advance");
     settings.time_to_draw = 0;
     simstep();
-    printf("sim:%f real:%f\n",simtime, realtime);
+    //printf("sim:%f real:%f\n",simtime, realtime);
 }
 
 static void SimulationDisplay()
@@ -155,7 +155,7 @@ static void SimulationDisplay()
     if (!settings.pause)
         realtime += 0.001 * framePeriod;
 
-    printf("sim:%f real:%f\n",simtime, realtime);
+    //printf("sim:%f real:%f\n",simtime, realtime);
 	glutSwapBuffers();
     
 }

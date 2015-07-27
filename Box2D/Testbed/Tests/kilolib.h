@@ -157,6 +157,7 @@ namespace Kilolib
             master_tick_period  (32768),
             kilo_tx_period      (3906),
             message_period      (kilo_tx_period/timer0_freq),
+            last_message        (0),
             kilo_straight_left  (70),
             kilo_straight_right (70),
             kilo_turn_left      (70),
