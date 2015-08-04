@@ -134,17 +134,23 @@ void Kilobot::set_motors(int left_m, int right_m)
     // Generate noise terms for velocity goals
     // Motion noise arises from the behaviour of the vibrating motors. Don't
     // inject noise when the commanded motor values are zero, the kilobots will be
-    // subject to jiggling from others but won't have noise at zero motor speed
+    // subject to jiggling from others but won't have noise at zero motor speed.
+    //
+    // Likewise, inject motion bias of the individual robot only when moving
     float xdot_noise = 0.0;
     float omega_noise = 0.0;
+    float xdot_bias = 0.0;
+    float omega_bias = 0.0;
     if (left_m || right_m)
     {
-        xdot_noise = rand_gaussian(settings->kbxdotsigma);
-        omega_noise = rand_gaussian(settings->kbomegasigma);
+        xdot_noise  = rand_gaussian(settings->kbsigma_vnoise);
+        omega_noise = rand_gaussian(settings->kbsigma_omeganoise);
+        xdot_bias   = vbias;
+        omega_bias  = omegabias;
     }
     // Omega and xdot are our desired angular and forward linear velocities
-    xdot_goal   = ((left_m * k + right_m * k) / 2) + xdot_noise;
-    omega_goal  = ((left_m * k - right_m * k) / l) + omega_noise;
+    xdot_goal   = ((left_m * k + right_m * k) / 2) + xdot_noise + xdot_bias;
+    omega_goal  = ((left_m * k - right_m * k) / l) + omega_noise + omega_bias;
     // ydot is the effect of rotation off centre on the centre velocity
     ydot_goal   = o * omega_goal;
     

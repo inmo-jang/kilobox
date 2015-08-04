@@ -175,6 +175,11 @@ namespace Kilolib
 
             kilo_ticks_real = 0;//rand(0, 100);
             kilo_ticks      = kilo_ticks_real;
+            
+            // Give the kilobot its motion biasses
+            vbias = rand_gaussian(settings->kbsigma_vbias);
+            omegabias = rand_gaussian(settings->kbsigma_omegabias);
+            
         }
         ModelPosition   *pos;
         b2Body          *m_body;
@@ -224,6 +229,10 @@ namespace Kilolib
 
         // LED colour
         float led_r, led_g, led_b;
+        
+        // Motion bias
+        float                       vbias;
+        float                       omegabias;
         
         
 

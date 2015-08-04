@@ -341,7 +341,7 @@ bool Worldfile::LoadTokens(FILE *file, int include)
 // Read in a comment token
 bool Worldfile::LoadTokenComment(FILE *file, int *line, int include)
 {
-  char token[256];
+    char token[16384];
   int len;
   int ch;
 

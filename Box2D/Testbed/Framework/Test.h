@@ -88,8 +88,10 @@ struct Settings
         seed                = 1;
         //-----------------------
         // Specific kilobot settings
-        kbxdotsigma         = 0.0;
-        kbomegasigma        = 0.0;
+        kbsigma_vbias       = 0.0;
+        kbsigma_omegabias   = 0.01;
+        kbsigma_vnoise      = 0.0;
+        kbsigma_omeganoise  = 0.0;
         kbdia               = 0.031;
         kbdensity           = 10.0;
         kblineardamp        = 10.0;
@@ -135,6 +137,10 @@ struct Settings
     float elapsed_time;
     bool show_time;
     // kilobot sim parameters
+    float   kbsigma_vbias;
+    float   kbsigma_omegabias;
+    float   kbsigma_vnoise;
+    float   kbsigma_omeganoise;
     float   kbdia;
     float   kbdensity;
     float   kblineardamp;
@@ -142,8 +148,7 @@ struct Settings
     float   kbfriction;
     float   kbrestitution;
     float   kbsenserad;
-    float   kbxdotsigma;
-    float   kbomegasigma;
+
     float   kbspeedconst;
     float   kbwheeloffset;
     float   kbwheeldist;

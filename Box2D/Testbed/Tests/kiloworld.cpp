@@ -133,40 +133,44 @@ void Kiloworld::build_world()
     {
         printf("Got non-default kilobot parameters %s\n", settings->params.c_str());
         std::vector<std::string> params = split(settings->params);
-        if ((params.size() != 12) && (params.size() != 2))
+        if ((params.size() != 14) && (params.size() != 4))
         {
-            printf("Invalid parameter argument, should be 2 or 12 numbers, exitting..\n");
+            printf("Invalid parameter argument, should be 4 or 14 numbers, exitting..\n");
             exit(1);
         }
         
-        settings->kbxdotsigma         = std::stof(params[0]);
-        settings->kbomegasigma        = std::stof(params[1]);
-        if (params.size() == 12)
+        settings->kbsigma_vbias         = std::stof(params[0]);
+        settings->kbsigma_omegabias     = std::stof(params[1]);
+        settings->kbsigma_vnoise        = std::stof(params[2]);
+        settings->kbsigma_omeganoise    = std::stof(params[3]);
+        if (params.size() == 14)
         {
-            settings->kbdia               = std::stof(params[2]);
-            settings->kbdensity           = std::stof(params[3]);
-            settings->kblineardamp        = std::stof(params[4]);
-            settings->kbangulardamp       = std::stof(params[5]);
-            settings->kbfriction          = std::stof(params[6]);
-            settings->kbrestitution       = std::stof(params[7]);
-            settings->kbsenserad          = std::stof(params[8]);
-            settings->kbspeedconst        = std::stof(params[9]);
-            settings->kbwheeloffset       = std::stof(params[10]);
-            settings->kbwheeldist         = std::stof(params[11]);
+            settings->kbdia               = std::stof(params[4]);
+            settings->kbdensity           = std::stof(params[5]);
+            settings->kblineardamp        = std::stof(params[6]);
+            settings->kbangulardamp       = std::stof(params[7]);
+            settings->kbfriction          = std::stof(params[8]);
+            settings->kbrestitution       = std::stof(params[9]);
+            settings->kbsenserad          = std::stof(params[10]);
+            settings->kbspeedconst        = std::stof(params[11]);
+            settings->kbwheeloffset       = std::stof(params[12]);
+            settings->kbwheeldist         = std::stof(params[13]);
         }
         printf("Params are:\n");
-        printf("kbxdotsigma     %f\n",settings->kbxdotsigma);
-        printf("kbomegasigma    %f\n",settings->kbomegasigma);
-        printf("kbdia           %f\n",settings->kbdia);
-        printf("kbdensity       %f\n",settings->kbdensity);
-        printf("kblineardamp    %f\n",settings->kblineardamp);
-        printf("kbangulardamp   %f\n",settings->kbangulardamp);
-        printf("kbfriction      %f\n",settings->kbfriction);
-        printf("kbrestitution   %f\n",settings->kbrestitution);
-        printf("kbsenserad      %f\n",settings->kbsenserad);
-        printf("kbspeedconst    %f\n",settings->kbspeedconst);
-        printf("kbwheeloffset   %f\n",settings->kbwheeloffset);
-        printf("kbwheeldist     %f\n",settings->kbwheeldist);
+        printf("kbsigma_vbias       %f\n",settings->kbsigma_vbias);
+        printf("kbsigma_omegabias   %f\n",settings->kbsigma_omegabias);
+        printf("kbsigma_vnoise      %f\n",settings->kbsigma_vnoise);
+        printf("kbsigma_omeganoise  %f\n",settings->kbsigma_omeganoise);
+        printf("kbdia               %f\n",settings->kbdia);
+        printf("kbdensity           %f\n",settings->kbdensity);
+        printf("kblineardamp        %f\n",settings->kblineardamp);
+        printf("kbangulardamp       %f\n",settings->kbangulardamp);
+        printf("kbfriction          %f\n",settings->kbfriction);
+        printf("kbrestitution       %f\n",settings->kbrestitution);
+        printf("kbsenserad          %f\n",settings->kbsenserad);
+        printf("kbspeedconst        %f\n",settings->kbspeedconst);
+        printf("kbwheeloffset       %f\n",settings->kbwheeloffset);
+        printf("kbwheeldist         %f\n",settings->kbwheeldist);
     }
     
     // Get any command line args for the controllers
