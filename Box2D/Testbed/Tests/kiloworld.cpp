@@ -32,6 +32,8 @@ void Kiloworld::Step(Settings* settings)
     if (settings->time_to_draw)
     {
         render_arena();
+        for(int i=0; i<regions.size(); i++)
+            regions[i]->render();
         for(int i=0; i<bots.size(); i++)
             bots[i]->render();
 
@@ -57,10 +59,34 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
     {
         const char *typestr = (char*)wf->GetEntityType(entity);
         int entity_parent = wf->GetEntityParent(entity);
-        //printf("%d %d %s\n", entity, wf->GetEntityParent(entity), typestr);
+        printf("%d %d %s\n", entity, wf->GetEntityParent(entity), typestr);
         // We are interested in the entities of type position with parent entity 0
         // These are top level kilobit models within the world, grab the pose
         // data associated with them, and the controller
+        if (entity_parent == 0 && !strcmp(typestr, "region"))
+        {
+            // We define regions which return particular values from environmental 
+            // sensing
+            // Regions can be:
+            //  region ( circle [ <xpos> <ypos> <radius> <return> ] )
+            //  region ( rectangle [ <xpos> <ypos> <xsize> <ysize> <return> ] )
+            if (wf->PropertyExists(entity, "circle"))
+            {
+                double x, y, r;
+                int rt;
+                wf->ReadTuple(entity, "circle", 0, 4, "fffi", &x, &y, &r, &rt);
+                printf("circle %f %f %f %i\n", x, y, r, rt);
+                regions.push_back((Region*)(new Circle(x, y, r, rt)));
+            }
+            if (wf->PropertyExists(entity, "rectangle"))
+            {
+                double x, y, xs, ys;
+                int rt;
+                wf->ReadTuple(entity, "rectangle", 0, 5, "ffffi", &x, &y, &xs, &ys, &rt);
+                printf("rectangle %f %f %f %f %i\n", x, y, xs, ys, rt);
+                regions.push_back((Region*)(new Rectangle(x, y, xs, ys, rt)));
+            }
+        }
         if (entity_parent == 0 && !strcmp(typestr, "position"))
         {
             double x, y, z, a;
@@ -90,6 +116,7 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
             mod->pose.y = y + yoffset;
             mod->pose.a = a;
             mod->world = m_world;
+            mod->kworld = this;
             // tokenize the argument string into words
             std::vector<std::string> words = split(controller);
             //printf("ctrargs is %s %s\n", ctrlarg_words[0].c_str(), ctrlarg_words[1].c_str());
@@ -248,6 +275,86 @@ void Kiloworld::render_arena()
     glVertex2f( settings->kbnestfoodsep / 2.0,  ysize / 2.0);
     glEnd();
 }
+
+
+void Circle::render()
+{
+    glEnable(GL_BLEND);
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    switch(rt)
+    {
+        case(0): glColor4f(1.0, 1.0, 1.0, 0.2);break;
+        case(1): glColor4f(0.0, 1.0, 0.0, 0.2);break;
+        case(2): glColor4f(1.0, 0.0, 1.0, 0.2);break;
+        case(3): glColor4f(0.0, 1.0, 1.0, 0.2);break;
+    }
+    glBegin(GL_TRIANGLE_FAN);
+    for(int i=0; i<32; i++)
+    {
+        float th = i * 2.0 * M_PI / 32;
+        float xp = x + r * cos(th);
+        float yp = y + r * sin(th);
+        glVertex2f(xp, yp);
+    }
+    glEnd();
+    glDisable(GL_BLEND);
+}
+
+void Rectangle::render()
+{
+    glEnable(GL_BLEND);
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    switch(rt)
+    {
+        case(0): glColor4f(1.0, 1.0, 1.0, 0.2);break;
+        case(1): glColor4f(0.0, 1.0, 0.0, 0.2);break;
+        case(2): glColor4f(1.0, 0.0, 1.0, 0.2);break;
+        case(3): glColor4f(0.0, 1.0, 1.0, 0.2);break;
+    }
+    glBegin(GL_QUADS);
+    glVertex2f(x - xs/2, y - ys/2);
+    glVertex2f(x - xs/2, y + ys/2);
+    glVertex2f(x + xs/2, y + ys/2);
+    glVertex2f(x + xs/2, y - ys/2);
+    glEnd();
+    glDisable(GL_BLEND);
+}
+
+
+int Kiloworld::get_environment(float x, float y)
+{
+    // Ask all regions if we are in their area. Positive if yes,
+    // first to respond is used
+    for(int i=0; i<regions.size(); i++)
+    {
+        int r = regions[i]->read_region(x, y);
+        if (r >= 0)
+            return r;
+    }
+    return -1;
+}
+
+
+int Circle::read_region(float xp, float yp)
+{
+    //printf("Checking circle at %f %f %f %i\n", x, y, r, rt);
+    if (sqrt((xp - x) * (xp - x) + (yp - y) * (xp - y)) < r)
+        return rt;
+    return -1;
+}
+
+int Rectangle::read_region(float xp, float yp)
+{
+    //printf("Checking rectangle at %f %f %f %f%i\n", x, y, xs, ys, rt);
+    if (    (xp > (x - xs/2)) 
+        &&  (xp < (x + xs/2)) 
+        &&  (yp > (y - ys/2)) 
+        &&  (yp < (y + ys/2)))
+        return rt;
+    return -1;
+}
+
+
 
 
 

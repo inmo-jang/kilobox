@@ -121,6 +121,13 @@ void Kilobot::check_messages()
 
 void Kilobot::set_motors(int left_m, int right_m)
 {
+    current_left_m  = left_m;
+    current_right_m = right_m;
+
+}
+
+void Kilobot::update_motion()
+{
     // Speed constant, we know from \cite{rubenstein2012kilobot} that the speed
     // of the kilobot is approximately 0.01ms^-1, and the recommended
     // maximum motor power is ~100, so giving the constant
@@ -141,7 +148,7 @@ void Kilobot::set_motors(int left_m, int right_m)
     float omega_noise = 0.0;
     float xdot_bias = 0.0;
     float omega_bias = 0.0;
-    if (left_m || right_m)
+    if (current_left_m || current_right_m)
     {
         xdot_noise  = rand_gaussian(settings->kbsigma_vnoise);
         omega_noise = rand_gaussian(settings->kbsigma_omeganoise);
@@ -149,8 +156,8 @@ void Kilobot::set_motors(int left_m, int right_m)
         omega_bias  = omegabias;
     }
     // Omega and xdot are our desired angular and forward linear velocities
-    xdot_goal   = ((left_m * k + right_m * k) / 2) + xdot_noise + xdot_bias;
-    omega_goal  = ((left_m * k - right_m * k) / l) + omega_noise + omega_bias;
+    xdot_goal   = ((current_left_m * k + current_right_m * k) / 2) + xdot_noise + xdot_bias;
+    omega_goal  = ((current_left_m * k - current_right_m * k) / l) + omega_noise + omega_bias;
     // ydot is the effect of rotation off centre on the centre velocity
     ydot_goal   = o * omega_goal;
     
@@ -193,7 +200,6 @@ void Kilobot::update(float delta_t, float simtime)
     loop();
 
     // Leave pheromone trace in environment
-
     // Do the physics, this always happens every tick, regardless of loop schelduling
     // This consists of working out what forces to apply to get our desired goal velocities
     // and then applying them
@@ -202,6 +208,10 @@ void Kilobot::update(float delta_t, float simtime)
     // This is called damping in the Box2D world. Our goal velocities should thus translate 
     // directly into forces and torques via the damping constant
     //
+    // Update the goal velocities based on the current motor settings
+    // and the noise and bias values
+    update_motion();
+
     // The goal velocities are all in the frame of the kilobot, transform into world frame
     float xd = xdot_goal * cos(a) - ydot_goal * sin(a);
     float yd = xdot_goal * sin(a) + ydot_goal * cos(a);

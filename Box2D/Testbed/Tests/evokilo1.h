@@ -121,6 +121,7 @@ public:
     
     uint32_t    last_update     = 0;
     int         last_region     = 0;
+    int         last_output     = 0;
 
     uint8_t     carrying        = 0;
     int         total_food      = 0;
@@ -128,6 +129,7 @@ public:
     
     std::vector<float> inputs;
     float       *outputs;
+
     
     
     
@@ -212,6 +214,7 @@ public:
      
     uint32_t    last_update     = 0;
     int         last_region     = 0;   
+    int         last_output     = 0;
 
     message_t   msg;
     int         messages        = 0;

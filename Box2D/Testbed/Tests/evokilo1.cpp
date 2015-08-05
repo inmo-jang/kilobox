@@ -74,7 +74,7 @@ void Evokilo1::loop()
 {
     // Run the NN at the same rate as the message send, roughly twice a second
     // Always send a message
-    int region = 0;
+    int region;
     if (kilo_ticks > last_update + 16)
     {
         last_update = kilo_ticks;
@@ -117,12 +117,15 @@ void Evokilo1::loop()
                 set_motors(0,0);
                 break;
             case(1):
+                if (last_output == 0) spinup_motors();
                 set_motors(kilo_turn_left,0);
                 break;
             case(2):
+                if (last_output == 0) spinup_motors();
                 set_motors(0,kilo_turn_right);
                 break;
             case(3):
+                if (last_output == 0) spinup_motors();
                 set_motors(kilo_straight_left, kilo_straight_right);
                 break;
         }
@@ -133,6 +136,7 @@ void Evokilo1::loop()
 
         // remember where we were
         last_region = region;
+        last_output = d;
 
 #ifdef DEBUG
         printf("%lu %d %d\r\n", kilo_ticks,region,carrying);
@@ -175,7 +179,7 @@ void Evokilo2::loop()
     // Run the NN at the same rate as the message send, roughly twice a second
     // Always send a message
     
-    int region = 0;
+    int region;
     if (kilo_ticks > last_update + 16)
     {
         last_update = kilo_ticks;
@@ -222,12 +226,15 @@ void Evokilo2::loop()
                 set_motors(0,0);
                 break;
             case(1):
+                if (last_output == 0) spinup_motors();
                 set_motors(kilo_turn_left,0);
                 break;
             case(2):
+                if (last_output == 0) spinup_motors();
                 set_motors(0,kilo_turn_right);
                 break;
             case(3):
+                if (last_output == 0) spinup_motors();
                 set_motors(kilo_straight_left, kilo_straight_right);
                 break;
         }
@@ -241,17 +248,13 @@ void Evokilo2::loop()
 
         // remember last region visited
         last_region = region;
+        last_output = d;
 
 #ifdef DEBUG
         printf("%lu %d %d\r\n", kilo_ticks,region,carrying);
 #endif
-
-
     }
     
-
-
-
     //===========================================================================
     // Stage only, non kilobot logging
     {

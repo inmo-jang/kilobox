@@ -20,6 +20,7 @@
 
 #include "../Framework/Test.h"
 #include "../Framework/Render.h"
+#include "kiloworld.h"
 
 #define DEGTORAD 0.0174532925199432957f
 #define RADTODEG 57.295779513082320876f
@@ -85,6 +86,7 @@ public:
     CtrlArgs( std::string w, std::string c ) : worldfile(w), cmdline(c) {}
 };
 
+
 class ModelPosition
 {
 // Fake ModelPosition so that we can use the controller code as unchanged as possible from 
@@ -92,9 +94,9 @@ class ModelPosition
 public:
     ModelPosition() {}
 
-    b2World *world;
-    Pose pose;
-    Color color;
+    b2World     *world;
+    Pose        pose;
+    Color       color;
     Pose GetPose() 
     {
         return pose;
@@ -112,6 +114,8 @@ public:
     World *GetWorld() {return &fake_world;}
     std::string token;
     const char *Token() {return token.c_str();}
+    // hold ref to kiloworld so we can access 
+    Kilolib::Kiloworld *kworld;
 };
 
 
@@ -121,12 +125,7 @@ namespace Kilolib
     // Forward declarations
     class Kilobot;
 
-    // Subclass the built in contact class
-    class KBContactListener : public b2ContactListener
-    {
-        void BeginContact(b2Contact *contact);
-        void EndContact(b2Contact *contact);
-    };
+
 
 
     enum entityCategory
@@ -153,6 +152,8 @@ namespace Kilolib
             led_r               (1.0),
             led_g               (1.0),
             led_b               (1.0),
+            current_left_m      (0),
+            current_right_m     (0),
             timer0_freq         (8e6/1024),
             master_tick_period  (32768),
             kilo_tx_period      (3906),
@@ -177,8 +178,8 @@ namespace Kilolib
             kilo_ticks      = kilo_ticks_real;
             
             // Give the kilobot its motion biasses
-            vbias = rand_gaussian(settings->kbsigma_vbias);
-            omegabias = rand_gaussian(settings->kbsigma_omegabias);
+            vbias           = rand_gaussian(settings->kbsigma_vbias);
+            omegabias       = rand_gaussian(settings->kbsigma_omegabias);
             
         }
         ModelPosition   *pos;
@@ -203,6 +204,7 @@ namespace Kilolib
 
 
         void render();
+        void update_motion();
         void update(float delta_t, float simtime);
 
     private:
@@ -230,6 +232,9 @@ namespace Kilolib
         // LED colour
         float led_r, led_g, led_b;
         
+        // Current motor values
+        int                         current_left_m;
+        int                         current_right_m;
         // Motion bias
         float                       vbias;
         float                       omegabias;
@@ -391,20 +396,7 @@ namespace Kilolib
         void    rand_seed(uint16_t s)    {
             gen.seed(s);
         }
-        int16_t get_ambientlight()
-        {
-            // ADC is 10 bits
-            //
-            // Return a low value for nest region, to the left,
-            // a high value for the food region, to the right,
-            // and zero for the wasteland in between
-            float d = settings->kbnestfoodsep / 2.0;
-            if (pos->pose.x < -d)
-                return 100;
-            if (pos->pose.x > d)
-                return 900;
-            return 0;
-        }
+
         int16_t get_voltage()           {return 0;}
         int16_t get_temperature()       {return 0;}
 
@@ -418,12 +410,9 @@ namespace Kilolib
             //
             // Now actually implemented based on the modulation pattern
             // of the DLP projector
-            float d = settings->kbnestfoodsep / 2.0;
-            if (pos->pose.x < -d)
-                return 1;
-            if (pos->pose.x > d)
-                return 2;
-            return 3;
+
+            int env = pos->kworld->get_environment(pos->pose.x, pos->pose.y);
+            return env;
         }
         //-------------------------------------------------
 
@@ -463,10 +452,7 @@ namespace Kilolib
             led_g = ((rgb>>2)&0x3)/3.0;
             led_b = ((rgb>>4)&0x3)/3.0;
         }
-      
-        
     };
-
 };
 
 
