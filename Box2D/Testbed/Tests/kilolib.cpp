@@ -191,6 +191,12 @@ void Kilobot::update(float delta_t, float simtime)
     float a     = m_body->GetAngle();
     pos->pose.a = a;
     pos->fake_world.simtime = (usec_t) us_simtime;
+    
+    // Log the position if making trails
+    if (settings->enableTrails)
+    {
+        trail.push_back(pos->pose);
+    }
 
     // Handle message system
     check_messages();
@@ -249,7 +255,7 @@ void DrawSolidCircle(const b2Vec2& center, float32 radius, const b2Vec2& axis, c
     if (solid)
 	    glColor4f(color.r, color.g, color.b, 1.0f);
     else
-	    glColor4f(color.r, color.g, color.b, 0.2f);
+	    glColor4f(color.r, color.g, color.b, 0.1f);
 	glBegin(GL_TRIANGLE_FAN);
 	for (int32 i = 0; i < k_segments; ++i)
 	{
@@ -304,6 +310,18 @@ void Kilobot::render()
         glVertex2f(theirpos.x, theirpos.y);
     }
     glEnd();
+    
+    if (settings->enableTrails && (trail.size() > 1))
+    {
+        glColor3f(0,0,0);
+        glBegin(GL_LINES);
+        for(int i=0; i<trail.size()-1; i++)
+        {
+            glVertex2f(trail[i].x, trail[i].y);
+            glVertex2f(trail[i+1].x, trail[i+1].y);
+        }
+        glEnd();
+    }
 }
 
 bool get_contact(b2Contact *contact, Kilobot *&sender, Kilobot *&receiver)

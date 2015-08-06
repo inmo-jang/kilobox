@@ -14,6 +14,7 @@
 
 //#include "kilolib.h"
 #include "worldfile.h"
+#include <random>
 
 
 namespace Kilolib

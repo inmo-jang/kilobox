@@ -112,6 +112,12 @@ static void Timer(int)
 
 void simstep()
 {
+    static int last_rt = 0;
+    if (!last_rt && settings.enableRealtime)
+        // Fast forward realtime to current simtime if just enabled realtime
+        realtime = simtime;
+    last_rt = settings.enableRealtime;
+    
     if (!settings.enableRealtime || (simtime < realtime))
     {
         test->Step(&settings);
@@ -586,6 +592,7 @@ void rungui(int argc, char** argv)
 	glui->add_checkbox_to_panel(drawPanel, "Profile", &settings.drawProfile);
 
 	glui->add_separator();
+	glui->add_checkbox("Trails", &settings.enableTrails);
 	glui->add_checkbox("Realtime", &settings.enableRealtime);
 	glui->add_separator();
 

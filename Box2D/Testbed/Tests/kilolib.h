@@ -228,6 +228,9 @@ namespace Kilolib
         // Pheromone strength
         float                      pheromone;
         ModelStigmergy::colour_t    ambient;
+        
+        // Vector of locations to plot trails
+        std::vector<Pose>           trail;
 
         // LED colour
         float led_r, led_g, led_b;
@@ -412,6 +415,7 @@ namespace Kilolib
             // of the DLP projector
 
             int env = pos->kworld->get_environment(pos->pose.x, pos->pose.y);
+            //printf("x:%10f y:%10f rt:%2i\n",pos->pose.x, pos->pose.y, env);
             return env;
         }
         //-------------------------------------------------

@@ -240,7 +240,7 @@ void Evokilo2::loop()
         }
         
         // visualise the internal state
-        set_color(RGB(carrying?3:0, (region==NEST)?3:0, (region==FOOD)?3:0));
+        set_color(RGB(carrying?2:0, (region==NEST)?3:0, (region==FOOD)?3:0));
         
         // Clear the message count
         messages = 0;

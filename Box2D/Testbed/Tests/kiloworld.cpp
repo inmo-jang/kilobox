@@ -59,7 +59,7 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
     {
         const char *typestr = (char*)wf->GetEntityType(entity);
         int entity_parent = wf->GetEntityParent(entity);
-        printf("%d %d %s\n", entity, wf->GetEntityParent(entity), typestr);
+        //printf("%d %d %s\n", entity, wf->GetEntityParent(entity), typestr);
         // We are interested in the entities of type position with parent entity 0
         // These are top level kilobit models within the world, grab the pose
         // data associated with them, and the controller
@@ -75,7 +75,7 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
                 double x, y, r;
                 int rt;
                 wf->ReadTuple(entity, "circle", 0, 4, "fffi", &x, &y, &r, &rt);
-                printf("circle %f %f %f %i\n", x, y, r, rt);
+                //printf("circle %f %f %f %i\n", x, y, r, rt);
                 regions.push_back((Region*)(new Circle(x, y, r, rt)));
             }
             if (wf->PropertyExists(entity, "rectangle"))
@@ -83,7 +83,7 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
                 double x, y, xs, ys;
                 int rt;
                 wf->ReadTuple(entity, "rectangle", 0, 5, "ffffi", &x, &y, &xs, &ys, &rt);
-                printf("rectangle %f %f %f %f %i\n", x, y, xs, ys, rt);
+                //printf("rectangle %f %f %f %f %i\n", x, y, xs, ys, rt);
                 regions.push_back((Region*)(new Rectangle(x, y, xs, ys, rt)));
             }
         }
@@ -338,7 +338,7 @@ int Kiloworld::get_environment(float x, float y)
 int Circle::read_region(float xp, float yp)
 {
     //printf("Checking circle at %f %f %f %i\n", x, y, r, rt);
-    if (sqrt((xp - x) * (xp - x) + (yp - y) * (xp - y)) < r)
+    if (sqrt((xp - x) * (xp - x) + (yp - y) * (yp - y)) < r)
         return rt;
     return -1;
 }
