@@ -55,6 +55,40 @@ static std::vector<std::string> split(std::string s)
 
 void Kiloworld::parse_worldfile(float xoffset, float yoffset)
 {
+    // Scan the parsed data structure, first for a global defn, then
+    // for everything else, since the global settings my impact on the rest
+    // eg for choosing a random bias value
+    for(int entity=1; entity < wf->GetEntityCount(); entity++)
+    {
+        const char *typestr = (char*)wf->GetEntityType(entity);
+        int entity_parent = wf->GetEntityParent(entity);
+        if (entity_parent == 0 && !strcmp(typestr, "global"))
+        {
+            // simulation parameters may be defined on the command line
+            // with the '--params' option, or with:
+            //  global ( params [ <val1> <val1> ... <val14> ] )
+            // Each val is floating point and has the same meaning as the 
+            // command line params
+            if (wf->PropertyExists(entity, "params"))
+            {
+                wf->ReadTuple(entity, "params", 0, 14, "ffffffffffffff",
+                    &(settings->kbsigma_vbias),
+                    &(settings->kbsigma_omegabias),
+                    &(settings->kbsigma_vnoise),
+                    &(settings->kbsigma_omeganoise),
+                    &(settings->kbdia),
+                    &(settings->kbdensity),
+                    &(settings->kblineardamp),
+                    &(settings->kbangulardamp),
+                    &(settings->kbfriction),
+                    &(settings->kbrestitution),
+                    &(settings->kbsenserad),
+                    &(settings->kbspeedconst),
+                    &(settings->kbwheeloffset),
+                    &(settings->kbwheeldist));
+            }
+        }
+    }
     for(int entity=1; entity < wf->GetEntityCount(); entity++)
     {
         const char *typestr = (char*)wf->GetEntityType(entity);
@@ -72,7 +106,7 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
             //  region ( rectangle [ <xpos> <ypos> <xsize> <ysize> <return> ] )
             if (wf->PropertyExists(entity, "circle"))
             {
-                double x, y, r;
+                float x, y, r;
                 int rt;
                 wf->ReadTuple(entity, "circle", 0, 4, "fffi", &x, &y, &r, &rt);
                 //printf("circle %f %f %f %i\n", x, y, r, rt);
@@ -80,7 +114,7 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
             }
             if (wf->PropertyExists(entity, "rectangle"))
             {
-                double x, y, xs, ys;
+                float x, y, xs, ys;
                 int rt;
                 wf->ReadTuple(entity, "rectangle", 0, 5, "ffffi", &x, &y, &xs, &ys, &rt);
                 //printf("rectangle %f %f %f %f %i\n", x, y, xs, ys, rt);
@@ -183,21 +217,6 @@ void Kiloworld::build_world()
             settings->kbwheeloffset       = std::stof(params[12]);
             settings->kbwheeldist         = std::stof(params[13]);
         }
-        printf("Params are:\n");
-        printf("kbsigma_vbias       %f\n",settings->kbsigma_vbias);
-        printf("kbsigma_omegabias   %f\n",settings->kbsigma_omegabias);
-        printf("kbsigma_vnoise      %f\n",settings->kbsigma_vnoise);
-        printf("kbsigma_omeganoise  %f\n",settings->kbsigma_omeganoise);
-        printf("kbdia               %f\n",settings->kbdia);
-        printf("kbdensity           %f\n",settings->kbdensity);
-        printf("kblineardamp        %f\n",settings->kblineardamp);
-        printf("kbangulardamp       %f\n",settings->kbangulardamp);
-        printf("kbfriction          %f\n",settings->kbfriction);
-        printf("kbrestitution       %f\n",settings->kbrestitution);
-        printf("kbsenserad          %f\n",settings->kbsenserad);
-        printf("kbspeedconst        %f\n",settings->kbspeedconst);
-        printf("kbwheeloffset       %f\n",settings->kbwheeloffset);
-        printf("kbwheeldist         %f\n",settings->kbwheeldist);
     }
     
     // Get any command line args for the controllers
@@ -215,6 +234,21 @@ void Kiloworld::build_world()
             parse_worldfile(xp, yp);
         }
     }
+    printf("Params are:\n");
+    printf("kbsigma_vbias       %f\n",settings->kbsigma_vbias);
+    printf("kbsigma_omegabias   %f\n",settings->kbsigma_omegabias);
+    printf("kbsigma_vnoise      %f\n",settings->kbsigma_vnoise);
+    printf("kbsigma_omeganoise  %f\n",settings->kbsigma_omeganoise);
+    printf("kbdia               %f\n",settings->kbdia);
+    printf("kbdensity           %f\n",settings->kbdensity);
+    printf("kblineardamp        %f\n",settings->kblineardamp);
+    printf("kbangulardamp       %f\n",settings->kbangulardamp);
+    printf("kbfriction          %f\n",settings->kbfriction);
+    printf("kbrestitution       %f\n",settings->kbrestitution);
+    printf("kbsenserad          %f\n",settings->kbsenserad);
+    printf("kbspeedconst        %f\n",settings->kbspeedconst);
+    printf("kbwheeloffset       %f\n",settings->kbwheeloffset);
+    printf("kbwheeldist         %f\n",settings->kbwheeldist);
 
 }
 

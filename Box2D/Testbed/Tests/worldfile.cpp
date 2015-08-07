@@ -1546,6 +1546,10 @@ int Worldfile::ReadTuple( const int entity, const char *name,
 	  break;
 
 	case 'f': // float
+	  *va_arg( args, float* ) = atof(val);
+	  break;
+	  
+	case 'd': // double
 	  *va_arg( args, double* ) = atof(val);
 	  break;
 	  
