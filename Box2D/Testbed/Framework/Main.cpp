@@ -474,7 +474,7 @@ int main(int argc, char** argv)
                 puts( USAGE );
                 break;
             case 's':
-                settings.seed = strtol(optarg, 0, 0);
+                settings.seed = strtol(optarg, 0, 10);
                 printf("Set random seed to %d\n", settings.seed);
                 break;
             case 'p':

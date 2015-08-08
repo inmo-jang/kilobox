@@ -300,13 +300,6 @@ void Kiloworld::render_arena()
         }
         glEnd();
     }
-    // Draw lines for the nest, food regions
-    glColor3f(1.0f, 0.0f, 0.0f);
-    glBegin(GL_LINES);
-    glVertex2f(-settings->kbnestfoodsep / 2.0, -ysize / 2.0);
-    glVertex2f(-settings->kbnestfoodsep / 2.0,  ysize / 2.0);
-    glVertex2f( settings->kbnestfoodsep / 2.0, -ysize / 2.0);
-    glVertex2f( settings->kbnestfoodsep / 2.0,  ysize / 2.0);
     glEnd();
 }
 
@@ -317,7 +310,7 @@ void Circle::render()
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     switch(rt)
     {
-        case(0): glColor4f(1.0, 1.0, 1.0, 0.2);break;
+        case(0): glColor4f(0.9, 0.9, 0.9, 1.0);break;
         case(1): glColor4f(0.0, 1.0, 0.0, 0.2);break;
         case(2): glColor4f(1.0, 0.0, 1.0, 0.2);break;
         case(3): glColor4f(0.0, 1.0, 1.0, 0.2);break;
@@ -340,7 +333,7 @@ void Rectangle::render()
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     switch(rt)
     {
-        case(0): glColor4f(1.0, 1.0, 1.0, 0.2);break;
+        case(0): glColor4f(0.9, 0.9, 0.9, 1.0);break;
         case(1): glColor4f(0.0, 1.0, 0.0, 0.2);break;
         case(2): glColor4f(1.0, 0.0, 1.0, 0.2);break;
         case(3): glColor4f(0.0, 1.0, 1.0, 0.2);break;
@@ -359,13 +352,13 @@ int Kiloworld::get_environment(float x, float y)
 {
     // Ask all regions if we are in their area. Positive if yes,
     // first to respond is used
-    for(int i=0; i<regions.size(); i++)
+    for(int i=regions.size()-1; i>=0; i--)
     {
         int r = regions[i]->read_region(x, y);
         if (r >= 0)
             return r;
     }
-    return -1;
+    return 0;
 }
 
 
