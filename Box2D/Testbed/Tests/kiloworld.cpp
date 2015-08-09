@@ -40,6 +40,14 @@ void Kiloworld::Step(Settings* settings)
         std::string s = string_format("Time:%8.2f", simtime);
         m_debugDraw.DrawString(5, m_textLine, s.c_str());
         m_textLine += 15;
+        
+        // Get total food
+        int f = 0;
+        for(int i=0; i<bots.size(); i++)
+            f += bots[i]->metric();
+        s = string_format("Food:%8i", f);
+        m_debugDraw.DrawString(5, m_textLine, s.c_str());
+        m_textLine += 15;
     }
 }
 

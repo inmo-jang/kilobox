@@ -148,8 +148,8 @@ public:
     words   (_words),
     logfile (_logfile),
     // Set the size of the neural net
-    nn      (6, 6, 2),
-    inputs  (6)
+    nn      (7, 7, 3),
+    inputs  (7)
     {
         if (words.size()-1 == nn.NN_NUM_WEIGHTS)
             for(int i=0; i<nn.NN_NUM_WEIGHTS; i++)
@@ -201,7 +201,9 @@ public:
     std::string logfile;
 
     // Hold usecs so we can log every second
-    int last_time = 0;  
+    int last_time = 0;
+    
+    float metric() {return total_food;}
 
     //------------------------------------------------------------
     // Kilobot user functions
@@ -218,7 +220,8 @@ public:
 
     message_t   msg;
     int         messages        = 0;
-    float       min_dist        = 150;
+    int         min_dist        = 150;
+    uint32_t    msgsum          = 0;
 
     uint8_t     carrying        = 0;
     int         total_food      = 0;
@@ -242,7 +245,7 @@ public:
         int dist = estimate_distance(d);
         if (dist < min_dist)
             min_dist = dist;
-        float msg = m->data[0];
+        msgsum += (uint8_t)(m->data[0]);
         messages ++;
     }
     

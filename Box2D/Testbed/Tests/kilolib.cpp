@@ -97,12 +97,13 @@ void Kilobot::check_messages()
                 distance_measurement_t  d;
                 d.low_gain = dist;
                 // Put the message on the queue
-                //printf("placing msg from %s in %s dist %d\n",pos->Token(),bot->pos->Token(), dist);
                 m_event_t sendmsg;
                 sendmsg.m = *msg;
                 sendmsg.d = d;
                 sendmsg.s = pos->Token();
                 meq.push(sendmsg);
+                //printf("placing msg from %s in %s dist %d dat %i\n",
+                //       pos->Token(),bot->pos->Token(), dist, sendmsg.m.data[0]);
             }
         }
     }
@@ -113,7 +114,8 @@ void Kilobot::check_messages()
     while (!meq.empty())
     {
         (*this.*kilo_message_rx)(&meq.front().m, &meq.front().d);
-        //printf("%s got message from distance %s %i\n", pos->Token(), meq.front().s.c_str(), meq.front().d.low_gain);
+        //printf("%s got message from distance %s %i %i\n",
+        //       pos->Token(), meq.front().s.c_str(), meq.front().d.low_gain, meq.front().m.data[0]);
         meq.pop();
     }
  
@@ -297,7 +299,8 @@ void Kilobot::render()
     //printf("##id:%5d x:%8.4f y:%8.4f\n", kilo_uid, mypos.x, mypos.y);
 
 
-    DrawSolidCircle(mypos, settings->kbsenserad, b2Mul(xf, b2Vec2(1.0f, 0.0f)), b2Color(0.1, 0.0, 1.0), false, false);
+    DrawSolidCircle(mypos, settings->kbsenserad, b2Mul(xf, b2Vec2(1.0f, 0.0f)),
+                    b2Color(msgcolour.r, msgcolour.g, msgcolour.b), false, false);
     DrawSolidCircle(mypos, settings->kbdia/2, b2Mul(xf, b2Vec2(1.0f, 0.0f)), b2Color(led_r, led_g, led_b), true, true);
 
 

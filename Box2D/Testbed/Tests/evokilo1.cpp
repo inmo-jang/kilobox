@@ -211,9 +211,12 @@ void Evokilo2::loop()
         inputs[3]   = carrying ? 1.0 : -1.0;
         
         // Distance to nearest neighbours
-        inputs[4]   = min_dist;
+        inputs[4]   = (float)min_dist / 100.0;
         // Number of neighbours
         inputs[5]   = messages;
+        // Average message
+        float avgmsg = messages==0 ? 0.0 : ((float)msgsum/messages - 128.0) / 100.0;
+        inputs[6]   = avgmsg;
         
         // Run the neural net
         outputs     = nn.nn_update(&inputs[0]);
@@ -239,12 +242,20 @@ void Evokilo2::loop()
                 break;
         }
         
+        // Message output
+        msg.data[0] = (outputs[2] + 1.0) * 250;
+        msg.crc     = message_crc(&msg);
+
+        
         // visualise the internal state
         set_color(RGB(carrying?2:0, (region==NEST)?3:0, (region==FOOD)?3:0));
+        //set_color_msg((outputs[2] + 1.0) / 2.0);
+        set_color_msg(carrying);
         
-        // Clear the message count
-        messages = 0;
-        min_dist = 150;
+        // Clear the message variables
+        messages    = 0;
+        msgsum      = 0;
+        min_dist    = 150;
 
         // remember last region visited
         last_region = region;
@@ -263,8 +274,8 @@ void Evokilo2::loop()
         {
             last_time += 1e6;
             char buf[1024];
-            snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
-                     pos->GetPose().x, pos->GetPose().y, inputs[1],inputs[2],inputs[3], outputs[0],outputs[1]);
+            snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f %12f\n", pos->Token(), time/1e6,
+                     pos->GetPose().x, pos->GetPose().y, inputs[1],inputs[2],inputs[3], outputs[0],outputs[1], outputs[2]);
             Evokilo2::log(buf);
         }
     }
