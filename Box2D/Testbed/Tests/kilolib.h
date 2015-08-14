@@ -526,12 +526,16 @@ namespace Kilolib
         int   rand_intrange(int low, int high)
         {
             std::uniform_int_distribution<>   dist(low, high);
-            return dist(gen);
+            int r = dist(gen);
+            //printf("int   %10s %10i\n",pos->Token(), r);
+            return r;
         }
         float rand_gaussian(float sigma)
         {
             std::normal_distribution<float> dist(0.0, sigma);
-            return dist(gen);
+            float r = dist(gen);
+            //printf("float %10s %10f %10f\n",pos->Token(), sigma, r);
+            return r;
         }
 
         //------------------------------------------------------------

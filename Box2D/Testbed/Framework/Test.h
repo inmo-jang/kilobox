@@ -90,7 +90,7 @@ struct Settings
         //-----------------------
         // Specific kilobot settings
         kbsigma_vbias       = 0.0;
-        kbsigma_omegabias   = 0.01;
+        kbsigma_omegabias   = 0.0;
         kbsigma_vnoise      = 0.0;
         kbsigma_omeganoise  = 0.0;
         kbdia               = 0.031;
