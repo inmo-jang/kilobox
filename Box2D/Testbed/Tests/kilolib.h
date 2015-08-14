@@ -491,7 +491,7 @@ namespace Kilolib
 
         
         // Each kilobot has its own random number generator
-        std::default_random_engine  gen;
+        std::mt19937  gen;
 
         // Pointers to all kilobots within message range
         std::vector<Kilobot*>       inrange_bots;

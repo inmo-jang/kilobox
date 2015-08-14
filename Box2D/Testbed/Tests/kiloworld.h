@@ -141,7 +141,7 @@ namespace Kilolib
         }
         
         // Set up a random number generator
-        std::default_random_engine              gen;
+        std::mt19937              gen;
 
         // arena
         //b2Body *arena;
