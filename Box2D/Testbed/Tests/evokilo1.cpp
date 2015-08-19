@@ -215,7 +215,7 @@ void Evokilo2::loop()
         // Number of neighbours
         inputs[5]   = messages;
         // Average message
-        float avgmsg = messages==0 ? 0.0 : ((float)msgsum/messages - 128.0) / 100.0;
+        float avgmsg = msgsum / messages;
         inputs[6]   = avgmsg;
         
         // Run the neural net
@@ -243,14 +243,14 @@ void Evokilo2::loop()
         }
         
         // Message output
-        msg.data[0] = (outputs[2] + 1.0) * 250;
+        *(float*)msg.data = outputs[2];
         msg.crc     = message_crc(&msg);
 
         
         // visualise the internal state
         set_color(RGB(carrying?2:0, (region==NEST)?3:0, (region==FOOD)?3:0));
-        //set_color_msg((outputs[2] + 1.0) / 2.0);
-        set_color_msg(carrying);
+        set_color_msg((outputs[2] + 1.0) / 2.0);
+        //set_color_msg(carrying);
         
         // Clear the message variables
         messages    = 0;

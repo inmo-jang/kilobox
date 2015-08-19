@@ -221,7 +221,7 @@ public:
     message_t   msg;
     int         messages        = 0;
     int         min_dist        = 150;
-    uint32_t    msgsum          = 0;
+    float       msgsum          = 0;
 
     uint8_t     carrying        = 0;
     int         total_food      = 0;
@@ -245,7 +245,7 @@ public:
         int dist = estimate_distance(d);
         if (dist < min_dist)
             min_dist = dist;
-        msgsum += (uint8_t)(m->data[0]);
+        msgsum += *(float*)m->data;
         messages ++;
     }
     
