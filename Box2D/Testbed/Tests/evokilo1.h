@@ -232,7 +232,7 @@ public:
     
     
     // Message transmission callback
-    message_t *tx_message()
+    message_t *tx_message() 
     {
         return &msg;
     }
