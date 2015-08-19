@@ -215,7 +215,7 @@ void Evokilo2::loop()
         // Number of neighbours
         inputs[5]   = messages;
         // Average message
-        float avgmsg = msgsum / messages;
+        float avgmsg = messages > 0 ? msgsum / messages : 0.0;
         inputs[6]   = avgmsg;
         
         // Run the neural net
