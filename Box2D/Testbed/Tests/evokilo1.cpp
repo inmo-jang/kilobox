@@ -243,7 +243,8 @@ void Evokilo2::loop()
         }
         
         // Message output direct from neuron
-        *(float*)msg.data = outputs[2];
+        float m = outputs[2];
+        memcpy(msg.data, &m, 4);
         msg.crc     = message_crc(&msg);
 
         

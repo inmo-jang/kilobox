@@ -245,7 +245,9 @@ public:
         int dist = estimate_distance(d);
         if (dist < min_dist)
             min_dist = dist;
-        msgsum += *(float*)m->data;
+        float mf;
+        memcpy(&mf, m->data, 4);
+        msgsum += mf;
         messages ++;
     }
     
