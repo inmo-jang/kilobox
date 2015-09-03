@@ -170,20 +170,15 @@ void Kilobot::update_motion()
 void Kilobot::update(float delta_t, float simtime)
 {
     dt = delta_t;
+    world_us_simtime = simtime * 1e6;
     // Update the kilobot tick counter
-    // Because user programs can change kilo_ticks, we check to see if the
-    // visible integer count has changed dramatically from the real internal
-    // time. If so, adjust the internal time. The tick frequency is about
-    // 30Hz, so for an update rate of 10Hz it should only ever differ by 3,
-    // for an update rate of 60Hz, should only differ by 1
-    usec_t us_simtime = simtime * 1e6;
+    //
+    // Create an internal local time in us, adjusted to use the offset and bias
+    // of this kilobot. This should mean that kilobots drift with respect to each other
+    usec_t us_simtime = (simtime * 1e6 + clkoffset) * clkbias;
     kilo_ticks_real = us_simtime / master_tick_period;
-    // ##FIXME!! SJ this doesn't work, we don't care at this point since we do not
-    // alter kilo_ticks in user code
-    //if (abs(kilo_ticks_real - kilo_ticks) > 3)
-    //    kilo_ticks_real = kilo_ticks;
-    //else
-        kilo_ticks = kilo_ticks_real;
+
+    kilo_ticks = kilo_ticks_real;
     
 
     // Update our fake ModelPosition that the controller can see
@@ -297,22 +292,67 @@ void Kilobot::render()
     //float a = m_body->GetAngle();
     const b2Transform &xf = m_body->GetTransform();
     //printf("##id:%5d x:%8.4f y:%8.4f\n", kilo_uid, mypos.x, mypos.y);
-
-
+    
+    
     DrawSolidCircle(mypos, settings->kbsenserad, b2Mul(xf, b2Vec2(1.0f, 0.0f)),
                     b2Color(msgcolour.r, msgcolour.g, msgcolour.b), false, false);
     DrawSolidCircle(mypos, settings->kbdia/2, b2Mul(xf, b2Vec2(1.0f, 0.0f)), b2Color(led_r, led_g, led_b), true, true);
-
-
-    glColor3f(1,1,1);//white
-    glBegin(GL_LINES);
-    for (int i = 0; i < inrange_bots.size(); i++) {
-        b2Vec2 theirpos = inrange_bots[i]->m_body->GetPosition();
-        //printf("  id:%5d x:%8.4f y:%8.4f\n", inrange_bots[i]->kb_id, theirpos.x, theirpos.y);
-        glVertex2f(mypos.x, mypos.y);
-        glVertex2f(theirpos.x, theirpos.y);
+    
+    
+    //glColor3f(1,1,1);//white
+    //glBegin(GL_LINES);
+    //for (int i = 0; i < inrange_bots.size(); i++) {
+    //    b2Vec2 theirpos = inrange_bots[i]->m_body->GetPosition();
+    //    //printf("  id:%5d x:%8.4f y:%8.4f\n", inrange_bots[i]->kb_id, theirpos.x, theirpos.y);
+    //    glVertex2f(mypos.x, mypos.y);
+    //    glVertex2f(theirpos.x, theirpos.y);
+    //}
+    //glEnd();
+    
+    if (settings->enableTrails && (trail.size() > 1))
+    {
+        glColor3f(0,0,0);
+        glBegin(GL_LINES);
+        for(int i=0; i<trail.size()-1; i++)
+        {
+            glVertex2f(trail[i].x, trail[i].y);
+            glVertex2f(trail[i+1].x, trail[i+1].y);
+        }
+        glEnd();
     }
-    glEnd();
+}
+
+void Kilobot::rendersensor()
+{
+    b2Vec2 mypos = m_body->GetPosition();
+    //float a = m_body->GetAngle();
+    const b2Transform &xf = m_body->GetTransform();
+    //printf("##id:%5d x:%8.4f y:%8.4f\n", kilo_uid, mypos.x, mypos.y);
+    
+    DrawSolidCircle(mypos, settings->kbsenserad, b2Mul(xf, b2Vec2(1.0f, 0.0f)),
+                    b2Color(msgcolour.r, msgcolour.g, msgcolour.b), false, false);
+
+}
+
+void Kilobot::renderbody()
+{
+    b2Vec2 mypos = m_body->GetPosition();
+    //float a = m_body->GetAngle();
+    const b2Transform &xf = m_body->GetTransform();
+    //printf("##id:%5d x:%8.4f y:%8.4f\n", kilo_uid, mypos.x, mypos.y);
+
+    DrawSolidCircle(mypos, settings->kbdia/2, b2Mul(xf, b2Vec2(1.0f, 0.0f)), b2Color(led_r, led_g, led_b), true, true);
+    
+    
+    //glColor3f(1,1,1);//white
+    //glBegin(GL_LINES);
+    //for (int i = 0; i < inrange_bots.size(); i++) {
+    //    b2Vec2 theirpos = inrange_bots[i]->m_body->GetPosition();
+    //    //printf("  id:%5d x:%8.4f y:%8.4f\n", inrange_bots[i]->kb_id, theirpos.x, theirpos.y);
+    //    glVertex2f(mypos.x, mypos.y);
+    //    glVertex2f(theirpos.x, theirpos.y);
+    //}
+    //glEnd();
     
     if (settings->enableTrails && (trail.size() > 1))
     {

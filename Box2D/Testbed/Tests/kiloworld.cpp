@@ -34,8 +34,11 @@ void Kiloworld::Step(Settings* settings)
         render_arena();
         for(int i=0; i<regions.size(); i++)
             regions[i]->render();
+        // Render the sensor first, then the kilobot body
         for(int i=0; i<bots.size(); i++)
-            bots[i]->render();
+            bots[i]->rendersensor();
+        for(int i=0; i<bots.size(); i++)
+            bots[i]->renderbody();
 
         std::string s = string_format("Time:%8.2f", simtime);
         m_debugDraw.DrawString(5, m_textLine, s.c_str());
@@ -170,6 +173,10 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
                 bots.push_back((Kilobot*)(new Evokilo1(mod, settings, words, logfile.c_str())));
             if (words[0] == "evokilo2")
                 bots.push_back((Kilobot*)(new Evokilo2(mod, settings, words, logfile.c_str())));
+            if (words[0] == "evokilo3")
+                bots.push_back((Kilobot*)(new Evokilo3(mod, settings, words, logfile.c_str())));
+            if (words[0] == "evokilo4")
+                bots.push_back((Kilobot*)(new Evokilo4(mod, settings, words, logfile.c_str())));
             
         }
     }

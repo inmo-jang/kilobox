@@ -112,13 +112,24 @@ static void Timer(int)
 
 void simstep()
 {
-    static int last_rt = 0;
-    if (!last_rt && settings.enableRealtime)
-        // Fast forward realtime to current simtime if just enabled realtime
-        realtime = simtime;
-    last_rt = settings.enableRealtime;
+    static int last_sm = 0;
+    int speedmult = 0;
+    switch (settings.speed)
+    {
+        case 1: speedmult = 1; break;
+        case 2: speedmult = 2; break;
+        case 3: speedmult = 5; break;
+        case 4: speedmult = 10; break;
+        case 5: speedmult = 20; break;
+        case 6: speedmult = 50; break;
+        case 7: speedmult = 100; break;
+    }
+    if (last_sm != speedmult)
+        // Fast forward realtime to current simtime if just enabled controlled speed
+        realtime = simtime / speedmult;
+    last_sm = speedmult;
     
-    if (!settings.enableRealtime || (simtime < realtime))
+    if (!speedmult || (simtime / speedmult < realtime))
     {
         test->Step(&settings);
         if (!settings.pause)
@@ -131,6 +142,7 @@ void simstep()
         test->Step(&settings);
         settings.pause = p;
     }
+    printf("%d\n", settings.speed);
 }
 
 static void SimulationAdvance()
@@ -591,10 +603,18 @@ void rungui(int argc, char** argv)
 	glui->add_checkbox_to_panel(drawPanel, "Statistics", &settings.drawStats);
 	glui->add_checkbox_to_panel(drawPanel, "Profile", &settings.drawProfile);
 
-	glui->add_separator();
-	glui->add_checkbox("Trails", &settings.enableTrails);
-	glui->add_checkbox("Realtime", &settings.enableRealtime);
-	glui->add_separator();
+    GLUI_Panel* simPanel =	glui->add_panel("Sim");
+    GLUI_RadioGroup *rgroup = glui->add_radiogroup_to_panel(simPanel, &settings.speed);
+    glui->add_radiobutton_to_group(rgroup, "Full");
+    glui->add_radiobutton_to_group(rgroup, "1x");
+    glui->add_radiobutton_to_group(rgroup, "2x");
+    glui->add_radiobutton_to_group(rgroup, "5x");
+    glui->add_radiobutton_to_group(rgroup, "10x");
+    glui->add_radiobutton_to_group(rgroup, "20x");
+    glui->add_radiobutton_to_group(rgroup, "50x");
+    glui->add_radiobutton_to_group(rgroup, "100x");
+	glui->add_checkbox_to_panel(simPanel, "Trails", &settings.enableTrails);
+
 
 	int32 testCount = 0;
 	TestEntry* e = g_testEntries;

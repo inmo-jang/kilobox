@@ -25,6 +25,8 @@ using namespace Kilolib;
 // Single class variable for logging file pointer
 FILE *Evokilo1::lfp = NULL;
 FILE *Evokilo2::lfp = NULL;
+FILE *Evokilo3::lfp = NULL;
+FILE *Evokilo4::lfp = NULL;
 
 
 float sigmoid(float x) {return tanh(x);}
@@ -39,8 +41,9 @@ float *NN::nn_update(float *inputs)
         for(int j=0; j<NN_NUM_INPUTS; j++)
             sum += inputs[j] * (*ptr++);
         // Then the hidden nodes
-        for(int j=0; j<NN_NUM_HIDDEN; j++)
-            sum += nn_hidden[j] * (*ptr++);
+        if (rec)
+            for(int j=0; j<NN_NUM_HIDDEN; j++)
+                sum += nn_hidden[j] * (*ptr++);
         // Update the neuron value with the weighted input pushed through the transfer function
         nn_hidden[i] = sigmoid(sum);
     }
@@ -245,7 +248,7 @@ void Evokilo2::loop()
         // Message output direct from neuron
         *(float*)msg.data = outputs[2];
         msg.crc     = message_crc(&msg);
-
+        
         
         // visualise the internal state
         set_color(RGB(carrying?2:0, (region==NEST)?3:0, (region==FOOD)?3:0));
@@ -256,11 +259,201 @@ void Evokilo2::loop()
         messages    = 0;
         msgsum      = 0;
         min_dist    = 150;
-
+        
         // remember last region visited
         last_region = region;
         last_output = d;
+        
+#ifdef DEBUG
+        printf("%lu %d %d\r\n", kilo_ticks,region,carrying);
+#endif
+    }
+    
+    //===========================================================================
+    // Stage only, non kilobot logging
+    {
+        usec_t time = world_us_simtime;
+        if (time - last_time >= 1e6)
+        {
+            last_time += 1e6;
+            char buf[1024];
+            snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
+                     pos->GetPose().x, pos->GetPose().y, inputs[1],inputs[2],inputs[3], outputs[0],outputs[1], outputs[2]);
+            Evokilo2::log(buf);
+        }
+    }
+    
+}
 
+void Evokilo3::setup()
+{
+    // Set the callbacks
+    kilo_message_tx         = (message_tx_t)&Evokilo3::tx_message;
+    kilo_message_rx         = (message_rx_t)&Evokilo3::message_rx;
+    
+    // Construct a valid message
+    msg.type    = NORMAL;
+    msg.crc     = message_crc(&msg);
+    
+    last_region = 0;
+}
+
+void Evokilo3::loop()
+{
+    // Run the NN at the same rate as the message send, roughly twice a second
+    // Always send a message
+    
+    int region;
+    if (kilo_ticks > last_update + 16)
+    {
+        last_update = kilo_ticks;
+
+        
+        // Bias
+        inputs[0]   = 1.0;
+        // Distance to nearest neighbours
+        inputs[1]   = (float)min_dist / 100.0;
+        // Number of neighbours
+        inputs[2]   = messages;
+        
+        // Run the neural net
+        outputs     = nn.nn_update(&inputs[0]);
+        
+        // Motor control
+        int d = (outputs[0] >= 0 ? 1 : 0) | (outputs[1] >= 0 ? 2 : 0);
+        switch(d)
+        {
+            case(0):
+                set_motors(0,0);
+                break;
+            case(1):
+                if (last_output == 0) spinup_motors();
+                set_motors(kilo_turn_left,0);
+                break;
+            case(2):
+                if (last_output == 0) spinup_motors();
+                set_motors(0,kilo_turn_right);
+                break;
+            case(3):
+                if (last_output == 0) spinup_motors();
+                set_motors(kilo_straight_left, kilo_straight_right);
+                break;
+        }
+        
+       
+        // visualise the internal state
+        //set_color(RGB(carrying?2:0, (region==NEST)?3:0, (region==FOOD)?3:0));
+        //set_color_msg((outputs[2] + 1.0) / 2.0);
+        //set_color_msg(carrying);
+        
+        // Clear the message variables
+        messages    = 0;
+        min_dist    = 150;
+        
+
+    }
+    
+    //===========================================================================
+    // Stage only, non kilobot logging
+    {
+        usec_t time = pos->GetWorld()->SimTimeNow();
+        if (time - last_time >= 1e6)
+        {
+            last_time += 1e6;
+            char buf[1024];
+            snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f, 0.0\n", pos->Token(), time/1e6,
+                     pos->GetPose().x, pos->GetPose().y, inputs[1],inputs[2], 0.0, outputs[0],outputs[1]);
+            Evokilo3::log(buf);
+        }
+    }
+    
+}
+
+
+void Evokilo4::setup()
+{
+    // Set the callbacks
+    kilo_message_tx         = (message_tx_t)&Evokilo4::tx_message;
+    kilo_message_rx         = (message_rx_t)&Evokilo4::message_rx;
+    
+    // Construct a valid message
+    msg.type    = NORMAL;
+    msg.crc     = message_crc(&msg);
+    
+    last_region = 0;
+}
+
+
+void Evokilo4::loop()
+{
+    // Run the NN at the same rate as the message send, roughly twice a second
+    // Always send a message
+    
+    int region;
+    if (kilo_ticks > last_update + 16)
+    {
+        last_update = kilo_ticks;
+        region      = get_environment();
+        
+        // Every cycle, build the inputs to the neuron net, compute the outputs
+        // and set the actuators using the outputs
+
+        
+        // Bias
+        inputs[0]   = 1.0;
+
+        
+        // Distance to nearest neighbours
+        inputs[1]   = (float)min_dist / 100.0;
+        // Number of neighbours
+        inputs[2]   = messages;
+        // Average message
+        float avgmsg = messages > 0 ? msgsum / messages : 0.0;
+        inputs[3]   = avgmsg;
+        
+        // Run the neural net
+        outputs     = nn.nn_update(&inputs[0]);
+        
+        // Motor control
+        int d = (outputs[0] >= 0 ? 1 : 0) | (outputs[1] >= 0 ? 2 : 0);
+        switch(d)
+        {
+            case(0):
+                set_motors(0,0);
+                break;
+            case(1):
+                if (last_output == 0) spinup_motors();
+                set_motors(kilo_turn_left,0);
+                break;
+            case(2):
+                if (last_output == 0) spinup_motors();
+                set_motors(0,kilo_turn_right);
+                break;
+            case(3):
+                if (last_output == 0) spinup_motors();
+                set_motors(kilo_straight_left, kilo_straight_right);
+                break;
+        }
+        
+        // Message output direct from neuron
+        *(float*)msg.data = outputs[2];
+        msg.crc     = message_crc(&msg);
+        
+        
+        // visualise the internal state
+        //set_color(RGB(carrying?2:0, (region==NEST)?3:0, (region==FOOD)?3:0));
+        set_color_msg((outputs[2] + 1.0) / 2.0);
+        //set_color_msg(carrying);
+        
+        // Clear the message variables
+        messages    = 0;
+        msgsum      = 0;
+        min_dist    = 150;
+        
+        // remember last region visited
+        last_region = region;
+        last_output = d;
+        
 #ifdef DEBUG
         printf("%lu %d %d\r\n", kilo_ticks,region,carrying);
 #endif
@@ -276,9 +469,10 @@ void Evokilo2::loop()
             char buf[1024];
             snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
                      pos->GetPose().x, pos->GetPose().y, inputs[1],inputs[2],inputs[3], outputs[0],outputs[1], outputs[2]);
-            Evokilo2::log(buf);
+            Evokilo4::log(buf);
         }
     }
     
 }
+
 
