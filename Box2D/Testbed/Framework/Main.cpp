@@ -142,7 +142,6 @@ void simstep()
         test->Step(&settings);
         settings.pause = p;
     }
-    printf("%d\n", settings.speed);
 }
 
 static void SimulationAdvance()

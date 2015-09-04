@@ -384,8 +384,8 @@ public:
     words   (_words),
     logfile (_logfile),
     // Set the size of the neural net
-    nn      (4, 7, 3),
-    inputs  (4)
+    nn      (7, 7, 3),
+    inputs  (7)
     {
         if (words.size()-1 == nn.NN_NUM_WEIGHTS)
             for(int i=0; i<nn.NN_NUM_WEIGHTS; i++)
@@ -458,6 +458,10 @@ public:
     int         messages        = 0;
     int         min_dist        = 150;
     float       msgsum          = 0;
+    int         mptr            = 0;
+#define MMEM 100
+    uint8_t     msg_id[MMEM];
+    int         new_id          = 0;
     
     uint8_t     carrying        = 0;
     int         total_food      = 0;
@@ -482,6 +486,21 @@ public:
         if (dist < min_dist)
             min_dist = dist;
         msgsum += *(float*)m->data;
+        
+        // Check memory to see if message in there
+        uint8_t mid = m->data[4];
+        int found = 0;
+        for(int i=0; i<MMEM; i++)
+            if (msg_id[i] == mid)
+            {
+                found = 1;
+                break;
+            }
+        if (!found)
+            // Salient, since not in memory
+            new_id++;
+        msg_id[mptr] = mid;
+        mptr = (mptr+1) % MMEM;
         messages ++;
     }
     
