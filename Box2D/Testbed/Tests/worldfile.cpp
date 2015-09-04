@@ -588,7 +588,7 @@ bool Worldfile::LoadTokenString(FILE *file, int *line, int include)
 {
   int ch;
   int len;
-  char token[2048];
+  char token[100000];
 
   len = 0;
   memset(token, 0, sizeof(token));

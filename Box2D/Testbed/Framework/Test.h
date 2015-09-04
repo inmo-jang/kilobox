@@ -75,7 +75,7 @@ struct Settings
 		enableSubStepping   = 0;
 		enableSleep         = 1;
         enableTrails        = 0;
-        enableRealtime      = 0;
+        speed               = 0;
 		pause               = 1;
 		singleStep          = 0;
         time_to_draw        = 1;
@@ -126,7 +126,7 @@ struct Settings
 	int32 enableSubStepping;
 	int32 enableSleep;
     int32 enableTrails;
-    int32 enableRealtime;
+    int32 speed;
 	int32 pause;
 	int32 singleStep;
     int32 time_to_draw;

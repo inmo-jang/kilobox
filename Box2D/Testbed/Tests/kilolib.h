@@ -454,11 +454,18 @@ namespace Kilolib
             vbias           = rand_gaussian(settings->kbsigma_vbias);
             omegabias       = rand_gaussian(settings->kbsigma_omegabias);
             
+            // Each kilobot has a slightly different clock frequency,
+            // this puts 95% within +- 3%
+            clkbias         = 1 + rand_gaussian(0.01);
+            // Each clock starts at slightly different time, within a millisecond
+            clkoffset       = rand_intrange(0, 200000);
+            
         }
         ModelPosition   *pos;
         b2Body          *m_body;
         b2World         *m_world;
         Settings        *settings;
+        usec_t          world_us_simtime;
 
 
         // Functions to maintain the list of other bots we are in range of
@@ -479,6 +486,8 @@ namespace Kilolib
 
 
         void render();
+        void rendersensor();
+        void renderbody();
         void update_motion();
         void update(float delta_t, float simtime);
 
@@ -518,6 +527,10 @@ namespace Kilolib
         // Motion bias
         float                       vbias;
         float                       omegabias;
+        // Clock frequency bias
+        float                       clkbias;
+        // Clock offset in usec
+        usec_t                      clkoffset;
         
         
 
@@ -741,7 +754,13 @@ namespace Kilolib
             led_g = ((rgb>>2)&0x3)/3.0;
             led_b = ((rgb>>4)&0x3)/3.0;
         }
-        
+        void set_colorf(float c)
+        {
+            Color col(c);
+            led_r = col.r;
+            led_g = col.g;
+            led_b = col.b;
+        }
         
     };
 };
