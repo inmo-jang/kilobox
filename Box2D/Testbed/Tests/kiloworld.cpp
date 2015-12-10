@@ -87,7 +87,7 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
             // command line params
             if (wf->PropertyExists(entity, "params"))
             {
-                wf->ReadTuple(entity, "params", 0, 14, "ffffffffffffff",
+                wf->ReadTuple(entity, "params", 0, 15, "fffffffffffffff",
                     &(settings->kbsigma_vbias),
                     &(settings->kbsigma_omegabias),
                     &(settings->kbsigma_vnoise),
@@ -101,7 +101,9 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
                     &(settings->kbsenserad),
                     &(settings->kbspeedconst),
                     &(settings->kbwheeloffset),
-                    &(settings->kbwheeldist));
+                    &(settings->kbwheeldist),
+                    &(settings->kbmsgsuccess)
+                    );
             }
         }
     }
@@ -214,9 +216,9 @@ void Kiloworld::build_world()
     {
         printf("Got non-default kilobot parameters %s\n", settings->params.c_str());
         std::vector<std::string> params = split(settings->params);
-        if ((params.size() != 14) && (params.size() != 4))
+        if ((params.size() != 15) && (params.size() != 4))
         {
-            printf("Invalid parameter argument, should be 4 or 14 numbers, exitting..\n");
+            printf("Invalid parameter argument, should be 4 or 15 numbers, exitting..\n");
             exit(1);
         }
         
@@ -224,7 +226,7 @@ void Kiloworld::build_world()
         settings->kbsigma_omegabias     = std::stof(params[1]);
         settings->kbsigma_vnoise        = std::stof(params[2]);
         settings->kbsigma_omeganoise    = std::stof(params[3]);
-        if (params.size() == 14)
+        if (params.size() == 15)
         {
             settings->kbdia               = std::stof(params[4]);
             settings->kbdensity           = std::stof(params[5]);
@@ -236,6 +238,7 @@ void Kiloworld::build_world()
             settings->kbspeedconst        = std::stof(params[11]);
             settings->kbwheeloffset       = std::stof(params[12]);
             settings->kbwheeldist         = std::stof(params[13]);
+            settings->kbmsgsuccess        = std::stof(params[14]);
         }
     }
     
@@ -269,6 +272,7 @@ void Kiloworld::build_world()
     printf("kbspeedconst        %f\n",settings->kbspeedconst);
     printf("kbwheeloffset       %f\n",settings->kbwheeloffset);
     printf("kbwheeldist         %f\n",settings->kbwheeldist);
+    printf("kbmsgsuccess        %f\n",settings->kbmsgsuccess);
 
 }
 

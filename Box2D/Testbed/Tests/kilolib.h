@@ -455,9 +455,9 @@ namespace Kilolib
             omegabias       = rand_gaussian(settings->kbsigma_omegabias);
             
             // Each kilobot has a slightly different clock frequency,
-            // this puts 95% within +- 3%
-            clkbias         = 1 + rand_gaussian(0.01);
-            // Each clock starts at slightly different time, within a millisecond
+            // this puts 95% within +- 1%
+            clkbias         = 1 + rand_gaussian(0.005);
+            // Each clock starts at slightly different time, within 0.2s
             clkoffset       = rand_intrange(0, 200000);
             
         }
@@ -548,6 +548,13 @@ namespace Kilolib
             std::normal_distribution<float> dist(0.0, sigma);
             float r = dist(gen);
             //printf("float %10s %10f %10f\n",pos->Token(), sigma, r);
+            return r;
+        }
+        float rand_realrange(float low, float high)
+        {
+            std::uniform_real_distribution<>   dist(low, high);
+            float r = dist(gen);
+            //printf("int   %10s %10i\n",pos->Token(), r);
             return r;
         }
 

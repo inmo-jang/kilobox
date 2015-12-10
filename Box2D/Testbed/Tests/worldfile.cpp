@@ -566,7 +566,7 @@ bool Worldfile::LoadTokenNum(FILE *file, int *line, int include)
 	  AddToken(TokenNum, token, include);
 	  return true;
 	}
-      else if (strchr("+-.0123456789", ch))
+      else if (strchr("+-.0123456789e", ch))
 	{
 	  token[len++] = ch;
 	}

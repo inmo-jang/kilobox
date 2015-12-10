@@ -103,6 +103,7 @@ struct Settings
         kbspeedconst        = 1e-4;
         kbwheeloffset       = 0.01;
         kbwheeldist         = 0.025;
+        kbmsgsuccess        = 0.95;
         //
         kbnestfoodsep       = 0.2;
 	}
@@ -154,6 +155,7 @@ struct Settings
     float   kbspeedconst;
     float   kbwheeloffset;
     float   kbwheeldist;
+    float   kbmsgsuccess;
     float   kbnestfoodsep;
     
     

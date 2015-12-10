@@ -85,6 +85,12 @@ void Kilobot::check_messages()
             int r = 0;//rand(0, s);
             for(int i=0; i<s; i++)
             {
+                // See if this message actually makes it to the recipient
+                if (rand_realrange(0.0,1.0) > settings->kbmsgsuccess)
+                {
+                    //printf("Failed to send message to %i of %i\n",i,s);
+                    continue;
+                }
                 int j = (i + r) % s;
                 Kilobot *bot = inrange_bots[j];
                 // Get a pointer to the recipients message queue
