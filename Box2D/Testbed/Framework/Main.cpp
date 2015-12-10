@@ -534,6 +534,7 @@ void runnogui(int argc, char** argv)
         settings.time_to_draw = 0;
 	    test->Step(&settings);
     }
+    test->Finish(&settings);
 }
 
 void rungui(int argc, char** argv)

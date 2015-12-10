@@ -99,6 +99,7 @@ namespace Kilolib
         }
         
         void Step(Settings* settings);
+        void Finish(Settings* settings);
         
         void build_world();
         void parse_worldfile(float xoffset, float yoffset);

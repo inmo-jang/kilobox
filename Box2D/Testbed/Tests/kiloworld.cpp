@@ -54,6 +54,11 @@ void Kiloworld::Step(Settings* settings)
     }
 }
 
+void Kiloworld::Finish(Settings *settings)
+{
+    printf("Sim about to finish\n");
+}
+
 static std::vector<std::string> split(std::string s)
 {
     // Quite frankly, this is inpenetrable, found on stackoverflow, but at least it doesn't require boost
