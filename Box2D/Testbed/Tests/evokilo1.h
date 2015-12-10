@@ -12,8 +12,8 @@
 
 using namespace Kilolib;
 
-#define W(i,h,o) ((i)*(h)+(h)*(h)+(h)*(o))
-#define WF(i,h,o) ((i)*(h)+(h)*(o))
+#define W(i,h,o) (((i)+1)*(h)+(h)*(h)+((h)+1)*(o))
+#define WF(i,h,o) (((i)+1)*(h)+((h)+1)*(o))
 
 
 class NN
@@ -152,8 +152,8 @@ public:
     words   (_words),
     logfile (_logfile),
     // Set the size of the neural net
-    nn      (7, 7, 3),
-    inputs  (7)
+    nn      (6, 6, 3),
+    inputs  (6)
     {
         if (words.size()-1 == nn.NN_NUM_WEIGHTS)
             for(int i=0; i<nn.NN_NUM_WEIGHTS; i++)

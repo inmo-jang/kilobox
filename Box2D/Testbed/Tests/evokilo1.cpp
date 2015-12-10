@@ -44,6 +44,8 @@ float *NN::nn_update(float *inputs)
         if (rec)
             for(int j=0; j<NN_NUM_HIDDEN; j++)
                 sum += nn_hidden[j] * (*ptr++);
+        // Then the bias
+        sum += 1.0 * (*ptr++);
         // Update the neuron value with the weighted input pushed through the transfer function
         nn_hidden[i] = sigmoid(sum);
     }
@@ -53,6 +55,8 @@ float *NN::nn_update(float *inputs)
         float sum = 0;
         for(int j=0; j<NN_NUM_HIDDEN; j++)
             sum += nn_hidden[j] * (*ptr++);
+        // Bias
+        sum += 1.0 * (*ptr++);
         nn_outputs[i] = sigmoid(sum);
     }
     return &nn_outputs[0];
@@ -204,22 +208,20 @@ void Evokilo2::loop()
             total_pickup++;
         }
         
-        // Bias
-        inputs[0]   = 1.0;
         // Nest
-        inputs[1]   = (region == NEST) ? 1.0 : -1.0;
+        inputs[0]   = (region == NEST) ? 1.0 : -1.0;
         // Food
-        inputs[2]   = (region == FOOD) ? 1.0 : -1.0;
+        inputs[1]   = (region == FOOD) ? 1.0 : -1.0;
         // carrying food
-        inputs[3]   = carrying ? 1.0 : -1.0;
+        inputs[2]   = carrying ? 1.0 : -1.0;
         
         // Distance to nearest neighbours
-        inputs[4]   = (float)min_dist / 100.0;
+        inputs[3]   = (float)min_dist / 100.0;
         // Number of neighbours
-        inputs[5]   = messages;
+        inputs[4]   = messages;
         // Average message
         float avgmsg = messages > 0 ? msgsum / messages : 0.0;
-        inputs[6]   = avgmsg;
+        inputs[5]   = avgmsg;
         
         // Run the neural net
         outputs     = nn.nn_update(&inputs[0]);
