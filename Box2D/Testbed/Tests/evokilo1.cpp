@@ -281,7 +281,7 @@ void Evokilo2::loop()
             last_time += 1e6;
             char buf[1024];
             snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
-                     pos->GetPose().x, pos->GetPose().y, inputs[1],inputs[2],inputs[3], outputs[0],outputs[1], outputs[2]);
+                     pos->GetPose().x, pos->GetPose().y, inputs[0],inputs[1],inputs[2], outputs[0],outputs[1], outputs[2]);
             Evokilo2::log(buf);
         }
     }
