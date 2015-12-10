@@ -152,7 +152,7 @@ public:
     words   (_words),
     logfile (_logfile),
     // Set the size of the neural net
-    nn      (6, 6, 3),
+    nn      (6, 7, 3),
     inputs  (6)
     {
         if (words.size()-1 == nn.NN_NUM_WEIGHTS)
