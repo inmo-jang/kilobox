@@ -89,20 +89,20 @@ struct Settings
         seed                = 1;
         //-----------------------
         // Specific kilobot settings
-        kbsigma_vbias       = 0.0;
-        kbsigma_omegabias   = 0.0;
-        kbsigma_vnoise      = 0.0;
-        kbsigma_omeganoise  = 0.0;
-        kbdia               = 0.031;
-        kbdensity           = 10.0;
-        kblineardamp        = 10.0;
-        kbangulardamp       = 10.0;
-        kbfriction          = 1.0;
-        kbrestitution       = 1.0;
+        kbsigma_vbias       = 0.00125;
+        kbsigma_omegabias   = 0.06;
+        kbsigma_vnoise      = 0.0001;
+        kbsigma_omeganoise  = 0.0001;
+        kbdia               = 0.032;
+        kbdensity           = 20.0;
+        kblineardamp        = 5.0;
+        kbangulardamp       = 5.0;
+        kbfriction          = 0.8;
+        kbrestitution       = 0.1;
         kbsenserad          = 0.1;
-        kbspeedconst        = 1e-4;
-        kbwheeloffset       = 0.01;
-        kbwheeldist         = 0.025;
+        kbspeedconst        = 0.000113;
+        kbwheeloffset       = 0.005;
+        kbwheeldist         = 0.015;
         kbmsgsuccess        = 0.95;
         //
         kbnestfoodsep       = 0.2;
