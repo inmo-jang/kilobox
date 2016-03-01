@@ -184,6 +184,8 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
                 bots.push_back((Kilobot*)(new Evokilo3(mod, settings, words, logfile.c_str())));
             if (words[0] == "evokilo4")
                 bots.push_back((Kilobot*)(new Evokilo4(mod, settings, words, logfile.c_str())));
+            if (words[0] == "evokilo5")
+                bots.push_back((Kilobot*)(new Evokilo5(mod, settings, words, logfile.c_str())));
             
         }
     }

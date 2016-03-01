@@ -510,6 +510,114 @@ public:
     
 };
 
+class Evokilo5 : public Kilobot
+{
+public:
+    // Foraging robot using message system to produce swarm effects
+    //
+    //
+    // Pass the model reference up to the parent constructor
+    Evokilo5(ModelPosition *_pos, Settings *_settings,
+             std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile),
+    // Set the size of the neural net
+    nn      (3, 3, 1, false),
+    inputs  (3)
+    {
+        if (words.size()-1 == nn.NN_NUM_WEIGHTS)
+            for(int i=0; i<nn.NN_NUM_WEIGHTS; i++)
+                nn.nn_weights[i] = atof(words[i+1].c_str());
+        else
+        {
+            printf("Wrong number of weights in controller arguments, got %lu should be %d\n", words.size()-1, nn.NN_NUM_WEIGHTS );
+            exit(1);
+        }
+        
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&Evokilo5::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&Evokilo5::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&Evokilo5::message_tx_success_dummy;
+        setup();
+    }
+    ~Evokilo5()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+
+    
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    
+    void setup();
+    void loop();
+    
+    NN          nn;
+    
+    uint32_t    last_update     = 0;
+    int         last_region     = 0;
+    int         last_output     = 0;
+    
+    message_t   msg;
+    int         messages        = 0;
+    float       msgsum          = 0;
+    
+    std::vector<float> inputs;
+    float       *outputs;
+    
+    
+    // Message transmission callback
+    message_t *tx_message()
+    {
+        return &msg;
+    }
+    
+    
+    void message_rx(message_t *m, distance_measurement_t *d)
+    {
+
+        msgsum += *(float*)m->data;
+        messages ++;
+    }
+    
+    
+    
+};
+
 
 
 #endif

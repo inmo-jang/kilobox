@@ -27,6 +27,7 @@ FILE *Evokilo1::lfp = NULL;
 FILE *Evokilo2::lfp = NULL;
 FILE *Evokilo3::lfp = NULL;
 FILE *Evokilo4::lfp = NULL;
+FILE *Evokilo5::lfp = NULL;
 
 
 float sigmoid(float x) {return tanh(x);}
@@ -492,6 +493,89 @@ void Evokilo4::loop()
             snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
                      pos->GetPose().x, pos->GetPose().y, inputs[1],inputs[2],inputs[3], outputs[0],outputs[1], outputs[2]);
             Evokilo4::log(buf);
+        }
+    }
+    
+}
+
+void Evokilo5::setup()
+{
+    // Set the callbacks
+    kilo_message_tx         = (message_tx_t)&Evokilo5::tx_message;
+    kilo_message_rx         = (message_rx_t)&Evokilo5::message_rx;
+    
+    // Construct a valid message
+    msg.type    = NORMAL;
+    msg.crc     = message_crc(&msg);
+
+        
+}
+
+
+void Evokilo5::loop()
+{
+    // Run the NN at the same rate as the message send, roughly twice a second
+    // Always send a message
+    
+    int region;
+    if (kilo_ticks > last_update + 16)
+    {
+        last_update = kilo_ticks;
+        region      = get_environment();
+        
+        // Every cycle, build the inputs to the neuron net, compute the outputs
+        // and set the actuators using the outputs
+
+        
+        // Change in neighbourhood
+        // This measures how the ids of the neighbours who have sent messages
+        // has changed since the last time
+        // if a message id is not in the circular buffer of recent message ids,
+        // this is regarded as salient, and increases the input to that neuron
+
+
+        // Average message
+        float avgmsg = messages > 0 ? msgsum / messages : 0.0;
+        inputs[0]   = avgmsg;
+        // Nest
+        inputs[1]   = (region == NEST) ? 1.0 : -1.0;
+        // Food
+        inputs[2]   = (region == FOOD) ? 1.0 : -1.0;
+        
+        // Run the neural net
+        outputs     = nn.nn_update(&inputs[0]);
+        
+        // Message output direct from neuron
+        *(float*)msg.data = outputs[0];
+        msg.crc     = message_crc(&msg);
+        
+        
+        // visualise the internal state
+        //set_color(RGB(carrying?2:0, (region==NEST)?3:0, (region==FOOD)?3:0));
+        set_colorf(outputs[0]>0 ? 1.0 : 0.0);
+
+        
+        // Clear the message variables
+        messages    = 0;
+        msgsum      = 0;
+
+        
+#ifdef DEBUG
+        printf("%lu %d\r\n", kilo_ticks,region);
+#endif
+    }
+    
+    //===========================================================================
+    // Stage only, non kilobot logging
+    {
+        usec_t time = world_us_simtime;
+        if (time - last_time >= 1e6)
+        {
+            last_time += 1e6;
+            char buf[1024];
+            snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
+                     pos->GetPose().x, pos->GetPose().y, inputs[0],inputs[1],inputs[2], outputs[0]);
+            Evokilo5::log(buf);
         }
     }
     
