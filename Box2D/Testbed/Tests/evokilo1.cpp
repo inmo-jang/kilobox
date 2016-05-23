@@ -28,8 +28,12 @@ FILE *Evokilo2::lfp = NULL;
 FILE *Evokilo3::lfp = NULL;
 FILE *Evokilo4::lfp = NULL;
 
+//#define RECT
+
 
 float sigmoid(float x) {return tanh(x);}
+float rect(float x) {if (x>0.0)return x; else return 0.0;}
+//float rect(float x) {return x;}
 
 float *NN::nn_update(float *inputs)
 {
@@ -47,7 +51,11 @@ float *NN::nn_update(float *inputs)
         // Then the bias
         sum += 1.0 * (*ptr++);
         // Update the neuron value with the weighted input pushed through the transfer function
+#ifndef RECT
         nn_hidden[i] = sigmoid(sum);
+#else
+        nn_hidden[i] = rect(sum);
+#endif
     }
     // Work out the output node values
     for(int i=0; i<NN_NUM_OUTPUTS; i++)
@@ -57,7 +65,11 @@ float *NN::nn_update(float *inputs)
             sum += nn_hidden[j] * (*ptr++);
         // Bias
         sum += 1.0 * (*ptr++);
+#ifndef RECT
         nn_outputs[i] = sigmoid(sum);
+#else
+        nn_outputs[i] = rect(sum);
+#endif
     }
     return &nn_outputs[0];
     
