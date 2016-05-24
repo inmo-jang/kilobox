@@ -8,6 +8,7 @@
 #include "evokilo1.h"
 #include "worldfile.h"
 
+
 using namespace Kilolib;
 
 
@@ -273,6 +274,37 @@ void Kiloworld::build_world()
     printf("kbwheeloffset       %f\n",settings->kbwheeloffset);
     printf("kbwheeldist         %f\n",settings->kbwheeldist);
     printf("kbmsgsuccess        %f\n",settings->kbmsgsuccess);
+    
+    using namespace BT;
+    
+//    json j =
+//    {{ "seq", json::array
+//        ({
+//            {{"cond", 1}},
+//            {{"act", 2}},
+//            {{"sel", json::array
+//                ({
+//                    {{"act", 3}},
+//                    {{"act", 4}}
+//                })
+//            }}
+//        })
+//    }};
+    json j = R"(
+    [ "seq",
+        [
+            ["cond", 1],
+            ["act", 2],
+            ["sel",
+                [
+                    ["act", 3],
+                    ["act", 4]
+                ]
+            ]
+        ]
+    ])"_json;
+    std::cout << j << std::endl;
+    bt = behaviour_tree_builder(j);
 
 }
 

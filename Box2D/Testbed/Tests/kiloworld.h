@@ -16,6 +16,8 @@
 #include "worldfile.h"
 #include <random>
 
+#include "bt.h"
+
 
 namespace Kilolib
 {
@@ -151,6 +153,9 @@ namespace Kilolib
         Worldfile *wf;
 
         std::vector<std::string> ctrlarg_words;
+        
+        // Behaviour tree
+        BT::Behaviour_tree_node *bt;
        
     };
 
