@@ -12,11 +12,12 @@
 #include "../Framework/Test.h"
 #include "../Framework/Render.h"
 
+#include "bt.h"
+
 //#include "kilolib.h"
 #include "worldfile.h"
 #include <random>
 
-#include "bt.h"
 
 
 namespace Kilolib

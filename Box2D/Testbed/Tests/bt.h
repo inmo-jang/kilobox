@@ -1,8 +1,8 @@
 
+#ifndef _BT_H
+#define _BT_H
 
 #include <vector>
-
-
 #include <json.hpp>
 using json = nlohmann::json;
 
@@ -28,21 +28,27 @@ namespace BT
     class Behaviour_tree_node
     {
     public:
-        //Behaviour_tree_node() {}
+        Behaviour_tree_node() {}
         virtual int tick() = 0;
         Select_node *select_node();
         Sequence_node *sequence_node();
         Parallel_node *parallel_node(int _s, int _f);
         Leaf_node *leaf_node(int (*_l)());
 
-        
+        void behaviour_tree_builder(json &j);
 
     protected:
         std::vector<Behaviour_tree_node *> children;
+    private:
+        //json &j;
     };
 
     class Root_node : public Behaviour_tree_node
     {
+    public:
+            Root_node(){}
+            Root_node(json &j);
+
     protected:
         // Single child, just does tick
         int tick();
@@ -90,6 +96,8 @@ namespace BT
         int (*l)() ;
     };
     
-    Behaviour_tree_node *behaviour_tree_builder(json j);
+    //Behaviour_tree_node *behaviour_tree_builder(json &j);
 
-};
+}
+
+#endif

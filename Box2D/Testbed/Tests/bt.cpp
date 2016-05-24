@@ -1,7 +1,7 @@
 
 
 #include <cassert>
-
+#include <string>
 
 #include "bt.h"
 
@@ -34,7 +34,7 @@ int Root_node::tick()
 int Select_node::tick()
 {
     assert(children.size() > 0);
-    for(auto i : children)
+    for(auto& i : children)
     {
         auto state = i->tick();
         if (state == BT_RUNNING || state == BT_SUCCESS)
@@ -46,7 +46,7 @@ int Select_node::tick()
 int Sequence_node::tick()
 {
     assert(children.size() > 0);
-    for(auto i : children)
+    for(auto& i : children)
     {
         auto state = i->tick();
         if (state == BT_RUNNING || state == BT_FAILURE)
@@ -60,7 +60,7 @@ int Parallel_node::tick()
     assert(children.size() > 0);
     int scount = 0;
     int fcount = 0;
-    for(auto i : children)
+    for(auto& i : children)
     {
         auto state = i->tick();
         if (state == BT_SUCCESS) ++scount;
@@ -71,9 +71,59 @@ int Parallel_node::tick()
     return BT_RUNNING;
 }
 
+json j = R"(
+[ "seq",
+    [
+        ["cond", [1]],
+        ["act", [2]],
+        ["sel",
+            [
+                ["act", [3]],
+                ["act", [4]]
+            ]
+        ]
+    ]
+])"_json;
 
+// The tree is represented as a hierarchical list
+// Each node consists of a node type string, followed by a list
+//
+// The type strings, and what the following list represents is given:
+//  node            ::= [ <ctrl_node_type>, { <arg_map> }, [ <node_list> ] ] |
+//                      [ <leaf_node_type>, { <arg_map> } ]
+//  node_list       ::= <node_list> , <node> | <node>
+//  arg_map         ::= <arg_map>, <arg> | <arg> | <empty>
+//  arg             ::= key : value
+//  ctrl_node_type  :: = seq | sel | par | seqm | selm
+//  leaf_node_type  :: = act | cond
+//
 
-Behaviour_tree_node *behaviour_tree_builder(json j)
+Root_node::Root_node(json &j)
 {
-    
+    for(auto& i : j)
+    {
+        if (i.is_string())
+        {
+            std::string s = i;
+            printf("control: %s\n", s.c_str());
+        }
+        else if (i.is_array())
+        {
+            printf("entering node..\n");
+            behaviour_tree_builder(i);
+        }
+        else if (i.is_number())
+        {
+            float f = i;
+            printf("leaf: %f\n", f);
+        }
+        else
+        {
+            printf("don't know what to do\n");
+        }
+    }
+    printf("leaving node..\n");
+    //return nullptr;
 }
+
+

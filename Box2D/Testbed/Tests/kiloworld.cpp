@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <iterator>
 
+
 #include "kiloworld.h"
 #include "evokilo1.h"
 #include "worldfile.h"
@@ -304,7 +305,9 @@ void Kiloworld::build_world()
         ]
     ])"_json;
     std::cout << j << std::endl;
-    bt = behaviour_tree_builder(j);
+    std::cout << j[0].is_string() << std::endl;
+    bt = new BT::Root_node(j);
+    //bt = BT::behaviour_tree_node(j);
 
 }
 
