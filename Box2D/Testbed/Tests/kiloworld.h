@@ -156,7 +156,7 @@ namespace Kilolib
         std::vector<std::string> ctrlarg_words;
         
         // Behaviour tree
-        BT::Behaviour_tree_node *bt;
+        BT::Node *bt;
        
     };
 

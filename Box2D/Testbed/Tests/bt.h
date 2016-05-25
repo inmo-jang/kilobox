@@ -25,45 +25,34 @@ namespace BT
     
     
 
-    class Behaviour_tree_node
+    class Node
     {
     public:
-        Behaviour_tree_node() {}
-        virtual int tick() = 0;
-        Select_node *select_node();
-        Sequence_node *sequence_node();
-        Parallel_node *parallel_node(int _s, int _f);
-        Leaf_node *leaf_node(int (*_l)());
-
-        void behaviour_tree_builder(json &j);
-
+        Node() {}
+        Node(json &j);
+        int tick();
     protected:
-        std::vector<Behaviour_tree_node *> children;
+        std::vector<Node *> children;
     private:
         //json &j;
     };
 
-    class Root_node : public Behaviour_tree_node
+
+
+    class Select_node : public Node
     {
     public:
-            Root_node(){}
-            Root_node(json &j);
-
-    protected:
-        // Single child, just does tick
-        int tick();
-    };
-
-    class Select_node : public Behaviour_tree_node
-    {
+        Select_node(json &j) : Node(j) {}
     protected:
         // Tick in order from start, return first running or success,
         // failure if no running or success
         int tick();
     };
     
-    class Sequence_node : public Behaviour_tree_node
+    class Sequence_node : public Node
     {
+    public:
+        Sequence_node(json &j) : Node(j) {}
     protected:
         // Tick in order from start, return first running or failure,
         // success if all successful
@@ -71,10 +60,10 @@ namespace BT
 
     };
 
-    class Parallel_node : public Behaviour_tree_node
+    class Parallel_node : public Node
     {
     public:
-        Parallel_node(int _s, int _f) : s(_s), f(_f) {}
+        Parallel_node(json &j, int _s, int _f) : Node(j), s(_s), f(_f) {}
     protected:
         // Tick all, return success if >= s successes,
         // failure if >= f failures
@@ -83,17 +72,14 @@ namespace BT
         int s, f;
     };
     
-    class Leaf_node : public Behaviour_tree_node
+    class Leaf_node : public Node
     {
     public:
-        Leaf_node(int (*_l)() ) : l(_l) {}
+        Leaf_node(json &_j) : j(_j) {}
     protected:
-        int tick()
-        {
-            return l();
-        }
+        int tick();
     private:
-        int (*l)() ;
+        json j;
     };
     
     //Behaviour_tree_node *behaviour_tree_builder(json &j);

@@ -2,32 +2,16 @@
 
 #include <cassert>
 #include <string>
+#include <set>
 
 #include "bt.h"
 
 using namespace BT;
 
 
-Select_node *Behaviour_tree_node::select_node()
+int Node::tick()
 {
-    return new Select_node();
-}
-Sequence_node *Behaviour_tree_node::sequence_node()
-{
-    return new Sequence_node();
-}
-Parallel_node *Behaviour_tree_node::parallel_node(int _s, int _f)
-{
-    return new Parallel_node(_s, _f);
-}
-Leaf_node *Behaviour_tree_node::leaf_node(int (*_l)())
-{
-    return new Leaf_node(_l);
-}
-
-int Root_node::tick()
-{
-    assert(children.size() > 0);
+    assert(children.size() == 1);
     return children[0]->tick();
 }
 
@@ -71,19 +55,58 @@ int Parallel_node::tick()
     return BT_RUNNING;
 }
 
-json j = R"(
-[ "seq",
-    [
-        ["cond", [1]],
-        ["act", [2]],
-        ["sel",
-            [
-                ["act", [3]],
-                ["act", [4]]
-            ]
-        ]
-    ]
-])"_json;
+// In automode, the behaviours and conditions are as follows, all conditions except stop have
+// obstacle avoidance embedded:
+//  exploration     - straight unless obstacle, then turn away from prox sense for random time
+//  stop
+//  phototaxis      - towards light
+//  anti-phototaxis - away from light
+//  attraction      - towards other robots in neighbourhood
+//  repulsion       - away from other robots in neighbourhood
+// Conditions:
+//  black floor
+//  grey floor
+//  white floor
+//  neighbour count
+//  inverted neighbour count
+// fix probability
+
+// With kilobots, necessarily lower level..
+//  move straight for x ticks
+//  move left       "
+//  move right      "
+//  set msg to x
+//
+//  msg count aka neighbours
+//  msg average
+//  carrying
+//  food
+//  nest
+//
+//
+
+
+int Leaf_node::tick()
+{
+    // Look at the json fragment to find out what to do
+    auto &t = j["type"];
+    printf("%s\n", t.c_str());
+    return BT_SUCCESS;
+}
+
+//json j = R"(
+//[ "seq", {"a",1},
+// [
+//  ["cond", {"a",1}],
+//  ["act", {"a",2}],
+//  ["sel",{"a",3},
+//   [
+//    ["act", {"a",4}],
+//    ["act", {"a",5}]
+//   ]
+//  ]
+// ]
+//])"_json;
 
 // The tree is represented as a hierarchical list
 // Each node consists of a node type string, followed by a list
@@ -98,32 +121,58 @@ json j = R"(
 //  leaf_node_type  :: = act | cond
 //
 
-Root_node::Root_node(json &j)
+Node::Node(json &j)
 {
-    for(auto& i : j)
+    // Really simple recursive descent parser with no error checking,
+    // creating the tree as we go. The top node is the root node
+    // and has only one child.
+    // Each node of the json description has 2 or 3 elements, depending on
+    // the first element which is the node type
+    
+    // From the BNF, first must be a node type, always a string,
+    // and the second is a map
+    std::cout << j << std::endl;
+
+    const std::set<std::string> ctrl_nodes {"seq", "sel", "par"};
+    const std::set<std::string> leaf_nodes {"act", "cond"};
+    
+    for(auto& n: j)
     {
-        if (i.is_string())
+        auto &i     = n[0];
+        auto &am    = n[1];
+        assert(i.is_string());
+        std::string s = i;
+        if (ctrl_nodes.count(s))
         {
-            std::string s = i;
-            printf("control: %s\n", s.c_str());
+            // Third element for these types
+            json &nl = n[2];
+            //std::cout << nl << std::endl;
+            if (s == "seq")
+            {
+                std::cout << "constructing seq" << std::endl;
+                children.push_back(new Sequence_node(nl));
+            }
+            else if (s == "sel")
+            {
+                std::cout << "constructing sel" << std::endl;
+                children.push_back(new Select_node(nl));
+            }
+            else if (s == "par")
+            {
+                int s = am["s"];
+                int f = am["f"];
+                std::cout << "constructing par" << std::endl;
+                //children.push_back(new Parallel_node(nl, s, f));
+            }
         }
-        else if (i.is_array())
+        else if (leaf_nodes.count(s))
         {
-            printf("entering node..\n");
-            behaviour_tree_builder(i);
-        }
-        else if (i.is_number())
-        {
-            float f = i;
-            printf("leaf: %f\n", f);
-        }
-        else
-        {
-            printf("don't know what to do\n");
+            // Only two elements for the leaf types
+            std::cout << "constructing leaf with param: " << am << std::endl;
+            children.push_back(new Leaf_node(am));
         }
     }
     printf("leaving node..\n");
-    //return nullptr;
 }
 
 
