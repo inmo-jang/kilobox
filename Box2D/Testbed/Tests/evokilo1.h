@@ -397,9 +397,20 @@ public:
            ["leaf", {"type": "ml", "x": 1}]
            ]
           ]])"_json;
-        bt = new BT::Node(j);
+        //bt = new BT::Node(j);
         //bt = BT::behaviour_tree_node(j);
         
+        // Build the string back from the already split words without the first word,
+        // then parse the string into the behaviour tree. It would
+        // be more sensible to pass the string in unsplit, but keep this to maintain
+        // compatibility with the already existing interface
+        std::string btstring = "";
+        for(auto i = words.begin() + 1; i != words.end(); ++i)
+            btstring += *i;
+        printf("BT strings is:\n%s\n", btstring.c_str());
+        json j1 = json::parse(btstring);
+        bt = new BT::Node(j1);
+
 
         
         if (logfile != "")

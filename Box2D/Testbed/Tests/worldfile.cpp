@@ -599,11 +599,18 @@ bool Worldfile::LoadTokenString(FILE *file, int *line, int include)
     {
       ch = fgetc(file);
 
-      if ( EOF == ch || 0x0a == ch || 0x0d == ch )
+    if (0)
+    //if ( EOF == ch || 0x0a == ch || 0x0d == ch )
 	{
 	  TOKEN_ERR("unterminated string constant", *line);
 	  return false;
 	}
+    else if (ch == '\\')
+    {
+        // Escape character, read next char and don't interpret
+        ch = fgetc(file);
+        token[len++] = ch;
+    }
       else if (ch == '"')
 	{
 	  AddToken(TokenString, token, include);
