@@ -1,0 +1,17 @@
+
+# Set up world in which there is a central nest surrounded by food with
+# a 10cm gap between them
+region( rectangle [0 0 3 2 2] )
+region( circle [0 0 0.3 0] )
+region( circle [0 0 0.2 1] )
+
+
+
+define r0 position (
+ctrl "evokilo4"
+)
+global ( params [0.001759 0.095316 0.000971 0.028605 0.032000 20.000000 5.000000 5.000000 0.695555 0.100000 0.110767 0.000078 0.006223 0.011603 0.843987] )
+
+quit_time 300
+r0( pose [ 0.000000  0.000000 0 94.420830 ])
+
