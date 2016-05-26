@@ -276,39 +276,6 @@ void Kiloworld::build_world()
     printf("kbwheeldist         %f\n",settings->kbwheeldist);
     printf("kbmsgsuccess        %f\n",settings->kbmsgsuccess);
     
-    using namespace BT;
-    
-//    json j =
-//    {{ "seq", json::array
-//        ({
-//            {{"cond", 1}},
-//            {{"act", 2}},
-//            {{"sel", json::array
-//                ({
-//                    {{"act", 3}},
-//                    {{"act", 4}}
-//                })
-//            }}
-//        })
-//    }};
-
-    json j = R"(
-    [[ "seq", {"a": 1},
-     [
-      ["leaf", {"type": "mf", "x", 3}],
-      ["leaf", {"type": "ml", "x": 2}],
-      ["sel", {"a": 3},
-       [
-        ["leaf", {"a": 4}],
-        ["leaf", {"a": 5}]
-        ]
-       ]
-      ]
-     ]])"_json;
-    //std::cout << j << std::endl;
-    //std::cout << j[0].is_string() << std::endl;
-    bt = new BT::Node(j);
-    //bt = BT::behaviour_tree_node(j);
 
 }
 

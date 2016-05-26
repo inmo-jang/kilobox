@@ -5,48 +5,82 @@
 #include <set>
 
 #include "bt.h"
+#include "kilolib.h"
+
 
 using namespace BT;
 
 
-int Node::tick()
+Status Node::tick(Blackboard *_b)
 {
-    assert(children.size() == 1);
-    return children[0]->tick();
+    b = _b;
+    if (stat != BT_RUNNING)
+        init();
+    stat = update();
+    if (stat != BT_RUNNING)
+        finish(stat);
+    return stat;
 }
 
-int Select_node::tick()
+
+Status Node::update()
+{
+    return children[0]->tick(b);
+}
+
+Status Select_node::update()
 {
     assert(children.size() > 0);
     for(auto& i : children)
     {
-        auto state = i->tick();
+        auto state = i->tick(b);
         if (state == BT_RUNNING || state == BT_SUCCESS)
             return state;
     }
     return BT_FAILURE;
 }
 
-int Sequence_node::tick()
+Status Sequence_node::update()
 {
     assert(children.size() > 0);
     for(auto& i : children)
     {
-        auto state = i->tick();
+        auto state = i->tick(b);
         if (state == BT_RUNNING || state == BT_FAILURE)
             return state;
     }
     return BT_SUCCESS;
 }
 
-int Parallel_node::tick()
+Status Sequencemem_node::update()
+{
+    assert(children.size() > 0);
+    for(int i = run_index; i < children.size(); ++i)
+    {
+        auto state = children[i]->tick(b);
+        if (state == BT_RUNNING)
+        {
+            run_index = i;
+            return state;
+        }
+        if (state == BT_FAILURE)
+        {
+            run_index = 0;
+            return state;
+        }
+    }
+    run_index = 0;
+    return BT_SUCCESS;
+}
+
+Status Parallel_node::update()
 {
     assert(children.size() > 0);
     int scount = 0;
     int fcount = 0;
     for(auto& i : children)
     {
-        auto state = i->tick();
+        auto state = i->tick(b);
         if (state == BT_SUCCESS) ++scount;
         if (state == BT_FAILURE) ++fcount;
     }
@@ -54,6 +88,8 @@ int Parallel_node::tick()
     if (fcount >= f) return BT_FAILURE;
     return BT_RUNNING;
 }
+
+
 
 // In automode, the behaviours and conditions are as follows, all conditions except stop have
 // obstacle avoidance embedded:
@@ -72,10 +108,10 @@ int Parallel_node::tick()
 // fix probability
 
 // With kilobots, necessarily lower level..
-//  move straight for x ticks
-//  move left       "
-//  move right      "
-//  set msg to x
+//  mf  move forward for x ticks
+//  ml  move left       "
+//  mr  move right      "
+//  sm  set msg to x
 //
 //  msg count aka neighbours
 //  msg average
@@ -99,12 +135,87 @@ int Parallel_node::tick()
 // To evaluate the tree:
 // Traverse
 //
-int Leaf_node::tick()
+void Leaf_node::init()
+{
+    auto &t = j["type"];
+    auto &x = j["x"];
+    
+    int val = 0; if (x.is_number()) val = x;
+    
+    std::string s = t;
+    count = 0;
+
+    if (s == "mf")
+    {
+        b->outputs[0] = 1.0;
+        b->outputs[1] = 1.0;
+        count = val;
+    }
+    else if (s == "ml")
+    {
+        b->outputs[0] = 1.0;
+        b->outputs[1] = 0.0;
+        count = val;
+    }
+    else if (s == "mr")
+    {
+        b->outputs[0] = 0.0;
+        b->outputs[1] = 1.0;
+        count = val;
+    }
+    else if (s == "sm")
+    {
+        b->outputs[2] = val;
+    }
+    stat = BT_RUNNING;
+}
+Status Leaf_node::update()
 {
     // Look at the json fragment to find out what to do
     auto &t = j["type"];
-    printf("%s\n", t.c_str());
-    return BT_SUCCESS;
+    std::string s = t;
+    
+    
+    count--;
+    if (count <= 0)
+    {
+        stat = BT_SUCCESS;
+        if (motor.count(s))
+        {
+            // We were running a motor command, so kill the motors
+            b->outputs[0] = 0.0;
+            b->outputs[1] = 0.0;
+        }
+    }
+    
+    if (s == "if")
+    {
+        auto &v1 = j["var1"];
+        auto &v2 = j["var2"];
+        auto &c1 = j["con1"];
+        auto &c2 = j["con2"];
+        std::string rel = j["rel"];
+        
+        float op1, op2;
+        if (v1.is_number())     op1 = b->inputs[v1];
+        if (v2.is_number())     op2 = b->inputs[v2];
+        if (c1.is_number())     op1 = c1;
+        if (c2.is_number())     op2 = c2;
+        
+        if (rel == ">") stat = op1 > op2 ? BT_SUCCESS : BT_FAILURE;
+        if (rel == "<") stat = op1 < op2 ? BT_SUCCESS : BT_FAILURE;
+        
+        printf("if %f %s %f\n", op1, rel.c_str(), op2);
+    }
+    
+    printf("Tick %s %d %d\n", s.c_str(), stat, count);
+    return stat;
+}
+
+
+void Leaf_node::finish(Status)
+{
+    
 }
 
 //json j = R"(
@@ -146,8 +257,7 @@ Node::Node(json &j)
     // and the second is a map
     std::cout << j << std::endl;
 
-    const std::set<std::string> ctrl_nodes {"seq", "sel", "par"};
-    const std::set<std::string> leaf_nodes {"act", "cond"};
+
     
     for(auto& n: j)
     {
@@ -165,6 +275,11 @@ Node::Node(json &j)
                 std::cout << "constructing seq" << std::endl;
                 children.push_back(new Sequence_node(nl));
             }
+            if (s == "seqm")
+            {
+                std::cout << "constructing seqm" << std::endl;
+                children.push_back(new Sequencemem_node(nl));
+            }
             else if (s == "sel")
             {
                 std::cout << "constructing sel" << std::endl;
@@ -180,7 +295,7 @@ Node::Node(json &j)
         }
         else if (leaf_nodes.count(s))
         {
-            // Only two elements for the leaf types
+            // Leaf types interpreted for now
             std::cout << "constructing leaf with param: " << am << std::endl;
             children.push_back(new Leaf_node(am));
         }

@@ -385,18 +385,22 @@ public:
     Kilobot (_pos, _settings),
     words   (_words),
     logfile (_logfile),
-    // Set the size of the neural net
-    nn      (7, 7, 3),
-    inputs  (7)
+    bboard  (5, 3)
     {
-        if (words.size()-1 == nn.NN_NUM_WEIGHTS)
-            for(int i=0; i<nn.NN_NUM_WEIGHTS; i++)
-                nn.nn_weights[i] = atof(words[i+1].c_str());
-        else
-        {
-            printf("Wrong number of weights in controller arguments, got %lu should be %d\n", words.size()-1, nn.NN_NUM_WEIGHTS );
-            exit(1);
-        }
+        // Construct the behaviour tree
+        using namespace BT;
+        json j = R"(
+        [[ "seqm", {"a": 1},
+          [
+           ["leaf", {"type": "if", "var1":3, "rel":">", "con2":0}],
+           ["leaf", {"type": "mf", "x": 20}],
+           ["leaf", {"type": "ml", "x": 1}]
+           ]
+          ]])"_json;
+        bt = new BT::Node(j);
+        //bt = BT::behaviour_tree_node(j);
+        
+
         
         if (logfile != "")
         {
@@ -450,7 +454,9 @@ public:
     void setup();
     void loop();
     
-    NN          nn;
+    // Behaviour tree
+    BT::Node *bt;
+    BT::Blackboard bboard;
     
     uint32_t    last_update     = 0;
     int         last_region     = 0;
@@ -460,18 +466,12 @@ public:
     int         messages        = 0;
     int         min_dist        = 150;
     float       msgsum          = 0;
-    int         mptr            = 0;
-#define MMEM 100
-    uint8_t     msg_id[MMEM];
-    int         new_id          = 0;
     
     uint8_t     carrying        = 0;
     int         total_food      = 0;
     int         total_pickup    = 0;
     
-    std::vector<float> inputs;
-    float       *outputs;
-    
+   
     
     // Message transmission callback
     message_t *tx_message()
@@ -487,25 +487,11 @@ public:
         int dist = estimate_distance(d);
         if (dist < min_dist)
             min_dist = dist;
-        msgsum += *(float*)m->data;
-        
-        // Check memory to see if message in there
-        uint8_t mid = m->data[4];
-        int found = 0;
-        for(int i=0; i<MMEM; i++)
-            if (msg_id[i] == mid)
-            {
-                found = 1;
-                break;
-            }
-        if (!found)
-            // Salient, since not in memory
-            new_id++;
-        msg_id[mptr] = mid;
-        mptr = (mptr+1) % MMEM;
+        float mf;
+        memcpy(&mf, m->data, 4);
+        msgsum += mf;
         messages ++;
     }
-    
     
     
 };

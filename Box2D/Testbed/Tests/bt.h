@@ -3,6 +3,7 @@
 #define _BT_H
 
 #include <vector>
+#include <set>
 #include <json.hpp>
 using json = nlohmann::json;
 
@@ -12,29 +13,50 @@ namespace BT
 
     
 
-    enum {
-        BT_FAILURE = 0,
+    enum Status {
+        BT_INVALID = 0,
+        BT_FAILURE,
         BT_SUCCESS,
         BT_RUNNING
     };
+    
+    const std::set<std::string> ctrl_nodes  {"seq", "seqm", "sel", "par"};
+    const std::set<std::string> leaf_nodes  {"leaf"};
+    const std::set<std::string> motor       {"mf", "ml", "mr"};
+
     
     class Select_node;
     class Sequence_node;
     class Parallel_node;
     class Leaf_node;
     
-    
+    class Blackboard
+    {
+    public:
+        Blackboard(int _i, int _o)
+        {
+            inputs.resize(_i);
+            outputs.resize(_o);
+        }
+        std::vector<float> inputs;
+        std::vector<float> outputs;
+    };
 
     class Node
     {
     public:
-        Node() {}
+        Node() : stat(BT_INVALID) {}
         Node(json &j);
-        int tick();
+        Status          tick(Blackboard *_b);
+        Status          tick();
+        virtual void    init() {}
+        virtual Status  update();
+        virtual void    finish(Status) {}
+        Blackboard *b;
     protected:
         std::vector<Node *> children;
     private:
-        //json &j;
+        Status stat;
     };
 
 
@@ -44,9 +66,7 @@ namespace BT
     public:
         Select_node(json &j) : Node(j) {}
     protected:
-        // Tick in order from start, return first running or success,
-        // failure if no running or success
-        int tick();
+        virtual Status update();
     };
     
     class Sequence_node : public Node
@@ -54,10 +74,19 @@ namespace BT
     public:
         Sequence_node(json &j) : Node(j) {}
     protected:
-        // Tick in order from start, return first running or failure,
-        // success if all successful
-        int tick();
-
+        virtual Status update();
+        
+    };
+    
+    class Sequencemem_node : public Node
+    {
+    public:
+        Sequencemem_node(json &j) : Node(j) {}
+    protected:
+        virtual Status update();
+    private:
+        int run_index = 0;
+        
     };
 
     class Parallel_node : public Node
@@ -65,9 +94,7 @@ namespace BT
     public:
         Parallel_node(json &j, int _s, int _f) : Node(j), s(_s), f(_f) {}
     protected:
-        // Tick all, return success if >= s successes,
-        // failure if >= f failures
-        int tick();
+        virtual Status update();
     private:
         int s, f;
     };
@@ -77,9 +104,13 @@ namespace BT
     public:
         Leaf_node(json &_j) : j(_j) {}
     protected:
-        int tick();
+        virtual void    init();
+        virtual Status  update();
+        virtual void    finish(Status s);
     private:
         json j;
+        Status stat;
+        int count = 0;
     };
     
     //Behaviour_tree_node *behaviour_tree_builder(json &j);

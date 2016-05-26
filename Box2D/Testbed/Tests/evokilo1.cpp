@@ -396,9 +396,6 @@ void Evokilo4::setup()
     msg.crc     = message_crc(&msg);
     
     last_region = 0;
-    // Clear record of message ids. There are no id==0
-    for(int i=0; i<MMEM; msg_id[i++] = 0);
-        
 }
 
 
@@ -413,39 +410,26 @@ void Evokilo4::loop()
         last_update = kilo_ticks;
         region      = get_environment();
         
-        // Every cycle, build the inputs to the neuron net, compute the outputs
-        // and set the actuators using the outputs
-
-        
-        // Change in neighbourhood
-        // This measures how the ids of the neighbours who have sent messages
-        // has changed since the last time
-        // if a message id is not in the circular buffer of recent message ids,
-        // this is regarded as salient, and increases the input to that neuron
-        
-        // Bias
-        inputs[0]   = 1.0;
-
+        // Set up the inputs on the blackboard
         
         // Distance to nearest neighbours
-        inputs[1]   = (float)min_dist / 100.0;
+        bboard.inputs[0]   = (float)min_dist / 100.0;
         // Number of neighbours
-        inputs[2]   = messages;
+        bboard.inputs[1]   = messages;
         // Average message
         float avgmsg = messages > 0 ? msgsum / messages : 0.0;
-        inputs[3]   = avgmsg;
+        bboard.inputs[2]   = avgmsg;
         // Nest
-        inputs[4]   = (region == NEST) ? 1.0 : -1.0;
+        bboard.inputs[3]   = (region == NEST) ? 1.0 : -1.0;
         // Food
-        inputs[5]   = (region == FOOD) ? 1.0 : -1.0;
-        // New ids seen this time
-        inputs[6]   = new_id;
-        
-        // Run the neural net
-        outputs     = nn.nn_update(&inputs[0]);
+        bboard.inputs[4]   = (region == FOOD) ? 1.0 : -1.0;
+
+        // Tick the behaviour tree
+        bt->tick(&bboard);
+
         
         // Motor control
-        int d = (outputs[0] >= 0 ? 1 : 0) | (outputs[1] >= 0 ? 2 : 0);
+        int d = (bboard.outputs[0] > 0 ? 1 : 0) | (bboard.outputs[1] > 0 ? 2 : 0);
         switch(d)
         {
             case(0):
@@ -466,23 +450,16 @@ void Evokilo4::loop()
         }
         
         // Message output direct from neuron
-        *(float*)msg.data = outputs[2];
+        *(float*)msg.data = bboard.outputs[2];
         msg.data[4] = kilo_uid & 0xff;
         msg.crc     = message_crc(&msg);
         
-        
-        // visualise the internal state
-        //set_color(RGB(carrying?2:0, (region==NEST)?3:0, (region==FOOD)?3:0));
-        set_colorf(messages > 0 ? (float)new_id/messages : 0);
-        //set_colorf(0.5);
-        set_color_msg((outputs[2] + 1.0) / 2.0);
-        //set_color_msg(carrying);
+
         
         // Clear the message variables
         messages    = 0;
         msgsum      = 0;
         min_dist    = 150;
-        new_id      = 0;
         
         // remember last region visited
         last_region = region;
@@ -502,7 +479,7 @@ void Evokilo4::loop()
             last_time += 1e6;
             char buf[1024];
             snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
-                     pos->GetPose().x, pos->GetPose().y, inputs[1],inputs[2],inputs[3], outputs[0],outputs[1], outputs[2]);
+                     pos->GetPose().x, pos->GetPose().y, bboard.inputs[0],bboard.inputs[1],bboard.inputs[2], bboard.outputs[0],bboard.outputs[1], bboard.outputs[2]);
             Evokilo4::log(buf);
         }
     }
