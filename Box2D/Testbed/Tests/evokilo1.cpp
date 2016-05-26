@@ -415,7 +415,7 @@ void Evokilo4::loop()
         // Distance to nearest neighbours
         bboard.inputs[0]   = (float)min_dist / 100.0;
         // Number of neighbours
-        bboard.inputs[1]   = messages;
+        bboard.inputs[1]   = (float)messages / 10.0;
         // Average message
         float avgmsg = messages > 0 ? msgsum / messages : 0.0;
         bboard.inputs[2]   = avgmsg;

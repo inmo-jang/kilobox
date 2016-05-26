@@ -40,6 +40,27 @@ Status Select_node::update()
     return BT_FAILURE;
 }
 
+Status Selectmem_node::update()
+{
+    assert(children.size() > 0);
+    for(int i = run_index; i < children.size(); ++i)
+    {
+        auto state = children[i]->tick(b);
+        if (state == BT_RUNNING)
+        {
+            run_index = i;
+            return state;
+        }
+        if (state == BT_SUCCESS)
+        {
+            run_index = 0;
+            return state;
+        }
+    }
+    run_index = 0;
+    return BT_FAILURE;
+}
+
 Status Sequence_node::update()
 {
     assert(children.size() > 0);
@@ -265,6 +286,7 @@ Node::Node(json &j)
         auto &am    = n[1];
         assert(i.is_string());
         std::string s = i;
+        printf("element is %s\n", s.c_str());
         if (ctrl_nodes.count(s))
         {
             // Third element for these types
@@ -275,7 +297,7 @@ Node::Node(json &j)
                 std::cout << "constructing seq" << std::endl;
                 children.push_back(new Sequence_node(nl));
             }
-            if (s == "seqm")
+            else if (s == "seqm")
             {
                 std::cout << "constructing seqm" << std::endl;
                 children.push_back(new Sequencemem_node(nl));
@@ -284,6 +306,11 @@ Node::Node(json &j)
             {
                 std::cout << "constructing sel" << std::endl;
                 children.push_back(new Select_node(nl));
+            }
+            else if (s == "selm")
+            {
+                std::cout << "constructing selm" << std::endl;
+                children.push_back(new Selectmem_node(nl));
             }
             else if (s == "par")
             {

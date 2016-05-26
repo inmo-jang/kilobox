@@ -611,6 +611,8 @@ bool Worldfile::LoadTokenString(FILE *file, int *line, int include)
         ch = fgetc(file);
         token[len++] = ch;
     }
+    else if (ch == '\'')
+        token[len++] = '"';
       else if (ch == '"')
 	{
 	  AddToken(TokenString, token, include);

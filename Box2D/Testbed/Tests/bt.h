@@ -20,7 +20,7 @@ namespace BT
         BT_RUNNING
     };
     
-    const std::set<std::string> ctrl_nodes  {"seq", "seqm", "sel", "par"};
+    const std::set<std::string> ctrl_nodes  {"seq", "seqm", "sel", "selm", "par"};
     const std::set<std::string> leaf_nodes  {"leaf"};
     const std::set<std::string> motor       {"mf", "ml", "mr"};
 
@@ -60,13 +60,23 @@ namespace BT
     };
 
 
-
+    
     class Select_node : public Node
     {
     public:
         Select_node(json &j) : Node(j) {}
     protected:
         virtual Status update();
+    };
+    
+    class Selectmem_node : public Node
+    {
+    public:
+        Selectmem_node(json &j) : Node(j) {}
+    protected:
+        virtual Status update();
+    private:
+        int run_index = 0;
     };
     
     class Sequence_node : public Node
