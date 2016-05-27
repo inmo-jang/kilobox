@@ -410,20 +410,38 @@ void Evokilo4::loop()
         last_update = kilo_ticks;
         region      = get_environment();
         
+        // Little state machine for food transport: always collect food if in food area
+        // and deposit it if in nest area
+        if (carrying && (region == NEST) && (last_region == NEST))
+        {
+            carrying = 0;
+            total_food++;
+        }
+        else if (!carrying && (region == FOOD) && (last_region == FOOD))
+        {
+            carrying = 1;
+            total_pickup++;
+        }
+        
         // Set up the inputs on the blackboard
         
+
+
+
+        // Nest
+        bboard.inputs[0]    = (region == NEST) ? 1.0 : -1.0;
+        // Food
+        bboard.inputs[1]    = (region == FOOD) ? 1.0 : -1.0;
+        // Carrying food
+        bboard.inputs[2]    = carrying ? 1.0 : -1.0;
         // Distance to nearest neighbours
-        bboard.inputs[0]   = (float)min_dist / 100.0;
+        bboard.inputs[3]    = (float)min_dist / 100.0;
         // Number of neighbours
-        bboard.inputs[1]   = (float)messages / 10.0;
+        bboard.inputs[4]    = (float)messages / 10.0;
         // Average message
         float avgmsg = messages > 0 ? msgsum / messages : 0.0;
-        bboard.inputs[2]   = avgmsg;
-        // Nest
-        bboard.inputs[3]   = (region == NEST) ? 1.0 : -1.0;
-        // Food
-        bboard.inputs[4]   = (region == FOOD) ? 1.0 : -1.0;
-
+        bboard.inputs[5]    = avgmsg;
+        
         // Tick the behaviour tree
         bt->tick(&bboard);
 

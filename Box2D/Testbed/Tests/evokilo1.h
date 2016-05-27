@@ -385,7 +385,7 @@ public:
     Kilobot (_pos, _settings),
     words   (_words),
     logfile (_logfile),
-    bboard  (5, 3)
+    bboard  (6, 3)
     {
         // Construct the behaviour tree
         using namespace BT;
