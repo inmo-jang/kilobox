@@ -226,10 +226,10 @@ Status Leaf_node::update()
         if (rel == ">") stat = op1 > op2 ? BT_SUCCESS : BT_FAILURE;
         if (rel == "<") stat = op1 < op2 ? BT_SUCCESS : BT_FAILURE;
         
-        printf("if %f %s %f\n", op1, rel.c_str(), op2);
+        //printf("if %f %s %f\n", op1, rel.c_str(), op2);
     }
     
-    printf("Tick %s %d %d\n", s.c_str(), stat, count);
+    //printf("Tick %s %d %d\n", s.c_str(), stat, count);
     return stat;
 }
 
