@@ -9,6 +9,7 @@
 #include "kilolib.h"
 #include <vector>
 #include <cstdlib>
+#include <map>
 
 using namespace Kilolib;
 
@@ -44,6 +45,318 @@ public:
 };
 
 
+class Minimal_example : public Kilobot
+{
+public:
+    // Minimal example kiloobt controller
+    
+    Minimal_example(ModelPosition *_pos, Settings *_settings,
+                    std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile)
+    {
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&Minimal_example::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&Minimal_example::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&Minimal_example::message_tx_success_dummy;
+        setup();
+    }
+    ~Minimal_example()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+    
+    
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    
+    void setup();
+    void loop();
+    int last_update;
+    
+};
+
+class Orbit_star : public Kilobot
+{
+public:
+    // Minimal example kiloobt controller
+    
+    Orbit_star(ModelPosition *_pos, Settings *_settings,
+                    std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile)
+    {
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&Orbit_star::message_tx;
+        kilo_message_rx         = (message_rx_t)&Orbit_star::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&Orbit_star::message_tx_success;
+        setup();
+    }
+    ~Orbit_star()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+    
+    
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    
+
+    int last_update;
+    uint8_t message_sent = 0;
+    message_t msg;
+    
+    void setup()
+    {
+        msg.type = NORMAL;
+        msg.crc = message_crc(&msg);
+    }
+    void loop() {
+        // blink red when message is sent
+        if (message_sent) {
+            message_sent = 0;
+            set_color(RGB(1,0,0));
+            //delay(20);
+            set_color(RGB(0,0,0));
+        }
+    }
+
+    message_t *message_tx()
+    {
+        return &msg;
+    }
+    void message_tx_success()
+    {
+        message_sent = 1;
+    }
+    
+};
+
+class Orbit_planet : public Kilobot
+{
+public:
+    // Minimal example kiloobt controller
+    
+    Orbit_planet(ModelPosition *_pos, Settings *_settings,
+                    std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile)
+    {
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&Orbit_planet::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&Orbit_planet::message_rx;
+        kilo_message_tx_success = (message_tx_success_t)&Orbit_planet::message_tx_success_dummy;
+        setup();
+    }
+    ~Orbit_planet()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+    
+    
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    
+    int last_update;
+    
+    // declare constants
+    static const uint8_t TOOCLOSE_DISTANCE = 40; // 40 mm
+    static const uint8_t DESIRED_DISTANCE = 60; // 60 mm
+    
+    // declare motion variable type
+    typedef enum {
+        STOP,
+        FORWARD,
+        LEFT,
+        RIGHT
+    } motion_t;
+    
+    // declare state variable type
+    typedef enum {
+        ORBIT_TOOCLOSE,
+        ORBIT_NORMAL,
+    } orbit_state_t;
+    
+    // declare variables
+    motion_t cur_motion = STOP;
+    orbit_state_t orbit_state = ORBIT_NORMAL;
+    uint8_t cur_distance = 0;
+    uint8_t new_message = 0;
+    distance_measurement_t dist;
+    
+    // function to set new motion
+    void set_motion(motion_t new_motion) {
+        if (cur_motion != new_motion) {
+            cur_motion = new_motion;
+            switch(cur_motion) {
+                case STOP:
+                    set_motors(0,0);
+                    break;
+                case FORWARD:
+                    spinup_motors();
+                    set_motors(kilo_straight_left, kilo_straight_right);
+                    break;
+                case LEFT:
+                    spinup_motors();
+                    set_motors(kilo_turn_left, 0);
+                    break;
+                case RIGHT:
+                    spinup_motors();
+                    set_motors(0, kilo_turn_right);
+                    break;
+            }
+        }
+    }
+    
+    void orbit_normal() {
+        if (cur_distance < TOOCLOSE_DISTANCE) {
+            orbit_state = ORBIT_TOOCLOSE;
+        } else {
+            if (cur_distance < DESIRED_DISTANCE)
+                set_motion(LEFT);
+            else
+                set_motion(RIGHT);
+        }
+    }
+    
+    void orbit_tooclose() {
+        if (cur_distance >= DESIRED_DISTANCE)
+            orbit_state = ORBIT_NORMAL;
+        else
+            set_motion(FORWARD);
+    }
+    
+    // no setup code required
+    void setup() { }
+    
+    void loop() {
+        // Update distance estimate with every message
+        if (new_message) {
+            new_message = 0;
+            cur_distance = estimate_distance(&dist);
+        } else if (cur_distance == 0) // skip state machine if no distance measurement available
+            return;
+        
+        // Orbit state machine
+        switch(orbit_state) {
+            case ORBIT_NORMAL:
+                orbit_normal();
+                break;
+            case ORBIT_TOOCLOSE:
+                orbit_tooclose();
+                break;
+        }
+    }
+    
+    void message_rx(message_t *m, distance_measurement_t *d) {
+        new_message = 1;
+        dist = *d;
+    }
+
+    
+};
 
 
 class Evokilo1 : public Kilobot
@@ -506,6 +819,117 @@ public:
     
     
 };
+
+
+
+
+
+class Disperse : public Kilobot
+{
+public:
+    // Minimal example kiloobt controller
+    
+    Disperse(ModelPosition *_pos, Settings *_settings,
+                    std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile)
+    {
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&Disperse::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&Disperse::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&Disperse::message_tx_success_dummy;
+        setup();
+    }
+    ~Disperse()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+    
+    
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    
+
+    int last_update;
+    uint8_t new_message = 0;
+    uint8_t message_sent = 0;
+    typedef std::map<int,int> ns_t;
+    ns_t neighbours_seen;
+    float last_density;
+    float dtarget = 100;
+    float dmargin = 50;
+    int last_output = 0;
+    uint8_t found_food = 0;
+    uint8_t told_about_food = 0;
+
+    // Spread out until certain density reached or food is found
+    // Run and tumble
+    // Stop when food or low enough density
+    // Run when concentration decreasing
+    // Tumble otherwise
+    // So:
+    //  Measure concentration
+    //      at a particular distance, a particular area is implied
+    //      area = pi*r^2
+    //      desnity = 1/area
+    //      calc densities due to each message, and add
+    // If food sensed, or food found in incoming message, set in outgoing
+    void setup();
+    void loop();
+    float calc_density();
+    void set_motion(int dir);
+
+    void message_rx(message_t *m, distance_measurement_t *d) {
+        new_message = 1;
+        int dist = estimate_distance(d);
+        int uid = m->data[0] | (m->data[1] << 8);
+        neighbours_seen[uid] = dist;
+        told_about_food = m->data[2];
+    }
+    message_t *message_tx()
+    {
+        return &msg;
+    }
+    void message_tx_success()
+    {
+        message_sent = 1;
+    }
+};
+
 
 
 

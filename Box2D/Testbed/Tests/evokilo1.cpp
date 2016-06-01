@@ -3,6 +3,9 @@
 // (c) Simon Jones 2015
 //----------------------------------------------------------
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,12 +26,30 @@ using namespace Kilolib;
 
 
 // Single class variable for logging file pointer
+FILE *Minimal_example::lfp = NULL;
+FILE *Orbit_star::lfp = NULL;
+FILE *Orbit_planet::lfp = NULL;
 FILE *Evokilo1::lfp = NULL;
 FILE *Evokilo2::lfp = NULL;
 FILE *Evokilo3::lfp = NULL;
 FILE *Evokilo4::lfp = NULL;
+FILE *Disperse::lfp = NULL;
 
-//#define RECT
+
+void Minimal_example::setup()
+{
+    last_update     = kilo_ticks;
+}
+void Minimal_example::loop()
+{
+    if (kilo_ticks > last_update + 16)
+    {
+        last_update = kilo_ticks;
+        set_color(RGB((kilo_ticks>>4)%2,0,0));
+    }
+}
+
+
 
 
 float sigmoid(float x) {return tanh(x);}
@@ -472,7 +493,9 @@ void Evokilo4::loop()
         msg.data[4] = kilo_uid & 0xff;
         msg.crc     = message_crc(&msg);
         
-
+        // visualise the internal state
+        set_color(RGB(carrying?2:0, 0, 0));
+        set_color_msg((bboard.outputs[2] + 1.0) / 2.0);
         
         // Clear the message variables
         messages    = 0;
@@ -499,6 +522,133 @@ void Evokilo4::loop()
             snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
                      pos->GetPose().x, pos->GetPose().y, bboard.inputs[0],bboard.inputs[1],bboard.inputs[2], bboard.outputs[0],bboard.outputs[1], bboard.outputs[2]);
             Evokilo4::log(buf);
+        }
+    }
+    
+}
+
+
+
+
+void Disperse::setup()
+{
+    // Set the callbacks
+    kilo_message_tx         = (message_tx_t)&Disperse::message_tx;
+    kilo_message_rx         = (message_rx_t)&Disperse::message_rx;
+    
+    // Construct a valid message with our ID in the first two bytes
+    msg.type    = NORMAL;
+    msg.data[0] = kilo_uid & 0xff;
+    msg.data[1] = (kilo_uid >> 8) & 0xff;
+    msg.data[2] = 0;
+    msg.crc     = message_crc(&msg);
+    last_density = 0.0f;
+    last_output = 0;
+}
+
+float Disperse::calc_density()
+{
+    // Density = sum(1/pi*r^2)
+    // Scale so in kilobots/m^2
+    float d = 0.0f;
+    //printf("%3d: ", kilo_uid);
+    for(ns_t::iterator i=neighbours_seen.begin(); i!=neighbours_seen.end(); ++i)
+    {
+        //printf("%4d ", i->second);
+        d += 1/(M_PI * pow((float)i->second / 1000.0, 2));
+    }
+    //printf("\n");
+    return d;
+}
+
+void Disperse::set_motion(int dir)
+{
+    switch(dir)
+    {
+        case(0):
+            set_motors(0,0);
+            break;
+        case(1):
+            if (last_output == 0) spinup_motors();
+            set_motors(kilo_turn_left,0);
+            break;
+        case(2):
+            if (last_output == 0) spinup_motors();
+            set_motors(0,kilo_turn_right);
+            break;
+        case(3):
+            if (last_output == 0) spinup_motors();
+            set_motors(kilo_straight_left, kilo_straight_right);
+            break;
+    }
+    last_output = dir;
+}
+
+void Disperse::loop()
+{
+    
+    //int region;
+    if (kilo_ticks > last_update + 32)
+    {
+        last_update = kilo_ticks;
+        
+        // Main loop, run through here approximately once a second
+        
+        // See if there is food
+        if (get_environment() == FOOD)
+        {
+            set_color(RGB(0,3,0));
+            found_food = 1;
+        }
+        if (told_about_food && !found_food)
+        {
+            set_color(RGB(3,3,0));
+            found_food = 1;
+        }
+        
+        // Get the density
+        float density = calc_density();
+        printf("%3d %f\n", kilo_uid, density);
+        float ddelta = density - last_density;
+        
+        //if (fabs(density - dtarget) < dmargin)
+        if (found_food || density < dtarget)
+        {
+            // Stay still
+            set_motion(0);
+        }
+        else if (ddelta > 0)
+        {
+            // density going up, tumble
+            int dir = rand_intrange(1,2);
+            set_motion(dir);
+        }
+        else if (ddelta < 0)
+        {
+            set_motion(3);
+        }
+
+        // Update the food part of the message
+        msg.data[2] = found_food;
+        msg.crc     = message_crc(&msg);
+
+        
+        last_density = density;
+        // Reset the map of neighbour distances
+        neighbours_seen.erase(neighbours_seen.begin(), neighbours_seen.end());
+    }
+    
+    //===========================================================================
+    // Stage only, non kilobot logging
+    {
+        usec_t time = world_us_simtime;
+        if (time - last_time >= 1e6)
+        {
+            last_time += 1e6;
+            char buf[1024];
+            //snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
+            //         pos->GetPose().x, pos->GetPose().y, bboard.inputs[0],bboard.inputs[1],bboard.inputs[2], bboard.outputs[0],bboard.outputs[1], bboard.outputs[2]);
+            //Evokilo4::log(buf);
         }
     }
     

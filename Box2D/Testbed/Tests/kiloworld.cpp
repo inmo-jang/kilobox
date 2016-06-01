@@ -178,14 +178,22 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
             if (ctrlarg_words.size() == 2 && ctrlarg_words[0] == "log")
                 logfile = ctrlarg_words[1];
             
+            if (words[0] == "minimal_example")
+                bots.push_back((Kilobot*)(new Minimal_example(mod, settings, words, logfile.c_str())));
+            if (words[0] == "orbit_star")
+                    bots.push_back((Kilobot*)(new Orbit_star(mod, settings, words, logfile.c_str())));
+            if (words[0] == "orbit_planet")
+                        bots.push_back((Kilobot*)(new Orbit_planet(mod, settings, words, logfile.c_str())));
             if (words[0] == "evokilo1")
-                bots.push_back((Kilobot*)(new Evokilo1(mod, settings, words, logfile.c_str())));
+                    bots.push_back((Kilobot*)(new Evokilo1(mod, settings, words, logfile.c_str())));
             if (words[0] == "evokilo2")
                 bots.push_back((Kilobot*)(new Evokilo2(mod, settings, words, logfile.c_str())));
             if (words[0] == "evokilo3")
                 bots.push_back((Kilobot*)(new Evokilo3(mod, settings, words, logfile.c_str())));
             if (words[0] == "evokilo4")
                 bots.push_back((Kilobot*)(new Evokilo4(mod, settings, words, logfile.c_str())));
+            if (words[0] == "disperse")
+                bots.push_back((Kilobot*)(new Disperse(mod, settings, words, logfile.c_str())));
             
         }
     }
