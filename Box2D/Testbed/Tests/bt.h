@@ -29,6 +29,7 @@ namespace BT
     class Sequence_node;
     class Parallel_node;
     class Leaf_node;
+    class Node;
     
     class Blackboard
     {
@@ -40,6 +41,7 @@ namespace BT
         }
         std::vector<float> inputs;
         std::vector<float> outputs;
+        std::vector<Node*> running;
     };
 
     class Node

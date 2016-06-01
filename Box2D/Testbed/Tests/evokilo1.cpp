@@ -614,17 +614,18 @@ void Disperse::loop()
         //if (fabs(density - dtarget) < dmargin)
         if (found_food || density < dtarget)
         {
-            // Stay still
+            // Target met, stay still
             set_motion(0);
         }
         else if (ddelta > 0)
         {
-            // density going up, tumble
+            // Density going up, tumble
             int dir = rand_intrange(1,2);
             set_motion(dir);
         }
         else if (ddelta < 0)
         {
+            // Density going down, run
             set_motion(3);
         }
 

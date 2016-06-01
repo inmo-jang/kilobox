@@ -142,19 +142,18 @@ Status Parallel_node::update()
 //
 //
 
-// Given a condition vector C, composed of booleans, traversng the tree gives a vector of
-// action nodes that are visited with tick(). These nodes may return SUCCESS,
-// FAILURE, and RUNNING. A RUNNING action node has yet to complete its task.
+// The tree of nodes is traversed. Nodes may be action or composition. Action nodes may return SUCCESS,
+// FAILURE, and RUNNING. Composition nodes return a status based on their childrens statuses.
+// A RUNNING action node has yet to complete its task.
 // Action nodes can have two states, CLOSED, OPEN. A node visited by tick() becomes
 // OPEN. The transition from CLOSED to OPEN calls the init() method. The transition
 // from OPEN to CLOSED calls the finish() method. All nodes that are OPEN call the tick()
 // method.
 //
-// Actually, the above is wrong, since action nodes also are effectively part of the
-// condition vector
+//
 //
 // To evaluate the tree:
-// Traverse
+// Traverse,
 //
 void Leaf_node::init()
 {
@@ -236,6 +235,12 @@ Status Leaf_node::update()
 
 void Leaf_node::finish(Status)
 {
+    if (stat == BT_RUNNING)
+    {
+        // We are a leaf node and still running, so we should be added to the
+        // list of running nodes
+        b->running.push_back(this);
+    }
     
 }
 
