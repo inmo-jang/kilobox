@@ -18,7 +18,7 @@ Status Node::tick(Blackboard *_b)
         init();
     stat = update();
     if (stat != BT_RUNNING)
-        finish(stat);
+        finish();
     return stat;
 }
 
@@ -94,7 +94,7 @@ Status Sequencemem_node::update()
     return BT_SUCCESS;
 }
 
-Status Parallel_node::update()
+/*Status Parallel_node::update()
 {
     assert(children.size() > 0);
     int scount = 0;
@@ -108,7 +108,7 @@ Status Parallel_node::update()
     if (scount >= s) return BT_SUCCESS;
     if (fcount >= f) return BT_FAILURE;
     return BT_RUNNING;
-}
+}*/
 
 
 
@@ -153,16 +153,31 @@ Status Parallel_node::update()
 //
 //
 // To evaluate the tree:
-// Traverse,
+// On every call to tick() at the root, traverse the tree in depth first order,
+// this will result in at most one RUNNING node, if the PAR construct is
+// not used. In order that a RUNNING node is not orphaned by a change in conditions
+// at some later tick(), record the node. If the previously RUNNING node is not reached,
+// call its finish() method
 //
 void Leaf_node::init()
 {
     auto &t = j["type"];
+    std::string s = t;
+    if (action.count(s) && b->running != nullptr && b->running != this)
+    {
+        // This is an action node (that might become running) and the currently
+        // marked running action node is not this node and not null, so it must be
+        // cleanly stopped before starting this one
+        b->running->finish();
+        b->running = nullptr;
+    }
+    
+    
     auto &x = j["x"];
     
-    int val = 0; if (x.is_number()) val = x;
+    int val = 0;
+    if (x.is_number()) val = x;
     
-    std::string s = t;
     count = 0;
 
     if (s == "mf")
@@ -233,15 +248,14 @@ Status Leaf_node::update()
 }
 
 
-void Leaf_node::finish(Status)
+void Leaf_node::finish()
 {
     if (stat == BT_RUNNING)
     {
         // We are a leaf node and still running, so we should be added to the
         // list of running nodes
-        b->running.push_back(this);
+        b->running = this;
     }
-    
 }
 
 //json j = R"(

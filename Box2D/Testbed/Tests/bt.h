@@ -22,6 +22,7 @@ namespace BT
     
     const std::set<std::string> ctrl_nodes  {"seq", "seqm", "sel", "selm", "par"};
     const std::set<std::string> leaf_nodes  {"leaf"};
+    const std::set<std::string> action      {"mf", "ml", "mr", "sm"};
     const std::set<std::string> motor       {"mf", "ml", "mr"};
 
     
@@ -39,9 +40,9 @@ namespace BT
             inputs.resize(_i);
             outputs.resize(_o);
         }
-        std::vector<float> inputs;
-        std::vector<float> outputs;
-        std::vector<Node*> running;
+        std::vector<float>  inputs;
+        std::vector<float>  outputs;
+        Node*               running = nullptr;
     };
 
     class Node
@@ -53,7 +54,7 @@ namespace BT
         Status          tick();
         virtual void    init() {}
         virtual Status  update();
-        virtual void    finish(Status) {}
+        virtual void    finish() {}
         Blackboard *b;
     protected:
         std::vector<Node *> children;
@@ -101,7 +102,7 @@ namespace BT
         
     };
 
-    class Parallel_node : public Node
+/*    class Parallel_node : public Node
     {
     public:
         Parallel_node(json &j, int _s, int _f) : Node(j), s(_s), f(_f) {}
@@ -110,7 +111,7 @@ namespace BT
     private:
         int s, f;
     };
-    
+*/
     class Leaf_node : public Node
     {
     public:
@@ -118,7 +119,7 @@ namespace BT
     protected:
         virtual void    init();
         virtual Status  update();
-        virtual void    finish(Status s);
+        virtual void    finish();
     private:
         json j;
         Status stat;

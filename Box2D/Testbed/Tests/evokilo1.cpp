@@ -656,3 +656,138 @@ void Disperse::loop()
 }
 
 
+void Btdisperse::setup()
+{
+    // Set the callbacks
+    kilo_message_tx         = (message_tx_t)&Disperse::message_tx;
+    kilo_message_rx         = (message_rx_t)&Disperse::message_rx;
+    
+    // Construct a valid message with our ID in the first two bytes
+    msg.type        = NORMAL;
+    msg.data[0]     = kilo_uid & 0xff;
+    msg.data[1]     = (kilo_uid >> 8) & 0xff;
+    msg.data[2]     = 0;
+    msg.crc         = message_crc(&msg);
+    last_density    = 0.0f;
+}
+
+float Btdisperse::calc_density()
+{
+    // Density = sum(1/pi*r^2)
+    // Scale so in kilobots/m^2
+    float d = 0.0f;
+    //printf("%3d: ", kilo_uid);
+    for(ns_t::iterator i=neighbours_seen.begin(); i!=neighbours_seen.end(); ++i)
+    {
+        //printf("%4d ", i->second);
+        d += 1/(M_PI * pow((float)i->second / 1000.0, 2));
+    }
+    //printf("\n");
+    return d;
+}
+
+void Btdisperse::set_motion(int dir)
+{
+    static int last_output = 0;
+    switch(dir)
+    {
+        case(0):
+            set_motors(0,0);
+            break;
+        case(1):
+            if (last_output == 0) spinup_motors();
+            set_motors(kilo_turn_left,0);
+            break;
+        case(2):
+            if (last_output == 0) spinup_motors();
+            set_motors(0,kilo_turn_right);
+            break;
+        case(3):
+            if (last_output == 0) spinup_motors();
+            set_motors(kilo_straight_left, kilo_straight_right);
+            break;
+    }
+    last_output = dir;
+}
+
+void Btdisperse::preamble()
+{
+    // Get the inputs needed for the BT
+    detected_food   = get_environment() == FOOD;
+    density         = calc_density();
+}
+
+void Btdisperse::postamble()
+{
+    last_density    = density;
+    // Update the food part of the message
+    msg.data[2]     = found_food;
+    msg.crc         = message_crc(&msg);
+    // Reset the map of neighbour distances
+    neighbours_seen.erase(neighbours_seen.begin(), neighbours_seen.end());
+}
+
+void Btdisperse::loop()
+{
+    
+    if (kilo_ticks > last_update + 32)
+    {
+        last_update = kilo_ticks;
+        // Main loop, run through here approximately once a second
+
+        preamble();
+        
+        // Inputs:
+        //  detected_food   (get_environment() == FOOD)
+        //  told_about_food (from message subsystem)
+        //  density         (from message subsystem)
+        //  dtarget
+        // Internal state:
+        //  found_food
+        //  last_density
+        // Outputs:
+        //  tell_about_food (to message subsystem)
+        
+        
+        // See if there is food
+        if (detected_food)
+        {
+            set_color(RGB(0,3,0));
+            found_food = 1;
+        }
+        if (told_about_food && !found_food)
+        {
+            set_color(RGB(3,3,0));
+            found_food = 1;
+        }
+
+        float ddelta = density - last_density;
+        
+        //if (fabs(density - dtarget) < dmargin)
+        if (found_food || density < dtarget)
+        {
+            // Target met, stay still
+            set_motion(0);
+        }
+        else if (ddelta > 0)
+        {
+            // Density going up, tumble
+            int dir = rand_intrange(1,2);
+            set_motion(dir);
+        }
+        else if (ddelta < 0)
+        {
+            // Density going down, run
+            set_motion(3);
+        }
+
+
+        postamble();
+
+    }
+    
+
+    
+}
+
+

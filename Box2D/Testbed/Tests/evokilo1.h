@@ -931,7 +931,125 @@ public:
 };
 
 
+class Btdisperse : public Kilobot
+{
+public:
+    // Minimal example kiloobt controller
+    
+    Btdisperse(ModelPosition *_pos, Settings *_settings,
+                    std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile),
+    bboard  (6, 3)
+    {
+        // Read in the Behaviour Tree
+        using namespace BT;
+        std::string btstring = "";
+        for(auto i = words.begin() + 1; i != words.end(); ++i)
+            btstring += *i;
+        printf("BT strings is:\n%s\n", btstring.c_str());
+        json j1 = json::parse(btstring);
+        bt = new BT::Node(j1);
+        
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&Btdisperse::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&Btdisperse::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&Btdisperse::message_tx_success_dummy;
+        setup();
+    }
+    ~Btdisperse()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+    
+    
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    // Behaviour tree
+    BT::Node *bt;
+    BT::Blackboard bboard;
 
+    int last_update;
+
+    typedef std::map<int,int> ns_t;
+    ns_t neighbours_seen;
+    
+    
+    
+    
+    float   last_density;
+    float   density;
+    float   dtarget         = 100;
+    int     found_food      = 0;
+    int     detected_food   = 0;
+    int     told_about_food = 0;
+
+    // Spread out until certain density reached or food is found
+    // Run and tumble
+    // Stop when food or low enough density
+    // Run when concentration decreasing
+    // Tumble otherwise
+    // So:
+    //  Measure concentration
+    //      at a particular distance, a particular area is implied
+    //      area = pi*r^2
+    //      desnity = 1/area
+    //      calc densities due to each message, and add
+    // If food sensed, or food found in incoming message, set in outgoing
+    void setup();
+    void loop();
+    void preamble();
+    void postamble();
+    
+    float calc_density();
+    void set_motion(int dir);
+
+    void message_rx(message_t *m, distance_measurement_t *d) {
+        int dist = estimate_distance(d);
+        int uid = m->data[0] | (m->data[1] << 8);
+        neighbours_seen[uid] = dist;
+        told_about_food |= m->data[2];
+    }
+    message_t *message_tx()
+    {
+        return &msg;
+    }
+
+};
 
 #endif
 
