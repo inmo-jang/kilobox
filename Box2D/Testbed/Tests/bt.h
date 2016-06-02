@@ -20,9 +20,9 @@ namespace BT
         BT_RUNNING
     };
     
-    const std::set<std::string> ctrl_nodes  {"seq", "seqm", "sel", "selm", "par"};
-    const std::set<std::string> leaf_nodes  {"leaf"};
-    const std::set<std::string> action      {"mf", "ml", "mr", "sm"};
+    const std::set<std::string> ctrl_type1  {"seq", "seqm", "sel", "selm", "par"};
+    const std::set<std::string> ctrl_type2  {"prob", "probm"};
+    const std::set<std::string> action      {"mf", "ml", "mr", "set"};
     const std::set<std::string> motor       {"mf", "ml", "mr"};
 
     
@@ -35,13 +35,10 @@ namespace BT
     class Blackboard
     {
     public:
-        Blackboard(int _i, int _o)
+        Blackboard(int _v)
         {
-            inputs.resize(_i);
-            outputs.resize(_o);
+            vars.resize(_v);
         }
-        std::vector<float>  inputs;
-        std::vector<float>  outputs;
         std::vector<float>  vars;
         Node*               running = nullptr;
     };
@@ -52,7 +49,7 @@ namespace BT
         Node() : stat(BT_INVALID) {}
         Node(json &j);
         Status          tick(Blackboard *_b);
-        Status          tick();
+        //Status          tick();
         virtual void    init() {}
         virtual Status  update();
         virtual void    finish() {}
@@ -86,7 +83,15 @@ namespace BT
     class Probsel_node : public Node
     {
     public:
-        Probsel_node(json &j) : Node(j) {}
+        Probsel_node(json &j, json &p) : Node(j)
+        {
+            for(auto &prob : p)
+            if (prob.is_number())
+            {
+                float fp = prob;
+                probability.push_back(fp);
+            }
+        }
     protected:
         virtual Status update();
     private:
@@ -96,7 +101,15 @@ namespace BT
     class Probselmem_node : public Node
     {
     public:
-        Probselmem_node(json &j) : Node(j) {}
+        Probselmem_node(json &j, json &p) : Node(j)
+        {
+            for(auto &prob : p)
+            if (prob.is_number())
+            {
+                float fp = prob;
+                probability.push_back(fp);
+            }
+        }
     protected:
         virtual Status update();
     private:

@@ -242,25 +242,22 @@ void Leaf_node::init()
 
     if (s == "mf")
     {
-        b->outputs[0] = 1.0;
-        b->outputs[1] = 1.0;
+        b->vars[0] = 1.0;
         count = val;
     }
     else if (s == "ml")
     {
-        b->outputs[0] = 1.0;
-        b->outputs[1] = 0.0;
+        b->vars[0] = 1.0;
         count = val;
     }
     else if (s == "mr")
     {
-        b->outputs[0] = 0.0;
-        b->outputs[1] = 1.0;
+        b->vars[0] = 0.0;
         count = val;
     }
-    else if (s == "sm")
+    else if (s == "set")
     {
-        b->outputs[2] = val;
+        b->vars[1] = val;
     }
     stat = BT_RUNNING;
 }
@@ -278,8 +275,7 @@ Status Leaf_node::update()
         if (motor.count(s))
         {
             // We were running a motor command, so kill the motors
-            b->outputs[0] = 0.0;
-            b->outputs[1] = 0.0;
+            b->vars[0] = 0.0;
         }
     }
     
@@ -292,8 +288,8 @@ Status Leaf_node::update()
         std::string rel = j["rel"];
         
         float op1, op2;
-        if (v1.is_number())     op1 = b->inputs[v1];
-        if (v2.is_number())     op2 = b->inputs[v2];
+        if (v1.is_number())     op1 = b->vars[v1];
+        if (v2.is_number())     op2 = b->vars[v2];
         if (c1.is_number())     op1 = c1;
         if (c2.is_number())     op2 = c2;
         
@@ -336,13 +332,14 @@ void Leaf_node::finish()
 // Each node consists of a node type string, followed by a list
 //
 // The type strings, and what the following list represents is given:
-//  node            ::= [ <ctrl_node_type>, { <arg_map> }, [ <node_list> ] ] |
-//                      [ <leaf_node_type>, { <arg_map> } ]
+//  node            ::= [ <ctrl_node_type1>, [ <node_list> ] ] |
+//                      [ <ctrl_node_type2>, [ <node_list> ], [ <prob_list> ] ] |
+//                      [ "leaf", { <arg_map> } ]
 //  node_list       ::= <node_list> , <node> | <node>
 //  arg_map         ::= <arg_map>, <arg> | <arg> | <empty>
 //  arg             ::= key : value
-//  ctrl_node_type1 :: = seq | sel | par | seqm | selm
-//  ctrl_node_type2 :: = prob | probm
+//  ctrl_node_type1 :: = "seq" | "sel" | "par" | "seqm" | "selm"
+//  ctrl_node_type2 :: = "prob" | "probm"
 //  leaf_node_type  :: = act | cond
 //
 
@@ -363,14 +360,22 @@ Node::Node(json &j)
     for(auto& n: j)
     {
         auto &i     = n[0];
-        auto &am    = n[1];
         assert(i.is_string());
         std::string s = i;
         printf("element is %s\n", s.c_str());
-        if (ctrl_nodes.count(s))
+        if (s == "leaf")
         {
-            // Third element for these types
-            json &nl = n[2];
+            // Leaf node has 2 elements, second is an arg map
+            auto &am = n[1];
+            // Leaf types interpreted for now
+            std::cout << "constructing leaf with param: " << am << std::endl;
+            children.push_back(new Leaf_node(am));
+        }
+        else if (ctrl_type1.count(s))
+        {
+            // Type 1 control nodes have 2 elements, second is list of
+            // child nodes
+            auto &nl = n[1];
             //std::cout << nl << std::endl;
             if (s == "seq")
             {
@@ -392,7 +397,14 @@ Node::Node(json &j)
                 std::cout << "constructing selm" << std::endl;
                 children.push_back(new Priselmem_node(nl));
             }
-            else if (s == "prob")
+        }
+        else if (ctrl_type2.count(s))
+        {
+            // Type 2 control nodes have 3 elements, second is list of
+            // child nodes, third is list of probabilities
+            auto &nl = n[1];
+            auto &pl = n[2];
+            if (s == "prob")
             {
                 std::cout << "constructing prob" << std::endl;
                 children.push_back(new Probsel_node(nl, pl));
@@ -402,19 +414,6 @@ Node::Node(json &j)
                 std::cout << "constructing probm" << std::endl;
                 children.push_back(new Probselmem_node(nl, pl));
             }
-            else if (s == "par")
-            {
-                int s = am["s"];
-                int f = am["f"];
-                std::cout << "constructing par" << std::endl;
-                //children.push_back(new Parallel_node(nl, s, f));
-            }
-        }
-        else if (leaf_nodes.count(s))
-        {
-            // Leaf types interpreted for now
-            std::cout << "constructing leaf with param: " << am << std::endl;
-            children.push_back(new Leaf_node(am));
         }
     }
     printf("leaving node..\n");

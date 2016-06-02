@@ -34,6 +34,7 @@ FILE *Evokilo2::lfp = NULL;
 FILE *Evokilo3::lfp = NULL;
 FILE *Evokilo4::lfp = NULL;
 FILE *Disperse::lfp = NULL;
+FILE *Btdisperse::lfp = NULL;
 
 
 void Minimal_example::setup()
@@ -450,26 +451,26 @@ void Evokilo4::loop()
 
 
         // Nest
-        bboard.inputs[0]    = (region == NEST) ? 1.0 : -1.0;
+        //bboard.inputs[0]    = (region == NEST) ? 1.0 : -1.0;
         // Food
-        bboard.inputs[1]    = (region == FOOD) ? 1.0 : -1.0;
+        //bboard.inputs[1]    = (region == FOOD) ? 1.0 : -1.0;
         // Carrying food
-        bboard.inputs[2]    = carrying ? 1.0 : -1.0;
+        //bboard.inputs[2]    = carrying ? 1.0 : -1.0;
         // Distance to nearest neighbours
-        bboard.inputs[3]    = (float)min_dist / 100.0;
+        //bboard.inputs[3]    = (float)min_dist / 100.0;
         // Number of neighbours
-        bboard.inputs[4]    = (float)messages / 10.0;
+        //bboard.inputs[4]    = (float)messages / 10.0;
         // Average message
         float avgmsg = messages > 0 ? msgsum / messages : 0.0;
-        bboard.inputs[5]    = avgmsg;
+        //bboard.inputs[5]    = avgmsg;
         
         // Tick the behaviour tree
         bt->tick(&bboard);
 
         
         // Motor control
-        int d = (bboard.outputs[0] > 0 ? 1 : 0) | (bboard.outputs[1] > 0 ? 2 : 0);
-        switch(d)
+        //int d = (bboard.outputs[0] > 0 ? 1 : 0) | (bboard.outputs[1] > 0 ? 2 : 0);
+        switch(0)
         {
             case(0):
                 set_motors(0,0);
@@ -489,13 +490,13 @@ void Evokilo4::loop()
         }
         
         // Message output direct from neuron
-        *(float*)msg.data = bboard.outputs[2];
+        //*(float*)msg.data = bboard.outputs[2];
         msg.data[4] = kilo_uid & 0xff;
         msg.crc     = message_crc(&msg);
         
         // visualise the internal state
         set_color(RGB(carrying?2:0, 0, 0));
-        set_color_msg((bboard.outputs[2] + 1.0) / 2.0);
+        //set_color_msg((bboard.outputs[2] + 1.0) / 2.0);
         
         // Clear the message variables
         messages    = 0;
@@ -504,7 +505,7 @@ void Evokilo4::loop()
         
         // remember last region visited
         last_region = region;
-        last_output = d;
+        //last_output = d;
         
 #ifdef DEBUG
         printf("%lu %d %d\r\n", kilo_ticks,region,carrying);
@@ -519,8 +520,8 @@ void Evokilo4::loop()
         {
             last_time += 1e6;
             char buf[1024];
-            snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
-                     pos->GetPose().x, pos->GetPose().y, bboard.inputs[0],bboard.inputs[1],bboard.inputs[2], bboard.outputs[0],bboard.outputs[1], bboard.outputs[2]);
+            /*snprintf(buf, 1024, "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
+                     pos->GetPose().x, pos->GetPose().y, bboard.inputs[0],bboard.inputs[1],bboard.inputs[2], bboard.outputs[0],bboard.outputs[1], bboard.outputs[2]);*/
             Evokilo4::log(buf);
         }
     }
@@ -667,8 +668,8 @@ void Btdisperse::message_rx(message_t *m, distance_measurement_t *d) {
 void Btdisperse::setup()
 {
     // Set the callbacks
-    kilo_message_tx         = (message_tx_t)&Disperse::message_tx;
-    kilo_message_rx         = (message_rx_t)&Disperse::message_rx;
+    kilo_message_tx         = (message_tx_t)&Btdisperse::message_tx;
+    kilo_message_rx         = (message_rx_t)&Btdisperse::message_rx;
     
     // Construct a valid message with our ID in the first two bytes
     msg.type        = NORMAL;
@@ -733,6 +734,7 @@ void Btdisperse::postamble()
     msg.crc         = message_crc(&msg);
     // Reset the map of neighbour distances
     neighbours_seen.erase(neighbours_seen.begin(), neighbours_seen.end());
+    told_about_food = 0;
 }
 
 void Btdisperse::loop()
@@ -746,49 +748,30 @@ void Btdisperse::loop()
         preamble();
         
         // Inputs:
-        //  detected_food   (get_environment() == FOOD)
-        //  told_about_food (from message subsystem)
-        //  density         (from message subsystem)
-        //  dtarget
+        //  [2] detected_food   (get_environment() == FOOD)
+        //  [3] told_about_food (from message subsystem)
+        //  [4] density         (from message subsystem)
+        //  [5] delta_density
+        //  [6] dtarget
         // Internal state:
-        //  found_food
-        //  last_density
+        //  [7] found_food
         // Outputs:
-        //  tell_about_food (to message subsystem)
-        //  motion
+        //  [1] tell_about_food (to message subsystem)
+        //  [0] motion
         
         
-        // See if there is food
-        if (detected_food)
-        {
-            set_color(RGB(0,3,0));
-            found_food = 1;
-        }
-        if (told_about_food && !found_food)
-        {
-            set_color(RGB(3,3,0));
-            found_food = 1;
-        }
-
-        float ddelta = density - last_density;
+        bboard.vars[2] = detected_food;
+        bboard.vars[3] = told_about_food;
+        bboard.vars[4] = density;
+        bboard.vars[5] = density - last_density;
+        bboard.vars[6] = dtarget;
         
-        //if (fabs(density - dtarget) < dmargin)
-        if (found_food || density < dtarget)
-        {
-            // Target met, stay still
-            set_motion(0);
-        }
-        else if (ddelta > 0)
-        {
-            // Density going up, tumble
-            int dir = rand_intrange(1,2);
-            set_motion(dir);
-        }
-        else if (ddelta < 0)
-        {
-            // Density going down, run
-            set_motion(3);
-        }
+        bt->tick(&bboard);
+        
+        int motion = (int)bboard.vars[0];
+        found_food = (int)bboard.vars[7];
+        
+        set_motion(motion);
 
 
         postamble();

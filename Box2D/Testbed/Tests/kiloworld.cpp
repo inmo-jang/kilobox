@@ -194,6 +194,8 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
                 bots.push_back((Kilobot*)(new Evokilo4(mod, settings, words, logfile.c_str())));
             if (words[0] == "disperse")
                 bots.push_back((Kilobot*)(new Disperse(mod, settings, words, logfile.c_str())));
+            if (words[0] == "btdisperse")
+                bots.push_back((Kilobot*)(new Btdisperse(mod, settings, words, logfile.c_str())));
             
         }
     }
