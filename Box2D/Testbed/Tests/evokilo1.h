@@ -1037,13 +1037,9 @@ public:
     
     float calc_density();
     void set_motion(int dir);
+    void message_rx(message_t *m, distance_measurement_t *d);
 
-    void message_rx(message_t *m, distance_measurement_t *d) {
-        int dist = estimate_distance(d);
-        int uid = m->data[0] | (m->data[1] << 8);
-        neighbours_seen[uid] = dist;
-        told_about_food |= m->data[2];
-    }
+
     message_t *message_tx()
     {
         return &msg;

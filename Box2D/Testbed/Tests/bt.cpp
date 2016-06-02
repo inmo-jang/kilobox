@@ -3,6 +3,7 @@
 #include <cassert>
 #include <string>
 #include <set>
+#include <random>
 
 #include "bt.h"
 #include "kilolib.h"
@@ -10,6 +11,14 @@
 
 using namespace BT;
 
+std::mt19937  gen;
+float rand_realrange(float low, float high)
+{
+    std::uniform_real_distribution<>   dist(low, high);
+    float r = dist(gen);
+    //printf("int   %10s %10i\n",pos->Token(), r);
+    return r;
+}
 
 Status Node::tick(Blackboard *_b)
 {
@@ -28,7 +37,7 @@ Status Node::update()
     return children[0]->tick(b);
 }
 
-Status Select_node::update()
+Status Prisel_node::update()
 {
     assert(children.size() > 0);
     for(auto& i : children)
@@ -40,7 +49,7 @@ Status Select_node::update()
     return BT_FAILURE;
 }
 
-Status Selectmem_node::update()
+Status Priselmem_node::update()
 {
     assert(children.size() > 0);
     for(int i = run_index; i < children.size(); ++i)
@@ -59,6 +68,57 @@ Status Selectmem_node::update()
     }
     run_index = 0;
     return BT_FAILURE;
+}
+
+Status Probsel_node::update()
+{
+    // Randomly choose one child only to tick, based on weights
+    assert(children.size() > 0);
+    assert(children.size() == probability.size());
+    float r = rand_realrange(0,1);
+    float p = 0.0f;
+    for(int i = 0; i < children.size(); ++i)
+    {
+        p += probability[i];
+        if (p > r)
+        {
+            return children[i]->tick(b);
+        }
+    }
+    return BT_FAILURE;
+}
+
+Status Probselmem_node::update()
+{
+    // Randomly choose one child to tick, based on weights. If the child
+    // returns RUNNING, remember it and return to it on subsequent ticks
+    // until no longer RUNNING
+    assert(children.size() > 0);
+    assert(children.size() == probability.size());
+    float r = rand_realrange(0,1);
+    float p = 0.0f;
+    Status state = BT_FAILURE;
+    if (run_index < 0)
+    {
+        for(int i = 0; i < children.size(); ++i)
+        {
+            p += probability[i];
+            if (p > r)
+            {
+                state = children[i]->tick(b);
+                if (state == BT_RUNNING)
+                    run_index = i;
+                break;
+            }
+        }
+    }
+    else
+    {
+        state = children[run_index]->tick(b);
+        if (state != BT_RUNNING)
+            run_index = -1;
+    }
+    return state;
 }
 
 Status Sequence_node::update()
@@ -281,7 +341,8 @@ void Leaf_node::finish()
 //  node_list       ::= <node_list> , <node> | <node>
 //  arg_map         ::= <arg_map>, <arg> | <arg> | <empty>
 //  arg             ::= key : value
-//  ctrl_node_type  :: = seq | sel | par | seqm | selm
+//  ctrl_node_type1 :: = seq | sel | par | seqm | selm
+//  ctrl_node_type2 :: = prob | probm
 //  leaf_node_type  :: = act | cond
 //
 
@@ -324,12 +385,22 @@ Node::Node(json &j)
             else if (s == "sel")
             {
                 std::cout << "constructing sel" << std::endl;
-                children.push_back(new Select_node(nl));
+                children.push_back(new Prisel_node(nl));
             }
             else if (s == "selm")
             {
                 std::cout << "constructing selm" << std::endl;
-                children.push_back(new Selectmem_node(nl));
+                children.push_back(new Priselmem_node(nl));
+            }
+            else if (s == "prob")
+            {
+                std::cout << "constructing prob" << std::endl;
+                children.push_back(new Probsel_node(nl, pl));
+            }
+            else if (s == "probm")
+            {
+                std::cout << "constructing probm" << std::endl;
+                children.push_back(new Probselmem_node(nl, pl));
             }
             else if (s == "par")
             {

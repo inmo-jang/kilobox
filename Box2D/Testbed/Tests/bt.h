@@ -42,6 +42,7 @@ namespace BT
         }
         std::vector<float>  inputs;
         std::vector<float>  outputs;
+        std::vector<float>  vars;
         Node*               running = nullptr;
     };
 
@@ -64,22 +65,43 @@ namespace BT
 
 
     
-    class Select_node : public Node
+    class Prisel_node : public Node
     {
     public:
-        Select_node(json &j) : Node(j) {}
+        Prisel_node(json &j) : Node(j) {}
     protected:
         virtual Status update();
     };
     
-    class Selectmem_node : public Node
+    class Priselmem_node : public Node
     {
     public:
-        Selectmem_node(json &j) : Node(j) {}
+        Priselmem_node(json &j) : Node(j) {}
     protected:
         virtual Status update();
     private:
         int run_index = 0;
+    };
+    
+    class Probsel_node : public Node
+    {
+    public:
+        Probsel_node(json &j) : Node(j) {}
+    protected:
+        virtual Status update();
+    private:
+        std::vector<float> probability;
+    };
+    
+    class Probselmem_node : public Node
+    {
+    public:
+        Probselmem_node(json &j) : Node(j) {}
+    protected:
+        virtual Status update();
+    private:
+        int run_index = -1;
+        std::vector<float> probability;
     };
     
     class Sequence_node : public Node

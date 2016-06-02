@@ -656,6 +656,14 @@ void Disperse::loop()
 }
 
 
+//===========================================================================
+void Btdisperse::message_rx(message_t *m, distance_measurement_t *d) {
+    int dist                = estimate_distance(d);
+    int uid                 = m->data[0] | (m->data[1] << 8);
+    neighbours_seen[uid]    = dist;
+    told_about_food         |= m->data[2];
+}
+
 void Btdisperse::setup()
 {
     // Set the callbacks
@@ -747,6 +755,7 @@ void Btdisperse::loop()
         //  last_density
         // Outputs:
         //  tell_about_food (to message subsystem)
+        //  motion
         
         
         // See if there is food
