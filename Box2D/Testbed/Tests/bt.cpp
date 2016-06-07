@@ -23,12 +23,14 @@ float rand_realrange(float low, float high)
 Status Node::tick(Blackboard *_b)
 {
     b = _b;
-    if (stat != BT_RUNNING)
+    // If this is the first time through a node, the map entry will get
+    // allocated and assigned using the default constructor for Status, which is 0 == BT_INVALID
+    if (b->stat[this] != BT_RUNNING)
         init();
-    stat = update();
-    if (stat != BT_RUNNING)
+    b->stat[this] = update();
+    if (b->stat[this] != BT_RUNNING)
         finish();
-    return stat;
+    return b->stat[this];
 }
 
 
@@ -52,6 +54,7 @@ Status Prisel_node::update()
 Status Priselmem_node::update()
 {
     assert(children.size() > 0);
+    int &run_index = b->count[this];
     for(int i = run_index; i < children.size(); ++i)
     {
         auto state = children[i]->tick(b);
@@ -88,6 +91,10 @@ Status Probsel_node::update()
     return BT_FAILURE;
 }
 
+void Probselmem_node::init()
+{
+    b->count[this] = -1;
+}
 Status Probselmem_node::update()
 {
     // Randomly choose one child to tick, based on weights. If the child
@@ -98,6 +105,7 @@ Status Probselmem_node::update()
     float r = rand_realrange(0,1);
     float p = 0.0f;
     Status state = BT_FAILURE;
+    int &run_index = b->count[this];
     if (run_index < 0)
     {
         for(int i = 0; i < children.size(); ++i)
@@ -105,6 +113,7 @@ Status Probselmem_node::update()
             p += probability[i];
             if (p > r)
             {
+                //printf("picked %d at %f\n", i, p);
                 state = children[i]->tick(b);
                 if (state == BT_RUNNING)
                     run_index = i;
@@ -118,6 +127,7 @@ Status Probselmem_node::update()
         if (state != BT_RUNNING)
             run_index = -1;
     }
+    //printf("probm r:%f p:%f idx:%i state:%i\n",r,p,run_index, state);
     return state;
 }
 
@@ -136,6 +146,7 @@ Status Sequence_node::update()
 Status Sequencemem_node::update()
 {
     assert(children.size() > 0);
+    int &run_index = b->count[this];
     for(int i = run_index; i < children.size(); ++i)
     {
         auto state = children[i]->tick(b);
@@ -154,6 +165,39 @@ Status Sequencemem_node::update()
     return BT_SUCCESS;
 }
 
+void Repeat_node::init()
+{
+    //printf("rep init %d\n", r);
+    b->count[this]  = r;
+    b->stat[this]   = BT_RUNNING;
+}
+Status Repeat_node::update()
+{
+    int &count      = b->count[this];
+    Status &stat    = b->stat[this];
+    //printf("rep update %d\n", count);
+    assert(children.size() == 1);
+    Status cs = children[0]->tick(b);
+    if (cs == BT_FAILURE)
+    {
+        count = 0;
+        stat = BT_FAILURE;
+    }
+    else if (cs == BT_SUCCESS)
+    {
+        count--;
+        if (count == 0)
+        {
+            stat = BT_SUCCESS;
+        }
+    }
+    return stat;
+}
+void Repeat_node::finish()
+{
+    b->count[this]  = 0;
+    b->stat[this]   = BT_SUCCESS;
+}
 /*Status Parallel_node::update()
 {
     assert(children.size() > 0);
@@ -231,35 +275,10 @@ void Leaf_node::init()
         b->running->finish();
         b->running = nullptr;
     }
-    
-    
-    auto &x = j["x"];
-    
-    int val = 0;
-    if (x.is_number()) val = x;
-    
-    count = 0;
 
-    if (s == "mf")
-    {
-        b->vars[0] = 1.0;
-        count = val;
-    }
-    else if (s == "ml")
-    {
-        b->vars[0] = 1.0;
-        count = val;
-    }
-    else if (s == "mr")
-    {
-        b->vars[0] = 0.0;
-        count = val;
-    }
-    else if (s == "set")
-    {
-        b->vars[1] = val;
-    }
-    stat = BT_RUNNING;
+    //printf("leaf %s %d\n", s.c_str(), val);
+    b->stat[this] = BT_RUNNING;
+    
 }
 Status Leaf_node::update()
 {
@@ -268,18 +287,32 @@ Status Leaf_node::update()
     std::string s = t;
     
     
-    count--;
-    if (count <= 0)
+    Status &stat = b->stat[this];
+    if (s == "mf")
     {
+        b->vars[0] = 3.0;
         stat = BT_SUCCESS;
-        if (motor.count(s))
-        {
-            // We were running a motor command, so kill the motors
-            b->vars[0] = 0.0;
-        }
     }
-    
-    if (s == "if")
+    else if (s == "ml")
+    {
+        b->vars[0] = 1.0;
+        stat = BT_SUCCESS;
+    }
+    else if (s == "mr")
+    {
+        b->vars[0] = 2.0;
+        stat = BT_SUCCESS;
+    }
+    else if (s == "set")
+    {
+        auto &jvar = j["var"];
+        auto &jval = j["val"];
+        int     var = jvar;
+        float   val = jval;
+        b->vars[var] = val;
+        stat = BT_SUCCESS;
+    }
+    else if (s == "if")
     {
         auto &v1 = j["var1"];
         auto &v2 = j["var2"];
@@ -298,7 +331,14 @@ Status Leaf_node::update()
         
         //printf("if %f %s %f\n", op1, rel.c_str(), op2);
     }
-    
+    else
+    {
+        // Undefined, return success
+        stat = BT_SUCCESS;
+    }
+
+    //std::cout << j << " " << stat << std::endl;
+
     //printf("Tick %s %d %d\n", s.c_str(), stat, count);
     return stat;
 }
@@ -306,7 +346,7 @@ Status Leaf_node::update()
 
 void Leaf_node::finish()
 {
-    if (stat == BT_RUNNING)
+    if (b->stat[this] == BT_RUNNING)
     {
         // We are a leaf node and still running, so we should be added to the
         // list of running nodes
@@ -334,13 +374,17 @@ void Leaf_node::finish()
 // The type strings, and what the following list represents is given:
 //  node            ::= [ <ctrl_node_type1>, [ <node_list> ] ] |
 //                      [ <ctrl_node_type2>, [ <node_list> ], [ <prob_list> ] ] |
+//                      [ <decorator_type1>, <node> ] |
+//                      [ <decorator_type2>, <value>, <node> ] |
 //                      [ "leaf", { <arg_map> } ]
 //  node_list       ::= <node_list> , <node> | <node>
 //  arg_map         ::= <arg_map>, <arg> | <arg> | <empty>
 //  arg             ::= key : value
-//  ctrl_node_type1 :: = "seq" | "sel" | "par" | "seqm" | "selm"
-//  ctrl_node_type2 :: = "prob" | "probm"
-//  leaf_node_type  :: = act | cond
+//  ctrl_node_type1 ::= "seq" | "sel" | "par" | "seqm" | "selm"
+//  ctrl_node_type2 ::= "prob" | "probm"
+//  decorator_type1 ::= "invert" | "succeed" | "fail"
+//  decorator_type2 ::= "repeat"
+//  leaf_node_type  ::= act | cond
 //
 
 Node::Node(json &j)
@@ -355,6 +399,7 @@ Node::Node(json &j)
     // and the second is a map
     std::cout << j << std::endl;
 
+    
 
     
     for(auto& n: j)
@@ -414,6 +459,15 @@ Node::Node(json &j)
                 std::cout << "constructing probm" << std::endl;
                 children.push_back(new Probselmem_node(nl, pl));
             }
+        }
+        else if (dec_type2.count(s))
+        {
+            auto &i = n[1];
+            auto &nd = n[2];
+            assert(i.is_number());
+            int reps = i;
+            std::cout << "constructing repeat" << std::endl;
+            children.push_back(new Repeat_node(nd, reps));
         }
     }
     printf("leaving node..\n");

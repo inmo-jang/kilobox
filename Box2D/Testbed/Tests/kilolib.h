@@ -761,12 +761,24 @@ namespace Kilolib
             led_g = ((rgb>>2)&0x3)/3.0;
             led_b = ((rgb>>4)&0x3)/3.0;
         }
+        void set_color(float r, float g, float b)
+        {
+            led_r = r;
+            led_g = g;
+            led_b = b;
+        }
         void set_colorf(float c)
         {
             Color col(c);
             led_r = col.r;
             led_g = col.g;
             led_b = col.b;
+        }
+        void set_color_greyscale(float c)
+        {
+            led_r = c;
+            led_g = c;
+            led_b = c;
         }
         
     };

@@ -896,6 +896,7 @@ public:
     uint8_t found_food = 0;
     uint8_t told_about_food = 0;
 
+
     // Spread out until certain density reached or food is found
     // Run and tumble
     // Stop when food or low enough density
@@ -919,6 +920,7 @@ public:
         int uid = m->data[0] | (m->data[1] << 8);
         neighbours_seen[uid] = dist;
         told_about_food = m->data[2];
+
     }
     message_t *message_tx()
     {
@@ -941,7 +943,7 @@ public:
     Kilobot (_pos, _settings),
     words   (_words),
     logfile (_logfile),
-    bboard  (8)
+    bboard  (10)
     {
         // Read in the Behaviour Tree
         using namespace BT;
@@ -994,7 +996,7 @@ public:
     
     // Hold usecs so we can log every second
     usec_t last_time = 0;
-    
+    float metric() {return total_food;}
     
     //------------------------------------------------------------
     // Kilobot user functions
@@ -1003,20 +1005,44 @@ public:
     BT::Node *bt;
     BT::Blackboard bboard;
 
-    int last_update;
+    uint32_t last_update        = 0;
 
     typedef std::map<int,int> ns_t;
-    ns_t neighbours_seen;
+    ns_t    neighbours_seen;
     
     
     
-    
+    int     new_message         = 0;
     float   last_density;
-    float   density;
-    float   dtarget         = 100;
-    int     found_food      = 0;
-    int     detected_food   = 0;
-    int     told_about_food = 0;
+    float   density             = 1000.0;
+    int     found_food          = 0;
+    int     detected_food       = 0;
+    int     detected_nest       = 0;
+    int     told_about_food     = 0;
+    int     dist_to_food        = 1000;
+    int     accum_dist_to_food  = 1000;
+    const int max_hops          = 7;
+    const int max_food_dist     = 500;
+    const int max_nest_dist     = 500;
+    int     min_hops_seen       = max_hops;
+    int     min_nest_hops_seen       = max_hops;
+    int     gradient            = max_hops;
+    int     nest_gradient            = max_hops;
+    
+    int     dist_to_food_smooth[5];
+    int     dist_to_nest_smooth[5];
+    int     dtf_ptr = 0;
+    float   dfood               = 500.0;
+    float   last_dfood          = 500.0;
+    float   dnest               = 500.0;
+    float   last_dnest          = 500.0;
+    int     carrying_food       = 0;
+    int     last_detected_food  = 0;
+    int     last_detected_nest  = 0;
+    int         total_food      = 0;
+    int         total_pickup    = 0;
+    int     dist_to_nest        = 1000;
+    int     accum_dist_to_nest  = 1000;
 
     // Spread out until certain density reached or food is found
     // Run and tumble
@@ -1038,12 +1064,8 @@ public:
     float calc_density();
     void set_motion(int dir);
     void message_rx(message_t *m, distance_measurement_t *d);
+    message_t *message_tx();
 
-
-    message_t *message_tx()
-    {
-        return &msg;
-    }
 
 };
 

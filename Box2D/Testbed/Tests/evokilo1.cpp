@@ -658,12 +658,7 @@ void Disperse::loop()
 
 
 //===========================================================================
-void Btdisperse::message_rx(message_t *m, distance_measurement_t *d) {
-    int dist                = estimate_distance(d);
-    int uid                 = m->data[0] | (m->data[1] << 8);
-    neighbours_seen[uid]    = dist;
-    told_about_food         |= m->data[2];
-}
+
 
 void Btdisperse::setup()
 {
@@ -676,8 +671,15 @@ void Btdisperse::setup()
     msg.data[0]     = kilo_uid & 0xff;
     msg.data[1]     = (kilo_uid >> 8) & 0xff;
     msg.data[2]     = 0;
+    msg.data[3]     = max_hops;
+    msg.data[6]     = max_hops;
     msg.crc         = message_crc(&msg);
     last_density    = 0.0f;
+    for(int i=0; i<5; i++)
+    {
+        dist_to_food_smooth[i] = max_food_dist;
+        dist_to_nest_smooth[i] = max_nest_dist;
+    }
 }
 
 float Btdisperse::calc_density()
@@ -719,22 +721,133 @@ void Btdisperse::set_motion(int dir)
     last_output = dir;
 }
 
+void Btdisperse::message_rx(message_t *m, distance_measurement_t *d)
+{
+    new_message             += 1;
+    int dist                = estimate_distance(d);
+    int uid                 = m->data[0] | (m->data[1] << 8);
+    neighbours_seen[uid]    = dist;
+    int heard_about_food    = m->data[2];
+    int hops                = m->data[3];
+    
+    told_about_food         |= heard_about_food;
+    if (hops < min_hops_seen)
+    {
+        min_hops_seen       = hops;
+        accum_dist_to_food  = (m->data[4] | (m->data[5] << 8)) + dist;
+    }
+    
+    int nest_hops           = m->data[6];
+    if (nest_hops < min_nest_hops_seen)
+    {
+        min_nest_hops_seen  = nest_hops;
+        accum_dist_to_nest  = (m->data[7] | (m->data[8] << 8)) + dist;
+    }
+    
+    
+}
+
+Btdisperse::message_t *Btdisperse::message_tx()
+{
+    // Update the food part of the message
+    msg.data[2]     = found_food;
+    msg.data[3]     = gradient;
+    msg.data[4]     = dist_to_food & 0xff;
+    msg.data[5]     = dist_to_food >> 8;
+    msg.data[6]     = nest_gradient;
+    msg.data[7]     = dist_to_nest & 0xff;
+    msg.data[8]     = dist_to_nest >> 8;
+    msg.crc         = message_crc(&msg);
+    return &msg;
+}
+
 void Btdisperse::preamble()
 {
     // Get the inputs needed for the BT
+    last_detected_food = detected_food;
+    last_detected_nest = detected_nest;
     detected_food   = get_environment() == FOOD;
-    density         = calc_density();
+    detected_nest   = get_environment() == NEST;
+    if (new_message)
+    {
+        density         = calc_density();
+        
+        if (min_hops_seen < max_hops)
+        {
+            gradient        = min_hops_seen + 1;
+            dist_to_food    = accum_dist_to_food;
+        }
+        else
+        {
+            gradient        = max_hops;
+            dist_to_food    = max_food_dist;
+        }
+        
+        if (min_nest_hops_seen < max_hops)
+        {
+            nest_gradient   = min_nest_hops_seen + 1;
+            dist_to_nest    = accum_dist_to_nest;
+        }
+        else
+        {
+            nest_gradient   = max_hops;
+            dist_to_nest    = max_nest_dist;
+        }
+    }
+    if (detected_food)
+    {
+        gradient        = 0;
+        dist_to_food    = 0;
+    }
+    if (detected_nest)
+    {
+        nest_gradient   = 0;
+        dist_to_nest    = 0;
+    }
+    
+    
+    last_dfood = dfood;
+    last_dnest = dnest;
+
+    dist_to_food_smooth[dtf_ptr] = dist_to_food;
+    dist_to_nest_smooth[dtf_ptr] = dist_to_nest;
+    dtf_ptr = (dtf_ptr + 1) % 5;
+    for(int i=0;i<5;i++)
+    {
+        dfood += dist_to_food_smooth[i];
+        dnest += dist_to_nest_smooth[i];
+    }
+    dfood /= 5;
+    dnest /= 5;
+    
+    
+    // Little state machine for food transport: always collect food if in food area
+    // and deposit it if in nest area
+    if (carrying_food && detected_nest && last_detected_nest)
+    {
+        carrying_food = 0;
+        total_food++;
+    }
+    else if (!carrying_food && detected_food && last_detected_food)
+    {
+        carrying_food = 1;
+        total_pickup++;
+    }
+
+    
 }
 
 void Btdisperse::postamble()
 {
     last_density    = density;
-    // Update the food part of the message
-    msg.data[2]     = found_food;
-    msg.crc         = message_crc(&msg);
+   
+
     // Reset the map of neighbour distances
     neighbours_seen.erase(neighbours_seen.begin(), neighbours_seen.end());
-    told_about_food = 0;
+    told_about_food     = 0;
+    min_hops_seen       = max_hops;
+    min_nest_hops_seen  = max_hops;
+    new_message         = 0;
 }
 
 void Btdisperse::loop()
@@ -747,38 +860,75 @@ void Btdisperse::loop()
 
         preamble();
         
-        // Inputs:
-        //  [2] detected_food   (get_environment() == FOOD)
-        //  [3] told_about_food (from message subsystem)
-        //  [4] density         (from message subsystem)
-        //  [5] delta_density
-        //  [6] dtarget
-        // Internal state:
-        //  [7] found_food
-        // Outputs:
-        //  [1] tell_about_food (to message subsystem)
+
+        // Outputs or state variables:
         //  [0] motion
+        //  [1] found_food      (to message subsystem)
+        //  [2] harvester       (internal state)
         
+        // Inputs:
+        //  [3] detected_food   (get_environment() == FOOD)
+        //  [4] told_about_food (from message subsystem)
+        //  [5] density         (from message subsystem)
+        //  [6] delta_density
+        //  [7] delta_food_dist
+        //  [8] delta_nest_dist
+        //  [9] carrying_food
         
-        bboard.vars[2] = detected_food;
-        bboard.vars[3] = told_about_food;
-        bboard.vars[4] = density;
-        bboard.vars[5] = density - last_density;
-        bboard.vars[6] = dtarget;
+        // Motor values always reset to zero, then potentially altered
+        bboard.vars[0] = 0;
+        
+        // Values are always boolean or in range -1.0 to 1.0
+        bboard.vars[3]  = detected_food;
+        bboard.vars[4]  = told_about_food;
+        bboard.vars[5]  = density / 1000.0;
+        bboard.vars[6]  = (density - last_density) / 1000.0;
+        bboard.vars[7]  = (dfood - last_dfood) / 1000.0;
+        bboard.vars[8]  = (dnest - last_dnest) / 1000.0;
+        bboard.vars[9]  = carrying_food;
         
         bt->tick(&bboard);
         
         int motion = (int)bboard.vars[0];
-        found_food = (int)bboard.vars[7];
+        found_food = (int)bboard.vars[1];
         
         set_motion(motion);
 
+        
+        //if (found_food)
+        //    set_color(RGB(0,3,0));
+        //if ((int)bboard.vars[7] == 1)
+        //    set_color(RGB(3,0,0));
+        //set_color_greyscale((float)gradient/max_hops);
+        //set_color(bboard.vars[7], (float)dfood/max_food_dist, 0);
+        set_color(bboard.vars[2], (float)dnest/max_nest_dist, bboard.vars[7]);
+        //set_color(bboard.vars[7], (float)nest_gradient/max_hops, 0);
+        //set_color_greyscale(detected_food);
+        
 
         postamble();
 
     }
     
-
+    //===========================================================================
+    // Sim logging
+    {
+        usec_t time = world_us_simtime;
+        if (time - last_time >= 1e6)
+        {
+            last_time += 1e6;
+            char buf[1024];
+            snprintf(buf, 1024,
+                     //printf(
+                     "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%4d,%4d,%4d,%4d,%4d,%4d\n", pos->Token(), time/1e6,
+                     pos->GetPose().x, pos->GetPose().y,
+                     bboard.vars[0], bboard.vars[1], bboard.vars[9], bboard.vars[3], bboard.vars[4], bboard.vars[5], bboard.vars[6],
+                     bboard.vars[7], bboard.vars[8], bboard.vars[2],
+                     msg.data[2], msg.data[3], gradient,  new_message, dist_to_food, dist_to_nest
+                     );
+            Btdisperse::log(buf);
+        }
+    }
     
 }
 

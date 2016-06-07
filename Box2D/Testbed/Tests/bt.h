@@ -22,6 +22,8 @@ namespace BT
     
     const std::set<std::string> ctrl_type1  {"seq", "seqm", "sel", "selm", "par"};
     const std::set<std::string> ctrl_type2  {"prob", "probm"};
+    const std::set<std::string> dec_type1   {"invert", "succeed", "fail"};
+    const std::set<std::string> dec_type2   {"repeat"};
     const std::set<std::string> action      {"mf", "ml", "mr", "set"};
     const std::set<std::string> motor       {"mf", "ml", "mr"};
 
@@ -32,6 +34,8 @@ namespace BT
     class Leaf_node;
     class Node;
     
+    typedef std::map<Node*, Status> Nodestatmap_t;
+    typedef std::map<Node*, int>    Nodecountmap_t;
     class Blackboard
     {
     public:
@@ -41,23 +45,22 @@ namespace BT
         }
         std::vector<float>  vars;
         Node*               running = nullptr;
+        Nodestatmap_t       stat;
+        Nodecountmap_t      count;
     };
 
     class Node
     {
     public:
-        Node() : stat(BT_INVALID) {}
+        Node() {}
         Node(json &j);
         Status          tick(Blackboard *_b);
-        //Status          tick();
         virtual void    init() {}
         virtual Status  update();
         virtual void    finish() {}
         Blackboard *b;
     protected:
         std::vector<Node *> children;
-    private:
-        Status stat;
     };
 
 
@@ -76,8 +79,6 @@ namespace BT
         Priselmem_node(json &j) : Node(j) {}
     protected:
         virtual Status update();
-    private:
-        int run_index = 0;
     };
     
     class Probsel_node : public Node
@@ -111,9 +112,9 @@ namespace BT
             }
         }
     protected:
+        virtual void init();
         virtual Status update();
     private:
-        int run_index = -1;
         std::vector<float> probability;
     };
     
@@ -123,7 +124,6 @@ namespace BT
         Sequence_node(json &j) : Node(j) {}
     protected:
         virtual Status update();
-        
     };
     
     class Sequencemem_node : public Node
@@ -132,9 +132,18 @@ namespace BT
         Sequencemem_node(json &j) : Node(j) {}
     protected:
         virtual Status update();
+    };
+    
+    class Repeat_node : public Node
+    {
+    public:
+        Repeat_node(json &j, int _r) : Node(j), r(_r) {}
+    protected:
+        virtual void    init();
+        virtual Status  update();
+        virtual void    finish();
     private:
-        int run_index = 0;
-        
+        int     r;
     };
 
 /*    class Parallel_node : public Node
@@ -157,8 +166,6 @@ namespace BT
         virtual void    finish();
     private:
         json j;
-        Status stat;
-        int count = 0;
     };
     
     //Behaviour_tree_node *behaviour_tree_builder(json &j);
