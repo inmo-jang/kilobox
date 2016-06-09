@@ -447,8 +447,8 @@ Node::Node(json &j)
         {
             // Type 2 control nodes have 3 elements, second is list of
             // child nodes, third is list of probabilities
-            auto &nl = n[1];
-            auto &pl = n[2];
+            auto &nl = n[2];
+            auto &pl = n[1];
             if (s == "prob")
             {
                 std::cout << "constructing prob" << std::endl;
