@@ -10,6 +10,7 @@
 #include <vector>
 #include <cstdlib>
 #include <map>
+#include "bt.h"
 
 using namespace Kilolib;
 
@@ -952,7 +953,7 @@ public:
             btstring += *i;
         printf("BT strings is:\n%s\n", btstring.c_str());
         json j1 = json::parse(btstring);
-        bt = new BT::Node(j1);
+        bt = new Node(j1);
         
         if (logfile != "")
         {
@@ -963,6 +964,28 @@ public:
         kilo_message_rx         = (message_rx_t)&Btdisperse::message_rx_dummy;
         kilo_message_tx_success = (message_tx_success_t)&Btdisperse::message_tx_success_dummy;
         setup();
+        
+        //bttest = mf();
+        bttest = seqm2(ml(),mf());
+        /*selm4(
+              probm2(0.3,
+                     success(),
+                     fail()
+                     ),
+              ifltcon(5, 0.1),
+              seqm2(
+                    ifltcon(6, 0),
+                    repeat(5,
+                           mf()
+                           )
+                    ),
+              probm3(0.33,0.33,
+                     repeat(3,mf()),
+                     repeat(3,ml()),
+                     repeat(3,mr())
+                     )
+              );*/
+
     }
     ~Btdisperse()
     {
@@ -990,6 +1013,9 @@ public:
         lfp = NULL;
     }
     
+    // Test of manual tree build
+    BT::Node *bttest;
+
     //void finish();
     std::vector<std::string> words;
     std::string logfile;
@@ -1066,6 +1092,7 @@ public:
     void message_rx(message_t *m, distance_measurement_t *d);
     message_t *message_tx();
 
+    
 
 };
 

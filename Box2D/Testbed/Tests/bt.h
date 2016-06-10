@@ -36,6 +36,8 @@ namespace BT
     
     typedef std::map<Node*, Status> Nodestatmap_t;
     typedef std::map<Node*, int>    Nodecountmap_t;
+    typedef std::vector<Node*>      Children_t;
+
     class Blackboard
     {
     public:
@@ -54,13 +56,18 @@ namespace BT
     public:
         Node() {}
         Node(json &j);
+        Node(Children_t *c)
+        {
+            for(auto &i : *c)
+                children.push_back(i);
+        }
         Status          tick(Blackboard *_b);
         virtual void    init() {}
         virtual Status  update();
         virtual void    finish() {}
         Blackboard *b;
     protected:
-        std::vector<Node *> children;
+        Children_t      children;
     };
 
 
@@ -130,6 +137,7 @@ namespace BT
     {
     public:
         Sequencemem_node(json &j) : Node(j) {}
+        Sequencemem_node(Children_t *c) : Node(c) {}
     protected:
         virtual Status update();
     };
@@ -169,6 +177,13 @@ namespace BT
     };
     
     //Behaviour_tree_node *behaviour_tree_builder(json &j);
+    Node* mf();
+
+    Node* ml();
+
+    Node* seqm2(Node*op1, Node*op2);
+
+    
 
 }
 

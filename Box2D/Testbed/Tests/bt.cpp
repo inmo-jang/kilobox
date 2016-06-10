@@ -473,4 +473,19 @@ Node::Node(json &j)
     printf("leaving node..\n");
 }
 
+Node* BT::mf()
+{
+    //return new Leaf_node(json::parse("[['leaf',{'type':'mf'}]]"));
+}
+Node* BT::ml()
+{
+    //return new Leaf_node(json::parse("[['leaf',{'type':'ml'}]]"));
+}
+Node* BT::seqm2(Node*op1, Node*op2)
+{
+    Children_t *children = new Children_t;
+    children->push_back(op1);
+    children->push_back(op2);
+    return new Sequencemem_node(children);
+}
 
