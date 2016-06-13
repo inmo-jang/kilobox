@@ -1,12 +1,9 @@
 
 
-#include <cassert>
-#include <string>
+//#include <cassert>
 #include <set>
-#include <random>
 
 #include "bt.h"
-#include "kilolib.h"
 
 
 
@@ -52,6 +49,8 @@
 
 using namespace BT;
 
+#ifndef KILOBOT
+#include <random>
 std::mt19937  gen;
 float rand_realrange(float low, float high)
 {
@@ -60,6 +59,12 @@ float rand_realrange(float low, float high)
     //printf("int   %10s %10i\n",pos->Token(), r);
     return r;
 }
+#else
+float rand_realrange(float low, float high)
+{
+    return low;
+}
+#endif
 
 Status Node::tick(Blackboard *_b)
 {
@@ -269,7 +274,7 @@ Status Set_node::update()
     return BT_SUCCESS;
 }
 
-#ifdef BTJSON
+#ifndef KILOBOT
 Node::Node(json &j)
 {
     // Really simple recursive descent parser with no error checking,

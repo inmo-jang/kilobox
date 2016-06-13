@@ -2,15 +2,22 @@
 #ifndef _BT_H
 #define _BT_H
 
+
+#ifdef KILOBOT
+// This is needed with Andy Brown's avr-stl lib
+#include <stddef.h>
+//#include <pnew.cpp>
+#include <iterator>
+#endif
+
 #include <vector>
 #include <set>
 #include <map>
 
-//#define BTJSON
 
 
-#ifdef BTJSON
-
+#ifndef KILOBOT
+#include <string>
 #include <json.hpp>
 using json = nlohmann::json;
 #endif
@@ -27,7 +34,7 @@ namespace BT
         BT_RUNNING
     };
     
-#ifdef BTJSON
+#ifndef KILOBOT
     const std::set<std::string> ctrl_type1  {"seq", "seqm", "sel", "selm", "par"};
     const std::set<std::string> ctrl_type2  {"prob", "probm"};
     const std::set<std::string> dec_type1   {"invert", "succeed", "fail"};
@@ -59,7 +66,7 @@ namespace BT
     {
     public:
         Node() {}
-#ifdef BTJSON
+#ifndef KILOBOT
         Node(json &j);
 #endif
         Node(Children_t *c)
@@ -82,7 +89,7 @@ namespace BT
     class Priselmem_node : public Node
     {
     public:
-#ifdef BTJSON
+#ifndef KILOBOT
         Priselmem_node(json &j) : Node(j) {}
 #endif
         Priselmem_node(Children_t *c) : Node(c) {}
@@ -94,7 +101,7 @@ namespace BT
     class Probselmem_node : public Node
     {
     public:
-#ifdef BTJSON
+#ifndef KILOBOT
         Probselmem_node(json &j, json &p) : Node(j)
         {
             for(auto &prob : p)
@@ -134,7 +141,7 @@ namespace BT
     class Sequencemem_node : public Node
     {
     public:
-#ifdef BTJSON
+#ifndef KILOBOT
         Sequencemem_node(json &j) : Node(j) {}
 #endif
         Sequencemem_node(Children_t *c) : Node(c) {}
@@ -144,7 +151,7 @@ namespace BT
     class Repeat_node : public Node
     {
     public:
-#ifdef BTJSON
+#ifndef KILOBOT
         Repeat_node(json &j, int _r) : Node(j), r(_r) {}
 #endif
         virtual void    init();
