@@ -27,11 +27,7 @@ namespace BT
     const std::set<std::string> action      {"mf", "ml", "mr", "set"};
     const std::set<std::string> motor       {"mf", "ml", "mr"};
 
-    
-    class Select_node;
-    class Sequence_node;
-    class Parallel_node;
-    class Leaf_node;
+
     class Node;
     
     typedef std::map<Node*, Status> Nodestatmap_t;
@@ -71,40 +67,16 @@ namespace BT
     };
 
 
-    
-    class Prisel_node : public Node
-    {
-    public:
-        Prisel_node(json &j) : Node(j) {}
-    protected:
-        virtual Status update();
-    };
+
     
     class Priselmem_node : public Node
     {
     public:
         Priselmem_node(json &j) : Node(j) {}
-    protected:
-        virtual Status update();
+        virtual Status  update();
     };
     
-    class Probsel_node : public Node
-    {
-    public:
-        Probsel_node(json &j, json &p) : Node(j)
-        {
-            for(auto &prob : p)
-            if (prob.is_number())
-            {
-                float fp = prob;
-                probability.push_back(fp);
-            }
-        }
-    protected:
-        virtual Status update();
-    private:
-        std::vector<float> probability;
-    };
+
     
     class Probselmem_node : public Node
     {
@@ -118,27 +90,37 @@ namespace BT
                 probability.push_back(fp);
             }
         }
-    protected:
+        Probselmem_node(float p0, Children_t *c) : Node(c)
+        {
+            probability.push_back(p0);
+            probability.push_back(1.0);
+        }
+        Probselmem_node(float p0, float p1, Children_t *c) : Node(c)
+        {
+            probability.push_back(p0);
+            probability.push_back(p1);
+            probability.push_back(1.0);
+        }
+        Probselmem_node(float p0, float p1, float p2, Children_t *c) : Node(c)
+        {
+            probability.push_back(p0);
+            probability.push_back(p1);
+            probability.push_back(p2);
+            probability.push_back(1.0);
+        }
         virtual void init();
         virtual Status update();
     private:
         std::vector<float> probability;
     };
     
-    class Sequence_node : public Node
-    {
-    public:
-        Sequence_node(json &j) : Node(j) {}
-    protected:
-        virtual Status update();
-    };
+
     
     class Sequencemem_node : public Node
     {
     public:
         Sequencemem_node(json &j) : Node(j) {}
         Sequencemem_node(Children_t *c) : Node(c) {}
-    protected:
         virtual Status update();
     };
     
@@ -146,7 +128,6 @@ namespace BT
     {
     public:
         Repeat_node(json &j, int _r) : Node(j), r(_r) {}
-    protected:
         virtual void    init();
         virtual Status  update();
         virtual void    finish();
@@ -154,21 +135,11 @@ namespace BT
         int     r;
     };
 
-/*    class Parallel_node : public Node
-    {
-    public:
-        Parallel_node(json &j, int _s, int _f) : Node(j), s(_s), f(_f) {}
-    protected:
-        virtual Status update();
-    private:
-        int s, f;
-    };
-*/
+
     class Leaf_node : public Node
     {
     public:
         Leaf_node(json &_j) : j(_j) {}
-    protected:
         virtual void    init();
         virtual Status  update();
         virtual void    finish();
@@ -176,12 +147,93 @@ namespace BT
         json j;
     };
     
+    //--------------------------------------------------
+    // Fixed leaf nodes
+    class Success_node : public Node
+    {
+    public:
+        virtual Status  update();
+    };
+    class Fail_node : public Node
+    {
+    public:
+        virtual Status  update();
+    };
+    class Mf_node : public Node
+    {
+    public:
+        virtual Status  update();
+    };
+    class Ml_node : public Node
+    {
+    public:
+        virtual Status  update();
+    };
+    class Mr_node : public Node
+    {
+    public:
+        virtual Status  update();
+    };
+    class Ifltvar_node : public Node
+    {
+    public:
+        Ifltvar_node(int _op1, int _op2) : op1(_op1), op2(_op2) {}
+        virtual Status  update();
+    private:
+        int op1, op2;
+    };
+    class Ifgtvar_node : public Node
+    {
+    public:
+        Ifgtvar_node(int _op1, int _op2) : op1(_op1), op2(_op2) {}
+        virtual Status  update();
+    private:
+        int op1, op2;
+    };
+    class Ifltcon_node : public Node
+    {
+    public:
+        Ifltcon_node(int _op1, float _op2) : op1(_op1), op2(_op2) {}
+        virtual Status  update();
+    private:
+        int op1;
+        float op2;
+    };
+    class Ifgtcon_node : public Node
+    {
+    public:
+        Ifgtcon_node(int _op1, float _op2) : op1(_op1), op2(_op2) {}
+        virtual Status  update();
+    private:
+        int op1;
+        float op2;
+    };
+    class Set_node : public Node
+    {
+    public:
+        Set_node(int _op1, float _op2) : op1(_op1), op2(_op2) {}
+        virtual Status  update();
+    private:
+        int     op1;
+        float   op2;
+    };
+    
+    
     //Behaviour_tree_node *behaviour_tree_builder(json &j);
     Node* mf();
-
     Node* ml();
-
+    Node* mr();
+    Node* success();
+    Node* fail();
+    Node* ifltvar(int op1, int op2);
+    Node* ifgtvar(int op1, int op2);
+    Node* ifltcon(int op1, float op2);
+    Node* ifgtcon(int op1, float op2);
+    Node* set(int op1, float op2);
     Node* seqm2(Node*op1, Node*op2);
+    Node* probm2(float p0, Node*op1, Node*op2);
+    Node* probm3(float p0, float p1, Node*op1, Node*op2, Node*op3);
+    Node* probm4(float p0, float p1, float p2, Node*op1, Node*op2, Node*op3, Node*op4);
 
     
 

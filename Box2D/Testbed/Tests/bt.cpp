@@ -24,32 +24,24 @@ Status Node::tick(Blackboard *_b)
 {
     b = _b;
     // If this is the first time through a node, the map entry will get
-    // allocated and assigned using the default constructor for Status, which is 0 == BT_INVALID
-    if (b->stat[this] != BT_RUNNING)
+    // allocated and assigned using the default constructor for Status,
+    // which is 0 == BT_INVALID
+    Status &stat = b->stat[this];
+    if (stat != BT_RUNNING)
         init();
-    b->stat[this] = update();
-    if (b->stat[this] != BT_RUNNING)
+    stat = update();
+    if (stat != BT_RUNNING)
         finish();
-    return b->stat[this];
+    return stat;
 }
 
-
+// Only the root node is not a derived class, and it only has one child
 Status Node::update()
 {
     return children[0]->tick(b);
 }
 
-Status Prisel_node::update()
-{
-    assert(children.size() > 0);
-    for(auto& i : children)
-    {
-        auto state = i->tick(b);
-        if (state == BT_RUNNING || state == BT_SUCCESS)
-            return state;
-    }
-    return BT_FAILURE;
-}
+
 
 Status Priselmem_node::update()
 {
@@ -73,23 +65,7 @@ Status Priselmem_node::update()
     return BT_FAILURE;
 }
 
-Status Probsel_node::update()
-{
-    // Randomly choose one child only to tick, based on weights
-    assert(children.size() > 0);
-    assert(children.size() == probability.size());
-    float r = rand_realrange(0,1);
-    float p = 0.0f;
-    for(int i = 0; i < children.size(); ++i)
-    {
-        p += probability[i];
-        if (p > r)
-        {
-            return children[i]->tick(b);
-        }
-    }
-    return BT_FAILURE;
-}
+
 
 void Probselmem_node::init()
 {
@@ -131,17 +107,7 @@ Status Probselmem_node::update()
     return state;
 }
 
-Status Sequence_node::update()
-{
-    assert(children.size() > 0);
-    for(auto& i : children)
-    {
-        auto state = i->tick(b);
-        if (state == BT_RUNNING || state == BT_FAILURE)
-            return state;
-    }
-    return BT_SUCCESS;
-}
+
 
 Status Sequencemem_node::update()
 {
@@ -173,8 +139,8 @@ void Repeat_node::init()
 }
 Status Repeat_node::update()
 {
-    int &count      = b->count[this];
-    Status &stat    = b->stat[this];
+    int     &count  = b->count[this];
+    Status  &stat   = b->stat[this];
     //printf("rep update %d\n", count);
     assert(children.size() == 1);
     Status cs = children[0]->tick(b);
@@ -198,53 +164,69 @@ void Repeat_node::finish()
     b->count[this]  = 0;
     b->stat[this]   = BT_SUCCESS;
 }
-/*Status Parallel_node::update()
+
+// Leaf nodes supported
+// success()
+// fail()
+// mf()
+// ml()
+// mr()
+// ifltvar(op1,op2)
+// ifgtvar(op1,op2)
+// ifltcon(op1,op2)
+// ifgtcon(op1,op2)
+Status Success_node::update()
 {
-    assert(children.size() > 0);
-    int scount = 0;
-    int fcount = 0;
-    for(auto& i : children)
-    {
-        auto state = i->tick(b);
-        if (state == BT_SUCCESS) ++scount;
-        if (state == BT_FAILURE) ++fcount;
-    }
-    if (scount >= s) return BT_SUCCESS;
-    if (fcount >= f) return BT_FAILURE;
-    return BT_RUNNING;
-}*/
-
-
-
-// In automode, the behaviours and conditions are as follows, all conditions except stop have
-// obstacle avoidance embedded:
-//  exploration     - straight unless obstacle, then turn away from prox sense for random time
-//  stop
-//  phototaxis      - towards light
-//  anti-phototaxis - away from light
-//  attraction      - towards other robots in neighbourhood
-//  repulsion       - away from other robots in neighbourhood
-// Conditions:
-//  black floor
-//  grey floor
-//  white floor
-//  neighbour count
-//  inverted neighbour count
-// fix probability
-
-// With kilobots, necessarily lower level..
-//  mf  move forward for x ticks
-//  ml  move left       "
-//  mr  move right      "
-//  sm  set msg to x
-//
-//  msg count aka neighbours
-//  msg average
-//  carrying
-//  food
-//  nest
-//
-//
+    return BT_SUCCESS;
+}
+Status Fail_node::update()
+{
+    return BT_SUCCESS;
+}
+// The motors are a contested resource, if a node tries to get access and they
+// are in use, return RUNNING and try again. The
+Status Mf_node::update()
+{
+    if (b->vars[0] > 0.0)
+        return BT_RUNNING;
+    b->vars[0] = 3.0;
+    return BT_SUCCESS;
+}
+Status Ml_node::update()
+{
+    if (b->vars[0] > 0.0)
+        return BT_RUNNING;
+    b->vars[0] = 1.0;
+    return BT_SUCCESS;
+}
+Status Mr_node::update()
+{
+    if (b->vars[0] > 0.0)
+        return BT_RUNNING;
+    b->vars[0] = 2.0;
+    return BT_SUCCESS;
+}
+Status Ifltvar_node::update()
+{
+    return b->vars[op1] < b->vars[op2] ? BT_SUCCESS : BT_FAILURE;
+}
+Status Ifgtvar_node::update()
+{
+    return b->vars[op1] > b->vars[op2] ? BT_SUCCESS : BT_FAILURE;
+}
+Status Ifltcon_node::update()
+{
+    return b->vars[op1] < op2 ? BT_SUCCESS : BT_FAILURE;
+}
+Status Ifgtcon_node::update()
+{
+    return b->vars[op1] > op2 ? BT_SUCCESS : BT_FAILURE;
+}
+Status Set_node::update()
+{
+    b->vars[op1] = op2;
+    return BT_SUCCESS;
+}
 
 // The tree of nodes is traversed. Nodes may be action or composition. Action nodes may return SUCCESS,
 // FAILURE, and RUNNING. Composition nodes return a status based on their childrens statuses.
@@ -263,110 +245,8 @@ void Repeat_node::finish()
 // at some later tick(), record the node. If the previously RUNNING node is not reached,
 // call its finish() method
 //
-void Leaf_node::init()
-{
-    auto &t = j["type"];
-    std::string s = t;
-    if (action.count(s) && b->running != nullptr && b->running != this)
-    {
-        // This is an action node (that might become running) and the currently
-        // marked running action node is not this node and not null, so it must be
-        // cleanly stopped before starting this one
-        b->running->finish();
-        b->running = nullptr;
-    }
-
-    //printf("leaf %s %d\n", s.c_str(), val);
-    b->stat[this] = BT_RUNNING;
-    
-}
-Status Leaf_node::update()
-{
-    // Look at the json fragment to find out what to do
-    auto &t = j["type"];
-    std::string s = t;
-    
-    
-    Status &stat = b->stat[this];
-    if (s == "mf")
-    {
-        b->vars[0] = 3.0;
-        stat = BT_SUCCESS;
-    }
-    else if (s == "ml")
-    {
-        b->vars[0] = 1.0;
-        stat = BT_SUCCESS;
-    }
-    else if (s == "mr")
-    {
-        b->vars[0] = 2.0;
-        stat = BT_SUCCESS;
-    }
-    else if (s == "set")
-    {
-        auto &jvar = j["var"];
-        auto &jval = j["val"];
-        int     var = jvar;
-        float   val = jval;
-        b->vars[var] = val;
-        stat = BT_SUCCESS;
-    }
-    else if (s == "if")
-    {
-        auto &v1 = j["var1"];
-        auto &v2 = j["var2"];
-        auto &c1 = j["con1"];
-        auto &c2 = j["con2"];
-        std::string rel = j["rel"];
-        
-        float op1, op2;
-        if (v1.is_number())     op1 = b->vars[v1];
-        if (v2.is_number())     op2 = b->vars[v2];
-        if (c1.is_number())     op1 = c1;
-        if (c2.is_number())     op2 = c2;
-        
-        if (rel == ">") stat = op1 > op2 ? BT_SUCCESS : BT_FAILURE;
-        if (rel == "<") stat = op1 < op2 ? BT_SUCCESS : BT_FAILURE;
-        
-        //printf("if %f %s %f\n", op1, rel.c_str(), op2);
-    }
-    else
-    {
-        // Undefined, return success
-        stat = BT_SUCCESS;
-    }
-
-    //std::cout << j << " " << stat << std::endl;
-
-    //printf("Tick %s %d %d\n", s.c_str(), stat, count);
-    return stat;
-}
 
 
-void Leaf_node::finish()
-{
-    if (b->stat[this] == BT_RUNNING)
-    {
-        // We are a leaf node and still running, so we should be added to the
-        // list of running nodes
-        b->running = this;
-    }
-}
-
-//json j = R"(
-//[ "seq", {"a",1},
-// [
-//  ["cond", {"a",1}],
-//  ["act", {"a",2}],
-//  ["sel",{"a",3},
-//   [
-//    ["act", {"a",4}],
-//    ["act", {"a",5}]
-//   ]
-//  ]
-// ]
-//])"_json;
 
 // The tree is represented as a hierarchical list
 // Each node consists of a node type string, followed by a list
@@ -398,23 +278,81 @@ Node::Node(json &j)
     // From the BNF, first must be a node type, always a string,
     // and the second is a map
     std::cout << j << std::endl;
-
-    
-
-    
     for(auto& n: j)
     {
-        auto &i     = n[0];
-        assert(i.is_string());
-        std::string s = i;
+        //auto &i     = n[0];
+        //assert(i.is_string());
+        //std::string s = i;
+        std::string s = n[0];
         printf("element is %s\n", s.c_str());
         if (s == "leaf")
         {
-            // Leaf node has 2 elements, second is an arg map
-            auto &am = n[1];
-            // Leaf types interpreted for now
-            std::cout << "constructing leaf with param: " << am << std::endl;
-            children.push_back(new Leaf_node(am));
+            if (0)
+            {
+                // Leaf node has 2 elements, second is an arg map
+                auto &am = n[1];
+                // Leaf types interpreted for now
+                std::cout << "constructing leaf with param: " << am << std::endl;
+                children.push_back(new Leaf_node(am));
+            }
+            else
+            {
+                // New form constructed leaf nodes
+                auto &am    = n[1];
+                std::string s = am["type"];
+                printf("leaf type is: %s\n", s.c_str());
+                if (s == "mf")
+                {
+                    children.push_back(mf());
+                }
+                else if (s == "ml")
+                {
+                    children.push_back(ml());
+                }
+                else if (s == "mr")
+                {
+                    children.push_back(mr());
+                }
+                else if (s == "success")
+                {
+                    children.push_back(success());
+                }
+                else if (s == "fail")
+                {
+                    children.push_back(fail());
+                }
+                else if (s == "ifltvar")
+                {
+                    int     op1 = am["var1"];
+                    int     op2 = am["var2"];
+                    children.push_back(ifltvar(op1, op2));
+                }
+                else if (s == "ifgtvar")
+                {
+                    int     op1 = am["var1"];
+                    int     op2 = am["var2"];
+                    children.push_back(ifgtvar(op1, op2));
+                }
+                else if (s == "ifltcon")
+                {
+                    int     op1 = am["var1"];
+                    float   op2 = am["con2"];
+                    children.push_back(ifltcon(op1, op2));
+                }
+                else if (s == "ifgtcon")
+                {
+                    int     op1 = am["var1"];
+                    float   op2 = am["con2"];
+                    children.push_back(ifgtcon(op1, op2));
+                }
+                else if (s == "set")
+                {
+                    int     op1 = am["var"];
+                    float   op2 = am["val"];
+                    children.push_back(set(op1,op2));
+                }
+            }
+            
         }
         else if (ctrl_type1.count(s))
         {
@@ -422,20 +360,10 @@ Node::Node(json &j)
             // child nodes
             auto &nl = n[1];
             //std::cout << nl << std::endl;
-            if (s == "seq")
-            {
-                std::cout << "constructing seq" << std::endl;
-                children.push_back(new Sequence_node(nl));
-            }
-            else if (s == "seqm")
+            if (s == "seqm")
             {
                 std::cout << "constructing seqm" << std::endl;
                 children.push_back(new Sequencemem_node(nl));
-            }
-            else if (s == "sel")
-            {
-                std::cout << "constructing sel" << std::endl;
-                children.push_back(new Prisel_node(nl));
             }
             else if (s == "selm")
             {
@@ -449,12 +377,7 @@ Node::Node(json &j)
             // child nodes, third is list of probabilities
             auto &nl = n[2];
             auto &pl = n[1];
-            if (s == "prob")
-            {
-                std::cout << "constructing prob" << std::endl;
-                children.push_back(new Probsel_node(nl, pl));
-            }
-            else if (s == "probm")
+            if (s == "probm")
             {
                 std::cout << "constructing probm" << std::endl;
                 children.push_back(new Probselmem_node(nl, pl));
@@ -475,11 +398,43 @@ Node::Node(json &j)
 
 Node* BT::mf()
 {
-    //return new Leaf_node(json::parse("[['leaf',{'type':'mf'}]]"));
+    return new Mf_node();
 }
 Node* BT::ml()
 {
-    //return new Leaf_node(json::parse("[['leaf',{'type':'ml'}]]"));
+    return new Ml_node();
+}
+Node* BT::mr()
+{
+    return new Mr_node();
+}
+Node* BT::success()
+{
+    return new Success_node();
+}
+Node* BT::fail()
+{
+    return new Fail_node();
+}
+Node* BT::ifltvar(int op1, int op2)
+{
+    return new Ifltvar_node(op1, op2);
+}
+Node* BT::ifgtvar(int op1, int op2)
+{
+    return new Ifgtvar_node(op1, op2);
+}
+Node* BT::ifltcon(int op1, float op2)
+{
+    return new Ifltcon_node(op1, op2);
+}
+Node* BT::ifgtcon(int op1, float op2)
+{
+    return new Ifgtcon_node(op1, op2);
+}
+Node* BT::set(int op1, float op2)
+{
+    return new Set_node(op1, op2);
 }
 Node* BT::seqm2(Node*op1, Node*op2)
 {
@@ -487,5 +442,29 @@ Node* BT::seqm2(Node*op1, Node*op2)
     children->push_back(op1);
     children->push_back(op2);
     return new Sequencemem_node(children);
+}
+Node* BT::probm2(float p0, Node*op1, Node*op2)
+{
+    Children_t *children = new Children_t;
+    children->push_back(op1);
+    children->push_back(op2);
+    return new Probselmem_node(p0, children);
+}
+Node* BT::probm3(float p0, float p1, Node*op1, Node*op2, Node*op3)
+{
+    Children_t *children = new Children_t;
+    children->push_back(op1);
+    children->push_back(op2);
+    children->push_back(op3);
+    return new Probselmem_node(p0, p1, children);
+}
+Node* BT::probm4(float p0, float p1, float p2, Node*op1, Node*op2, Node*op3, Node*op4)
+{
+    Children_t *children = new Children_t;
+    children->push_back(op1);
+    children->push_back(op2);
+    children->push_back(op3);
+    children->push_back(op4);
+    return new Probselmem_node(p0, p1, p2, children);
 }
 

@@ -966,7 +966,7 @@ public:
         setup();
         
         //bttest = mf();
-        bttest = seqm2(ml(),mf());
+        bt = probm3(0.33,0.33,ml(),mf(),mr());
         /*selm4(
               probm2(0.3,
                      success(),
