@@ -703,14 +703,14 @@ public:
     {
         // Construct the behaviour tree
         using namespace BT;
-        json j = R"(
-        [[ "seqm", {"a": 1},
-          [
-           ["leaf", {"type": "if", "var1":3, "rel":">", "con2":0}],
-           ["leaf", {"type": "mf", "x": 20}],
-           ["leaf", {"type": "ml", "x": 1}]
-           ]
-          ]])"_json;
+        //json j = R"(
+        //[[ "seqm", {"a": 1},
+        //  [
+        //   ["leaf", {"type": "if", "var1":3, "rel":">", "con2":0}],
+        //   ["leaf", {"type": "mf", "x": 20}],
+        //   ["leaf", {"type": "ml", "x": 1}]
+        //   ]
+        //  ]])"_json;
         //bt = new BT::Node(j);
         //bt = BT::behaviour_tree_node(j);
         
@@ -722,8 +722,8 @@ public:
         for(auto i = words.begin() + 1; i != words.end(); ++i)
             btstring += *i;
         printf("BT strings is:\n%s\n", btstring.c_str());
-        json j1 = json::parse(btstring);
-        bt = new BT::Node(j1);
+        //json j1 = json::parse(btstring);
+        //bt = new BT::Node(j1);
 
 
         
@@ -952,8 +952,8 @@ public:
         for(auto i = words.begin() + 1; i != words.end(); ++i)
             btstring += *i;
         printf("BT strings is:\n%s\n", btstring.c_str());
-        json j1 = json::parse(btstring);
-        bt = new Node(j1);
+        //json j1 = json::parse(btstring);
+        //bt = new Node(j1);
         
         if (logfile != "")
         {
@@ -966,7 +966,8 @@ public:
         setup();
         
         //bttest = mf();
-        bt = probm3(0.33,0.33,ml(),mf(),mr());
+        //bt = probm3(0.33,0.33,ml(),mf(),mr());
+        bt = selm3(ml(),mf(),mr());
         /*selm4(
               probm2(0.3,
                      success(),
