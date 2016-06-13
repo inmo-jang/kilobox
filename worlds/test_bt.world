@@ -8,8 +8,13 @@ region( circle [0 0 0.2 1] )
 
 
 define r0 position (
-ctrl "evokilo4 
-[['seqm',{},[['seqm',{},[['leaf', {'type':'mr','x':7}],['leaf', {'type':'mr','x':7}],['seqm',{},[['leaf', {'type':'mf','x':7}],['leaf', {'type':'sm','x':0.509877}],['leaf', {'type':'sm','x':0.392302}]]]]],['leaf', {'type':'mf','x':9}],['selm',{},[['seqm',{},[['leaf', {'type':'mr','x':9}],['leaf', {'type':'ml','x':5}],['leaf', {'type':'mf','x':3}]]],['leaf', {'type':'ml','x':10}],['selm',{},[['leaf', {'type':'mr','x':8}],['leaf', {'type':'sm','x':-0.741923}]]]]],['leaf', {'type':'mf','x':9}]]]]"
+ctrl "btdisperse
+[
+['seqm',[
+    ['leaf',{'type':'ml'}],
+    ['leaf',{'type':'mr'}]
+    ]]
+]"
 
 #[[ 'seqm', {'a': 1}, [ ['leaf', {'type': 'if', 'var1':3, 'rel':'>', 'con2':0}], ['leaf', {'type': 'mf', 'x': 20}], ['leaf', {'type': 'ml', 'x': 1}] ] ]]
 )
