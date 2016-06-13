@@ -4,9 +4,16 @@
 
 #include <vector>
 #include <set>
+#include <map>
+
+//#define BTJSON
+
+
+#ifdef BTJSON
+
 #include <json.hpp>
 using json = nlohmann::json;
-
+#endif
 
 namespace BT
 {
@@ -20,13 +27,14 @@ namespace BT
         BT_RUNNING
     };
     
+#ifdef BTJSON
     const std::set<std::string> ctrl_type1  {"seq", "seqm", "sel", "selm", "par"};
     const std::set<std::string> ctrl_type2  {"prob", "probm"};
     const std::set<std::string> dec_type1   {"invert", "succeed", "fail"};
     const std::set<std::string> dec_type2   {"repeat"};
     const std::set<std::string> action      {"mf", "ml", "mr", "set"};
     const std::set<std::string> motor       {"mf", "ml", "mr"};
-
+#endif
 
     class Node;
     
@@ -51,7 +59,9 @@ namespace BT
     {
     public:
         Node() {}
+#ifdef BTJSON
         Node(json &j);
+#endif
         Node(Children_t *c)
         {
             for(auto &i : *c)
@@ -72,7 +82,10 @@ namespace BT
     class Priselmem_node : public Node
     {
     public:
+#ifdef BTJSON
         Priselmem_node(json &j) : Node(j) {}
+#endif
+        Priselmem_node(Children_t *c) : Node(c) {}
         virtual Status  update();
     };
     
@@ -81,6 +94,7 @@ namespace BT
     class Probselmem_node : public Node
     {
     public:
+#ifdef BTJSON
         Probselmem_node(json &j, json &p) : Node(j)
         {
             for(auto &prob : p)
@@ -90,6 +104,7 @@ namespace BT
                 probability.push_back(fp);
             }
         }
+#endif
         Probselmem_node(float p0, Children_t *c) : Node(c)
         {
             probability.push_back(p0);
@@ -119,7 +134,9 @@ namespace BT
     class Sequencemem_node : public Node
     {
     public:
+#ifdef BTJSON
         Sequencemem_node(json &j) : Node(j) {}
+#endif
         Sequencemem_node(Children_t *c) : Node(c) {}
         virtual Status update();
     };
@@ -127,7 +144,9 @@ namespace BT
     class Repeat_node : public Node
     {
     public:
+#ifdef BTJSON
         Repeat_node(json &j, int _r) : Node(j), r(_r) {}
+#endif
         virtual void    init();
         virtual Status  update();
         virtual void    finish();
@@ -136,16 +155,7 @@ namespace BT
     };
 
 
-    class Leaf_node : public Node
-    {
-    public:
-        Leaf_node(json &_j) : j(_j) {}
-        virtual void    init();
-        virtual Status  update();
-        virtual void    finish();
-    private:
-        json j;
-    };
+
     
     //--------------------------------------------------
     // Fixed leaf nodes
@@ -231,6 +241,11 @@ namespace BT
     Node* ifgtcon(int op1, float op2);
     Node* set(int op1, float op2);
     Node* seqm2(Node*op1, Node*op2);
+    Node* seqm3(Node*op1, Node*op2, Node*op3);
+    Node* seqm4(Node*op1, Node*op2, Node*op3, Node*op4);
+    Node* selm2(Node*op1, Node*op2);
+    Node* selm3(Node*op1, Node*op2, Node*op3);
+    Node* selm4(Node*op1, Node*op2, Node*op3, Node*op4);
     Node* probm2(float p0, Node*op1, Node*op2);
     Node* probm3(float p0, float p1, Node*op1, Node*op2, Node*op3);
     Node* probm4(float p0, float p1, float p2, Node*op1, Node*op2, Node*op3, Node*op4);

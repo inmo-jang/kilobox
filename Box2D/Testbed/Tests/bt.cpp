@@ -9,6 +9,47 @@
 #include "kilolib.h"
 
 
+
+// The tree of nodes is traversed. Nodes may be action or composition. Action nodes may return SUCCESS,
+// FAILURE, and RUNNING. Composition nodes return a status based on their childrens statuses.
+// A RUNNING action node has yet to complete its task.
+// Action nodes can have two states, CLOSED, OPEN. A node visited by tick() becomes
+// OPEN. The transition from CLOSED to OPEN calls the init() method. The transition
+// from OPEN to CLOSED calls the finish() method. All nodes that are OPEN call the tick()
+// method.
+//
+//
+//
+// To evaluate the tree:
+// On every call to tick() at the root, traverse the tree in depth first order,
+// this will result in at most one RUNNING node, if the PAR construct is
+// not used. In order that a RUNNING node is not orphaned by a change in conditions
+// at some later tick(), record the node. If the previously RUNNING node is not reached,
+// call its finish() method
+//
+
+
+
+// The tree is represented as a hierarchical list
+// Each node consists of a node type string, followed by a list
+//
+// The type strings, and what the following list represents is given:
+//  node            ::= [ <ctrl_node_type1>, [ <node_list> ] ] |
+//                      [ <ctrl_node_type2>, [ <node_list> ], [ <prob_list> ] ] |
+//                      [ <decorator_type1>, <node> ] |
+//                      [ <decorator_type2>, <value>, <node> ] |
+//                      [ "leaf", { <arg_map> } ]
+//  node_list       ::= <node_list> , <node> | <node>
+//  arg_map         ::= <arg_map>, <arg> | <arg> | <empty>
+//  arg             ::= key : value
+//  ctrl_node_type1 ::= "seq" | "sel" | "par" | "seqm" | "selm"
+//  ctrl_node_type2 ::= "prob" | "probm"
+//  decorator_type1 ::= "invert" | "succeed" | "fail"
+//  decorator_type2 ::= "repeat"
+//  leaf_node_type  ::= act | cond
+//
+
+
 using namespace BT;
 
 std::mt19937  gen;
@@ -228,49 +269,11 @@ Status Set_node::update()
     return BT_SUCCESS;
 }
 
-// The tree of nodes is traversed. Nodes may be action or composition. Action nodes may return SUCCESS,
-// FAILURE, and RUNNING. Composition nodes return a status based on their childrens statuses.
-// A RUNNING action node has yet to complete its task.
-// Action nodes can have two states, CLOSED, OPEN. A node visited by tick() becomes
-// OPEN. The transition from CLOSED to OPEN calls the init() method. The transition
-// from OPEN to CLOSED calls the finish() method. All nodes that are OPEN call the tick()
-// method.
-//
-//
-//
-// To evaluate the tree:
-// On every call to tick() at the root, traverse the tree in depth first order,
-// this will result in at most one RUNNING node, if the PAR construct is
-// not used. In order that a RUNNING node is not orphaned by a change in conditions
-// at some later tick(), record the node. If the previously RUNNING node is not reached,
-// call its finish() method
-//
-
-
-
-// The tree is represented as a hierarchical list
-// Each node consists of a node type string, followed by a list
-//
-// The type strings, and what the following list represents is given:
-//  node            ::= [ <ctrl_node_type1>, [ <node_list> ] ] |
-//                      [ <ctrl_node_type2>, [ <node_list> ], [ <prob_list> ] ] |
-//                      [ <decorator_type1>, <node> ] |
-//                      [ <decorator_type2>, <value>, <node> ] |
-//                      [ "leaf", { <arg_map> } ]
-//  node_list       ::= <node_list> , <node> | <node>
-//  arg_map         ::= <arg_map>, <arg> | <arg> | <empty>
-//  arg             ::= key : value
-//  ctrl_node_type1 ::= "seq" | "sel" | "par" | "seqm" | "selm"
-//  ctrl_node_type2 ::= "prob" | "probm"
-//  decorator_type1 ::= "invert" | "succeed" | "fail"
-//  decorator_type2 ::= "repeat"
-//  leaf_node_type  ::= act | cond
-//
-
+#ifdef BTJSON
 Node::Node(json &j)
 {
     // Really simple recursive descent parser with no error checking,
-    // creating the tree as we go. The top node is the root node
+    // creating the tree as we go from JSON. The top node is the root node
     // and has only one child.
     // Each node of the json description has 2 or 3 elements, depending on
     // the first element which is the node type
@@ -287,72 +290,60 @@ Node::Node(json &j)
         printf("element is %s\n", s.c_str());
         if (s == "leaf")
         {
-            if (0)
+            // New form constructed leaf nodes
+            auto &am    = n[1];
+            std::string s = am["type"];
+            printf("leaf type is: %s\n", s.c_str());
+            if (s == "mf")
             {
-                // Leaf node has 2 elements, second is an arg map
-                auto &am = n[1];
-                // Leaf types interpreted for now
-                std::cout << "constructing leaf with param: " << am << std::endl;
-                children.push_back(new Leaf_node(am));
+                children.push_back(mf());
             }
-            else
+            else if (s == "ml")
             {
-                // New form constructed leaf nodes
-                auto &am    = n[1];
-                std::string s = am["type"];
-                printf("leaf type is: %s\n", s.c_str());
-                if (s == "mf")
-                {
-                    children.push_back(mf());
-                }
-                else if (s == "ml")
-                {
-                    children.push_back(ml());
-                }
-                else if (s == "mr")
-                {
-                    children.push_back(mr());
-                }
-                else if (s == "success")
-                {
-                    children.push_back(success());
-                }
-                else if (s == "fail")
-                {
-                    children.push_back(fail());
-                }
-                else if (s == "ifltvar")
-                {
-                    int     op1 = am["var1"];
-                    int     op2 = am["var2"];
-                    children.push_back(ifltvar(op1, op2));
-                }
-                else if (s == "ifgtvar")
-                {
-                    int     op1 = am["var1"];
-                    int     op2 = am["var2"];
-                    children.push_back(ifgtvar(op1, op2));
-                }
-                else if (s == "ifltcon")
-                {
-                    int     op1 = am["var1"];
-                    float   op2 = am["con2"];
-                    children.push_back(ifltcon(op1, op2));
-                }
-                else if (s == "ifgtcon")
-                {
-                    int     op1 = am["var1"];
-                    float   op2 = am["con2"];
-                    children.push_back(ifgtcon(op1, op2));
-                }
-                else if (s == "set")
-                {
-                    int     op1 = am["var"];
-                    float   op2 = am["val"];
-                    children.push_back(set(op1,op2));
-                }
+                children.push_back(ml());
             }
-            
+            else if (s == "mr")
+            {
+                children.push_back(mr());
+            }
+            else if (s == "success")
+            {
+                children.push_back(success());
+            }
+            else if (s == "fail")
+            {
+                children.push_back(fail());
+            }
+            else if (s == "ifltvar")
+            {
+                int     op1 = am["var1"];
+                int     op2 = am["var2"];
+                children.push_back(ifltvar(op1, op2));
+            }
+            else if (s == "ifgtvar")
+            {
+                int     op1 = am["var1"];
+                int     op2 = am["var2"];
+                children.push_back(ifgtvar(op1, op2));
+            }
+            else if (s == "ifltcon")
+            {
+                int     op1 = am["var1"];
+                float   op2 = am["con2"];
+                children.push_back(ifltcon(op1, op2));
+            }
+            else if (s == "ifgtcon")
+            {
+                int     op1 = am["var1"];
+                float   op2 = am["con2"];
+                children.push_back(ifgtcon(op1, op2));
+            }
+            else if (s == "set")
+            {
+                int     op1 = am["var"];
+                float   op2 = am["val"];
+                children.push_back(set(op1,op2));
+            }
         }
         else if (ctrl_type1.count(s))
         {
@@ -374,7 +365,7 @@ Node::Node(json &j)
         else if (ctrl_type2.count(s))
         {
             // Type 2 control nodes have 3 elements, second is list of
-            // child nodes, third is list of probabilities
+            // probabilities, third is list of child nodes
             auto &nl = n[2];
             auto &pl = n[1];
             if (s == "probm")
@@ -395,6 +386,7 @@ Node::Node(json &j)
     }
     printf("leaving node..\n");
 }
+#endif
 
 Node* BT::mf()
 {
@@ -442,6 +434,47 @@ Node* BT::seqm2(Node*op1, Node*op2)
     children->push_back(op1);
     children->push_back(op2);
     return new Sequencemem_node(children);
+}
+Node* BT::seqm3(Node*op1, Node*op2, Node*op3)
+{
+    Children_t *children = new Children_t;
+    children->push_back(op1);
+    children->push_back(op2);
+    children->push_back(op3);
+    return new Sequencemem_node(children);
+}
+Node* BT::seqm4(Node*op1, Node*op2, Node*op3, Node*op4)
+{
+    Children_t *children = new Children_t;
+    children->push_back(op1);
+    children->push_back(op2);
+    children->push_back(op3);
+    children->push_back(op4);
+    return new Sequencemem_node(children);
+}
+Node* BT::selm2(Node*op1, Node*op2)
+{
+    Children_t *children = new Children_t;
+    children->push_back(op1);
+    children->push_back(op2);
+    return new Priselmem_node(children);
+}
+Node* BT::selm3(Node*op1, Node*op2, Node*op3)
+{
+    Children_t *children = new Children_t;
+    children->push_back(op1);
+    children->push_back(op2);
+    children->push_back(op3);
+    return new Priselmem_node(children);
+}
+Node* BT::selm4(Node*op1, Node*op2, Node*op3, Node*op4)
+{
+    Children_t *children = new Children_t;
+    children->push_back(op1);
+    children->push_back(op2);
+    children->push_back(op3);
+    children->push_back(op4);
+    return new Priselmem_node(children);
 }
 Node* BT::probm2(float p0, Node*op1, Node*op2)
 {
