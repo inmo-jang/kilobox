@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <map>
 #include "bt.h"
+#include "bts.h"
 
 using namespace Kilolib;
 
@@ -943,8 +944,7 @@ public:
                     std::vector<std::string> _words, std::string _logfile = "") :
     Kilobot (_pos, _settings),
     words   (_words),
-    logfile (_logfile),
-    bboard  (10)
+    logfile (_logfile)
     {
         // Read in the Behaviour Tree
         using namespace BT;
@@ -967,25 +967,15 @@ public:
         
         //bttest = mf();
         //bt = probm3(0.33,0.33,ml(),mf(),mr());
-        bt = selm3(ml(),mf(),mr());
-        /*selm4(
-              probm2(0.3,
-                     success(),
-                     fail()
-                     ),
-              ifltcon(5, 0.1),
-              seqm2(
-                    ifltcon(6, 0),
-                    repeat(5,
-                           mf()
-                           )
-                    ),
-              probm3(0.33,0.33,
-                     repeat(3,mf()),
-                     repeat(3,ml()),
-                     repeat(3,mr())
-                     )
-              );*/
+        bt =
+        newnode(SEQM2,
+            newnode(PROBM2, 0.3,
+                newnode(MF),
+                newnode(ML)
+            ),
+            newnode(ML)
+        );
+
 
     }
     ~Btdisperse()
@@ -1015,7 +1005,9 @@ public:
     }
     
     // Test of manual tree build
-    BT::Node *bttest;
+
+    
+
 
     //void finish();
     std::vector<std::string> words;
@@ -1029,8 +1021,12 @@ public:
     // Kilobot user functions
     //------------------------------------------------------------
     // Behaviour tree
-    BT::Node *bt;
-    BT::Blackboard bboard;
+    //BT::Node *bt;
+    //BT::Blackboard bboard;
+    
+    float bboard[10];
+    struct Node *bt;
+    
 
     uint32_t last_update        = 0;
 

@@ -259,15 +259,4 @@ namespace BT
 
 }
 
-namespace BTT
-{
-    enum Status {
-        BT_INVALID = 0,
-        BT_FAILURE,
-        BT_SUCCESS,
-        BT_RUNNING
-    };
-    Status btree();
-}
-
 #endif

@@ -25,6 +25,8 @@ set(Testbed_Tests_SRCS
 	Tests/evokilo1.cpp
 	Tests/bt.h
 	Tests/bt.cpp
+	Tests/bts.h
+	Tests/bts.c
 )
 
 # These are used to create visual studio folders.

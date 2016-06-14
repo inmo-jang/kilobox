@@ -876,21 +876,23 @@ void Btdisperse::loop()
         //  [9] carrying_food
         
         // Motor values always reset to zero, then potentially altered
-        bboard.vars[0] = 0;
+        bboard[0] = 0;
         
         // Values are always boolean or in range -1.0 to 1.0
-        bboard.vars[3]  = detected_food;
-        bboard.vars[4]  = told_about_food;
-        bboard.vars[5]  = density / 1000.0;
-        bboard.vars[6]  = (density - last_density) / 1000.0;
-        bboard.vars[7]  = (dfood - last_dfood) / 1000.0;
-        bboard.vars[8]  = (dnest - last_dnest) / 1000.0;
-        bboard.vars[9]  = carrying_food;
+        bboard[3]  = detected_food;
+        bboard[4]  = told_about_food;
+        bboard[5]  = density / 1000.0;
+        bboard[6]  = (density - last_density) / 1000.0;
+        bboard[7]  = (dfood - last_dfood) / 1000.0;
+        bboard[8]  = (dnest - last_dnest) / 1000.0;
+        bboard[9]  = carrying_food;
         
-        bt->tick(&bboard);
         
-        int motion = (int)bboard.vars[0];
-        found_food = (int)bboard.vars[1];
+        vars = bboard;
+        tick(bt);
+        
+        int motion = (int)bboard[0];
+        found_food = (int)bboard[1];
         
         set_motion(motion);
 
@@ -901,7 +903,7 @@ void Btdisperse::loop()
         //    set_color(RGB(3,0,0));
         //set_color_greyscale((float)gradient/max_hops);
         //set_color(bboard.vars[7], (float)dfood/max_food_dist, 0);
-        set_color(bboard.vars[2], (float)dnest/max_nest_dist, bboard.vars[7]);
+        set_color(bboard[2], (float)dnest/max_nest_dist, bboard[7]);
         //set_color(bboard.vars[7], (float)nest_gradient/max_hops, 0);
         //set_color_greyscale(detected_food);
         
@@ -922,8 +924,8 @@ void Btdisperse::loop()
                      //printf(
                      "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%4d,%4d,%4d,%4d,%4d,%4d\n", pos->Token(), time/1e6,
                      pos->GetPose().x, pos->GetPose().y,
-                     bboard.vars[0], bboard.vars[1], bboard.vars[9], bboard.vars[3], bboard.vars[4], bboard.vars[5], bboard.vars[6],
-                     bboard.vars[7], bboard.vars[8], bboard.vars[2],
+                     bboard[0], bboard[1], bboard[9], bboard[3], bboard[4], bboard[5], bboard[6],
+                     bboard[7], bboard[8], bboard[2],
                      msg.data[2], msg.data[3], gradient,  new_message, dist_to_food, dist_to_nest
                      );
             Btdisperse::log(buf);
