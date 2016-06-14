@@ -4,10 +4,8 @@
 
 
 #ifdef KILOBOT
-// This is needed with Andy Brown's avr-stl lib
-#include <stddef.h>
-//#include <pnew.cpp>
-#include <iterator>
+
+
 #endif
 
 #include <vector>
@@ -259,6 +257,17 @@ namespace BT
 
     
 
+}
+
+namespace BTT
+{
+    enum Status {
+        BT_INVALID = 0,
+        BT_FAILURE,
+        BT_SUCCESS,
+        BT_RUNNING
+    };
+    Status btree();
 }
 
 #endif

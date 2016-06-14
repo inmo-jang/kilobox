@@ -506,3 +506,42 @@ Node* BT::probm4(float p0, float p1, float p2, Node*op1, Node*op2, Node*op3, Nod
     return new Probselmem_node(p0, p1, p2, children);
 }
 
+
+namespace BTT
+{
+    Status seqm2(Status op1, Status op2)
+    {
+        static int = 0;
+        for(int i = run_index; i < 2; ++i)
+        {
+            Status state = ;
+            if (state == BT_RUNNING)
+            {
+                run_index = i;
+                return state;
+            }
+            if (state == BT_FAILURE)
+            {
+                run_index = 0;
+                return state;
+            }
+        }
+        run_index = 0;
+        return BT_SUCCESS;
+        return BT_INVALID;
+    }
+    Status bf()
+    {
+        return BT_SUCCESS;
+    }
+    Status bl()
+    {
+        return BT_SUCCESS;
+    }
+    Status btree()
+    {
+        return seqm2(bf(),bl());
+    }
+}
+
+
