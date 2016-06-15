@@ -22,6 +22,8 @@
 #include "kilolib.h"
 #include "evokilo1.h"
 
+//#include "bts.h"
+
 using namespace Kilolib;
 
 
@@ -888,7 +890,7 @@ void Btdisperse::loop()
         bboard[9]  = carrying_food;
         
         
-        vars = bboard;
+        set_vars(bboard);
         tick(bt);
         
         int motion = (int)bboard[0];

@@ -16,7 +16,13 @@ typedef enum
     PROBM4,
     MF,
     ML,
-    MR
+    MR,
+    IFLTVAR,
+    IFGTVAR,
+    IFLTCON,
+    IFGTCON,
+    SET,
+    REPEAT
 } Nodetype;
 
 typedef enum
@@ -28,9 +34,9 @@ typedef enum
 } Status;
 
 struct Node;
-float *vars;
-struct Node *newnode(Nodetype type,...);
-Status tick(struct Node *bt);
+void            set_vars(float *v);
+struct Node     *newnode(Nodetype type,...);
+Status          tick(struct Node *bt);
 
 
 #endif

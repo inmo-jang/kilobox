@@ -7,10 +7,26 @@
 #include "bts.h"
 
 
-
+#ifndef KILOBOT
 float rand_realrange(float low, float high)
 {
-    return low;
+    float r = ((float)rand()/RAND_MAX) * (high - low) + low;
+    return r;
+}
+#else
+float rand_realrange(float low, float high)
+{
+    float r = ((float)rand()/RAND_MAX) * (high - low) + low;
+    return r;
+}
+#endif
+
+
+// Private variable pointing at the blackboard, and setter for it
+static float *vars;
+void set_vars(float *v)
+{
+    vars = v;
 }
 
 struct SM2
@@ -52,6 +68,26 @@ struct PM4
     struct Node *op[4];
 };
 
+struct IFV
+{
+    int8_t      op1;
+    int8_t      op2;
+};
+
+struct IFC
+{
+    int8_t      op1;
+    float       op2;
+};
+
+struct REP
+{
+    int8_t      count;
+    int8_t      repeat;
+    struct Node *op;
+};
+
+
 union Ndata
 {
 
@@ -61,6 +97,10 @@ union Ndata
     struct PM2  pm2;
     struct PM3  pm3;
     struct PM4  pm4;
+    struct IFV  ifv;
+    struct IFC  ifc;
+    struct REP  rep;
+
 };
 
 struct Node
@@ -137,7 +177,7 @@ struct Node *newnode(Nodetype type,...)
         }
         case PROBM4:
         {
-            n->data.pm4 .idx     = -1;
+            n->data.pm4.idx     = -1;
             n->data.pm4.p[0]    = va_arg(args, double);
             n->data.pm4.p[1]    = va_arg(args, double);
             n->data.pm4.p[2]    = va_arg(args, double);
@@ -153,6 +193,25 @@ struct Node *newnode(Nodetype type,...)
         {
             break;
         }
+        case IFLTVAR:
+        case IFGTVAR:
+        {
+            n->data.ifv.op1     = va_arg(args, int);
+            n->data.ifv.op2     = va_arg(args, int);
+        }
+        case IFLTCON:
+        case IFGTCON:
+        case SET:
+        {
+            n->data.ifc.op1     = va_arg(args, int);
+            n->data.ifc.op2     = va_arg(args, double);
+        }
+        case REPEAT:
+        {
+            n->data.rep.repeat  = va_arg(args, int);
+            n->data.rep.op      = va_arg(args, struct Node*);
+        }
+            
     }
     va_end(args);
     return n;
@@ -220,7 +279,10 @@ Status update_probm(struct Node *bt, int8_t count)
     {
         for(int8_t i = 0; i < count; ++i)
         {
-            p += bt->data.pm4.p[i];
+            // There is one less probability value than there are
+            // choices, because the last value is assumed to sum up
+            // to 1
+            p += (i == (count - 1)) ? 1.0 : bt->data.pm4.p[i];
             if (p > r)
             {
                 s = tick(children[i]);
@@ -260,10 +322,60 @@ Status update_mr()
     vars[0] = 2.0f;
     return BT_SUCCESS;
 }
+Status update_ifltvar(struct Node *bt)
+{
+    return vars[bt->data.ifv.op1] < vars[bt->data.ifv.op2]  ? BT_SUCCESS : BT_FAILURE;
+}
+Status update_ifgtvar(struct Node *bt)
+{
+    return vars[bt->data.ifv.op1] >= vars[bt->data.ifv.op2] ? BT_SUCCESS : BT_FAILURE;
+}
+Status update_ifltcon(struct Node *bt)
+{
+    return vars[bt->data.ifc.op1] < bt->data.ifc.op2        ? BT_SUCCESS : BT_FAILURE;
+}
+Status update_ifgtcon(struct Node *bt)
+{
+    return vars[bt->data.ifc.op1] >= bt->data.ifc.op2       ? BT_SUCCESS : BT_FAILURE;
+}
+Status update_set(struct Node *bt)
+{
+    vars[bt->data.ifc.op1] = bt->data.ifc.op2;
+    return BT_SUCCESS;
+}
+Status update_repeat(struct Node *bt)
+{
+    Status s = tick(bt->data.rep.op);
+    if (s == BT_FAILURE)
+    {
+        bt->data.rep.count  = 0;
+        return BT_FAILURE;
+    }
+    else if (s == BT_SUCCESS)
+    {
+        bt->data.rep.count --;
+        if (bt->data.rep.count == 0)
+        {
+            return BT_SUCCESS;
+        }
+    }
+    return BT_RUNNING;
+}
 
-
+// All nodes execute in three phases, although most have empty init and finish phases
 void init(struct Node *bt)
 {
+    switch(bt->type)
+    {
+        case REPEAT:
+        {
+            bt->data.rep.count  = bt->data.rep.repeat;
+            bt->status          = BT_RUNNING;
+            return;
+        }
+        default:
+            return;
+    }
 }
 Status update(struct Node *bt)
 {
@@ -281,6 +393,12 @@ Status update(struct Node *bt)
         case MF:        return update_mf();
         case ML:        return update_ml();
         case MR:        return update_mr();
+        case IFLTVAR:   return update_ifltvar(bt);
+        case IFGTVAR:   return update_ifgtvar(bt);
+        case IFLTCON:   return update_ifltcon(bt);
+        case IFGTCON:   return update_ifgtcon(bt);
+        case SET:       return update_set(bt);
+        case REPEAT:    return update_repeat(bt);
     }
     return BT_SUCCESS;
 }
