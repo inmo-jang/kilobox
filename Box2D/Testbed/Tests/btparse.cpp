@@ -15,7 +15,7 @@ extern "C" {
 // Regex to match lower case alphabetic words with optional single digit ending,
 // and numbers possibly prefixed
 // with + or - and possibly having a decimal point with one or more digits after it
-std::regex e("[a-z]+[234]?|[-+]?[0-9]+(\\.[0-9]+)*");
+std::regex e("[a-z]+[234]?|[-+]?[0-9]+\\.?[0-9]*");
 
 
 
@@ -48,13 +48,17 @@ std::string words[]
 std::regex_token_iterator<std::string::iterator> rend;
 std::regex_token_iterator<std::string::iterator> a;
 
-void check(std::string msg)
+std::string check(std::string msg)
 {
     if (a == rend)
     {
         printf("%s\n", msg.c_str());
         exit(1);
     }
+    std::string s = *a;
+    printf("<%s>", s.c_str());
+
+    return s;
 }
 
 struct Node *pt()
@@ -62,8 +66,8 @@ struct Node *pt()
     // This gives us a stream of tokens which are either words or
     // signed decimal numbers (no exponents).
 
-    check("Unexpected end of tokens parsing node\n");
-    std::string s = *a++;
+    auto s = check("Unexpected end of tokens parsing node\n");
+    a++;
     if (s == words[SEQM2])
     {
         return newnode(SEQM2, pt(), pt());
@@ -90,32 +94,32 @@ struct Node *pt()
     }
     else if (s == words[PROBM2])
     {
-        check("Unexpected end of tokens parsing probm2 p1\n");
-        s = *a++;
-        float p1 = atof(s.c_str());
+        s = check("Unexpected end of tokens parsing probm2 p1\n");
+        a++;
+        double p1 = atof(s.c_str());
         return newnode(PROBM2, p1, pt(), pt());
     }
     else if (s == words[PROBM3])
     {
-        check("Unexpected end of tokens parsing probm3 p1\n");
-        s = *a++;
-        float p1 = atof(s.c_str());
-        check("Unexpected end of tokens parsing probm3 p2\n");
-        s = *a++;
-        float p2 = atof(s.c_str());
+        s = check("Unexpected end of tokens parsing probm3 p1\n");
+        a++;
+        double p1 = atof(s.c_str());
+        s = check("Unexpected end of tokens parsing probm3 p2\n");
+        a++;
+        double p2 = atof(s.c_str());
         return newnode(PROBM3, p1, p2, pt(), pt(), pt());
     }
     else if (s == words[PROBM4])
     {
-        check("Unexpected end of tokens parsing probm4 p1\n");
-        s = *a++;
-        float p1 = atof(s.c_str());
-        check("Unexpected end of tokens parsing probm4 p2\n");
-        s = *a++;
-        float p2 = atof(s.c_str());
-        check("Unexpected end of tokens parsing probm4 p3\n");
-        s = *a++;
-        float p3 = atof(s.c_str());
+        s = check("Unexpected end of tokens parsing probm4 p1\n");
+        a++;
+        double p1 = atof(s.c_str());
+        s = check("Unexpected end of tokens parsing probm4 p2\n");
+        a++;
+        double p2 = atof(s.c_str());
+        s = check("Unexpected end of tokens parsing probm4 p3\n");
+        a++;
+        double p3 = atof(s.c_str());
         return newnode(PROBM4, p1, p2, p3, pt(), pt(), pt(), pt());
     }
     else if (s == words[MF])
@@ -132,59 +136,59 @@ struct Node *pt()
     }
     else if (s == words[IFLTVAR])
     {
-        check("Unexpected end of tokens parsing ifltvar op1\n");
-        s = *a++;
+        s = check("Unexpected end of tokens parsing ifltvar op1\n");
+        a++;
         int op1 = atol(s.c_str());
-        check("Unexpected end of tokens parsing ifltvar op2\n");
-        s = *a++;
+        s = check("Unexpected end of tokens parsing ifltvar op2\n");
+        a++;
         int op2 = atol(s.c_str());
         return newnode(IFLTVAR, op1, op2);
     }
     else if (s == words[IFGTVAR])
     {
-        check("Unexpected end of tokens parsing ifgtvar op1\n");
-        s = *a++;
+        s = check("Unexpected end of tokens parsing ifgtvar op1\n");
+        a++;
         int op1 = atol(s.c_str());
-        check("Unexpected end of tokens parsing ifgtvar op2\n");
-        s = *a++;
+        s = check("Unexpected end of tokens parsing ifgtvar op2\n");
+        a++;
         int op2 = atol(s.c_str());
         return newnode(IFGTVAR, op1, op2);
     }
     else if (s == words[IFLTCON])
     {
-        check("Unexpected end of tokens parsing ifltcon op1\n");
-        s = *a++;
+        s = check("Unexpected end of tokens parsing ifltcon op1\n");
+        a++;
         int op1 = atol(s.c_str());
-        check("Unexpected end of tokens parsing ifltcon op2\n");
-        s = *a++;
-        float op2 = atof(s.c_str());
+        s = check("Unexpected end of tokens parsing ifltcon op2\n");
+        a++;
+        double op2 = atof(s.c_str());
         return newnode(IFLTCON, op1, op2);
     }
     else if (s == words[IFGTCON])
     {
-        check("Unexpected end of tokens parsing ifgtcon op1\n");
-        s = *a++;
+        s = check("Unexpected end of tokens parsing ifgtcon op1\n");
+        a++;
         int op1 = atol(s.c_str());
-        check("Unexpected end of tokens parsing ifgtcon op2\n");
-        s = *a++;
-        float op2 = atof(s.c_str());
+        s = check("Unexpected end of tokens parsing ifgtcon op2\n");
+        a++;
+        double op2 = atof(s.c_str());
         return newnode(IFGTCON, op1, op2);
     }
     else if (s == words[SET])
     {
-        check("Unexpected end of tokens parsing set op1\n");
-        s = *a++;
+        s = check("Unexpected end of tokens parsing set op1\n");
+        a++;
         int op1 = atol(s.c_str());
-        check("Unexpected end of tokens parsing set op2\n");
-        s = *a++;
-        float op2 = atof(s.c_str());
+        s = check("Unexpected end of tokens parsing set op2\n");
+        a++;
+        double op2 = atof(s.c_str());
         return newnode(SET, op1, op2);
     }
     else if (s == words[REPEAT])
     {
-        check("Unexpected end of tokens parsing repeat\n");
-        s = *a++;
-        int reps = atoi(s.c_str());
+        s = check("Unexpected end of tokens parsing repeat\n");
+        a++;
+        int reps = atol(s.c_str());
         return newnode(REPEAT, reps, pt());
     }
     else if (s == words[SUCCESSD])
@@ -209,6 +213,16 @@ struct Node *pt()
 struct Node *parse_tree(std::string s)
 {
     a = std::regex_token_iterator<std::string::iterator>(s.begin(), s.end(), e);
+
+    while(a != rend)
+    {
+        std::cout << "[" << *a << "]";
+        a++;
+    }
+    std::cout << std::endl;
+
+    a = std::regex_token_iterator<std::string::iterator>(s.begin(), s.end(), e);
+
 
     struct Node *n = pt();
     return n;

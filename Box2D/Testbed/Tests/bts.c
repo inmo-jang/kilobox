@@ -206,6 +206,7 @@ struct Node *newnode(Nodetype type, ...)
         {
             n->data.ifv.op1     = va_arg(args, int);
             n->data.ifv.op2     = va_arg(args, int);
+            break;
         }
         case IFLTCON:
         case IFGTCON:
@@ -213,16 +214,19 @@ struct Node *newnode(Nodetype type, ...)
         {
             n->data.ifc.op1     = va_arg(args, int);
             n->data.ifc.op2     = va_arg(args, double);
+            break;
         }
         case REPEAT:
         {
             n->data.rep.repeat  = va_arg(args, int);
             n->data.rep.op      = va_arg(args, struct Node*);
+            break;
         }
         case SUCCESSD:
         case FAILURED:
         {
             n->data.fix.op      = va_arg(args, struct Node*);
+            break;
         }
             
     }

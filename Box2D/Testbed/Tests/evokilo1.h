@@ -971,7 +971,8 @@ public:
         setup();
         
         //bttest = mf();
-        bt = parse_tree("probm3(0.33,0.33,ml(),repeat(1,mf()),mr())");
+        bt = parse_tree("probm3(0.33,0.33,ml(),repeat(2,mf()),mr())");
+        
         //bt = newnode(SEQM2,newnode(MR),newnode(ML));
         //newnode(SEQM2,
         //    newnode(PROBM2, 0.3,
