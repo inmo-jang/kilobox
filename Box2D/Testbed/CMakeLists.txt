@@ -27,6 +27,8 @@ set(Testbed_Tests_SRCS
 	Tests/bt.cpp
 	Tests/bts.h
 	Tests/bts.c
+	Tests/btparse.h
+	Tests/btparse.cpp
 )
 
 # These are used to create visual studio folders.

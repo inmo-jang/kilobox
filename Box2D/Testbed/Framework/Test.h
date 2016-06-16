@@ -92,7 +92,7 @@ struct Settings
         kbsigma_vbias       = 0.0013;
         kbsigma_omegabias   = 0.0675;
         kbsigma_vnoise      = 0.001;
-        kbsigma_omeganoise  = 0.001;
+        kbsigma_omeganoise  = 0.01;
         kbdia               = 0.032;
         kbdensity           = 20.0;
         kblineardamp        = 5.0;

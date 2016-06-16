@@ -16,6 +16,8 @@ extern "C" {
 #include "bts.h"
 }
 
+#include "btparse.h"
+
 using namespace Kilolib;
 
 #define W(i,h,o) (((i)+1)*(h)+(h)*(h)+((h)+1)*(o))
@@ -969,7 +971,7 @@ public:
         setup();
         
         //bttest = mf();
-        //bt = probm3(0.33,0.33,ml(),mf(),mr());
+        bt = parse_tree("probm3(0.33,0.33,ml(),repeat(1,mf()),mr())");
         //bt = newnode(SEQM2,newnode(MR),newnode(ML));
         //newnode(SEQM2,
         //    newnode(PROBM2, 0.3,
@@ -979,12 +981,15 @@ public:
         //    newnode(ML)
         //);
         //bt = newnode(SEQM2, newnode(IFLTCON, 3, 0.5), newnode(MF));
-        bt = newnode(SEQM2,
+        //bt = parse_tree("seqm2(mf(),ml())");
+
+        /*bt = newnode(SEQM2,
                      newnode(REPEAT, 5,
                              newnode(MF)),
                      newnode(PROBM2, 0.5,
                              newnode(MR),
                              newnode(ML)));
+        */
 
 
     }

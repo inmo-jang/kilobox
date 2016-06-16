@@ -87,6 +87,11 @@ struct REP
     struct Node *op;
 };
 
+struct FIX
+{
+    struct Node *op;
+};
+
 
 union Ndata
 {
@@ -100,6 +105,7 @@ union Ndata
     struct IFV  ifv;
     struct IFC  ifc;
     struct REP  rep;
+    struct FIX  fix;
 
 };
 
@@ -122,7 +128,7 @@ int nsize(Nodetype type)
 
 // Return a pointer to a new node of type type, with space allocated
 // and fields filled in
-struct Node *newnode(Nodetype type,...)
+struct Node *newnode(Nodetype type, ...)
 {
     va_list args;
     va_start(args, type);
@@ -190,6 +196,8 @@ struct Node *newnode(Nodetype type,...)
         case MF:
         case ML:
         case MR:
+        case SUCCESSL:
+        case FAILUREL:
         {
             break;
         }
@@ -210,6 +218,11 @@ struct Node *newnode(Nodetype type,...)
         {
             n->data.rep.repeat  = va_arg(args, int);
             n->data.rep.op      = va_arg(args, struct Node*);
+        }
+        case SUCCESSD:
+        case FAILURED:
+        {
+            n->data.fix.op      = va_arg(args, struct Node*);
         }
             
     }
@@ -361,8 +374,27 @@ Status update_repeat(struct Node *bt)
     }
     return BT_RUNNING;
 }
+Status update_successd(struct Node *bt)
+{
+    Status s = tick(bt->data.fix.op);
+    if (s == BT_RUNNING)
+        return BT_RUNNING;
+    return BT_SUCCESS;
+}
+Status update_failured(struct Node *bt)
+{
+    Status s = tick(bt->data.fix.op);
+    if (s == BT_RUNNING)
+        return BT_RUNNING;
+    return BT_FAILURE;
+}
 
-// All nodes execute in three phases, although most have empty init and finish phases
+// All nodes execute in three phases, although most have empty init and finish phases.
+// When we introduce parallel and non mem composition nodes, these will be necessary to
+// deal with the cases when a running node is orphaned and needs to be stopped in an
+// orderly way, and to track multiple running nodes.
+// With only ..M memory type composition nodes and no par, there is only ever zero or
+// one running leaf node (and the composition nodes leading to that leaf).
 void init(struct Node *bt)
 {
     switch(bt->type)
@@ -399,6 +431,10 @@ Status update(struct Node *bt)
         case IFGTCON:   return update_ifgtcon(bt);
         case SET:       return update_set(bt);
         case REPEAT:    return update_repeat(bt);
+        case SUCCESSD:  return update_successd(bt);
+        case FAILURED:  return update_failured(bt);
+        case SUCCESSL:  return BT_SUCCESS;
+        case FAILUREL:  return BT_FAILURE;
     }
     return BT_SUCCESS;
 }
@@ -416,18 +452,12 @@ Status tick(struct Node *bt)
     return bt->status;
 }
 
-struct Node *test()
-{
-    return
-    newnode(SEQM2,
-        newnode(PROBM2, 0.3,
-            newnode(MF),
-            newnode(ML)
-        ),
-        newnode(ML)
-    );
-}
+#ifdef SIMULATOR
+// Behaviour tree construction from JSON, only applicable in simulator
 
+
+
+#endif
 
 
 

@@ -22,7 +22,11 @@ typedef enum
     IFLTCON,
     IFGTCON,
     SET,
-    REPEAT
+    REPEAT,
+    SUCCESSD,
+    FAILURED,
+    SUCCESSL,
+    FAILUREL
 } Nodetype;
 
 typedef enum
