@@ -118,13 +118,74 @@ struct Node
 
 
 
+
+#ifdef KILOBOT
+// The kilobot has extremely limited RAM, only 2k bytes. Each node gets allocated
+// space on the heap with calloc and each node is quite small, between 7 and 23 bytes.
+// The standard memory allocator in avr-libc has a 2 byte overhead per allocation, giving
+// between 9% and 30% bloat in memory usage. The memory allocated is never freed. For this
+// reason, we statically grab a chunk of memory and allocate from this with a replacement
+// calloc.
+#define MLIMIT 1024
+char mem[MLIMIT];
+void *calloc(size_t count, size_t size)
+{
+    static int ptr    = 0;
+    if (ptr + size * count >= MLIMIT)
+        return 0;
+    int p = ptr;
+    ptr += size * count;
+    return (void*)(p + mem);
+}
+// Little helper for kilobot to see if in danger of stack clash
+#include <avr/common.h>
+void print_sp()
+{
+    char a;
+    printf("sp:%04x\r\n",(int)&a);
+}
+#endif
+
+
 // Return the size in bytes of the node type.
-// Currently just the size that sizeof() gives, which
-// is the largest size, but will be possible to tune this
+// Normally, this returns the sizeof the Node struct, which is 2 + the
+// size of the union Ndata, but the structs composing Ndata are variable
+// in size. Because of the limited space on the kilobot, we return the
+// actual used space, allowing successive nodes to overlap the unused space
+// at the end of previous nodes.
 int nsize(Nodetype type)
 {
+#ifdef KILOBOT
+    // Space is very tight on the kilobot
+    switch (type)
+    {
+        case SEQM2:
+        case SELM2:     return sizeof(struct SM2) + 2;  // 7
+        case SEQM3:
+        case SELM3:     return sizeof(struct SM3) + 2;  // 9
+        case SEQM4:
+        case SELM4:     return sizeof(struct SM4) + 2;  // 11
+        case PROBM2:    return sizeof(struct PM2) + 2;  // 11
+        case PROBM3:    return sizeof(struct PM3) + 2;  // 17
+        case PROBM4:    return sizeof(struct PM4) + 2;  // 23
+        case MF:
+        case ML:
+        case MR:
+        case SUCCESSL:
+        case FAILUREL:  return 2;
+        case IFLTVAR:
+        case IFGTVAR:   return sizeof(struct IFV) + 2;  // 4
+        case IFLTCON:
+        case IFGTCON:
+        case SET:       return sizeof(struct IFC) + 2;  // 7
+        case REPEAT:    return sizeof(struct REP) + 2;  // 6
+        case SUCCESSD:
+        case FAILURED:  return sizeof(struct FIX) + 2;  // 4
+    }
+#endif
     return sizeof(struct Node);
 }
+
 
 // Return a pointer to a new node of type type, with space allocated
 // and fields filled in
@@ -135,6 +196,7 @@ struct Node *newnode(Nodetype type, ...)
     
     // All fields get zeroed, this means status starts at INVALID
     struct Node *n = (struct Node*)calloc(1, nsize(type));
+    //printf("%04x %d\r\n",(int)n,type);
     n->type = type;
     
     switch(type)
@@ -415,6 +477,9 @@ void init(struct Node *bt)
 }
 Status update(struct Node *bt)
 {
+#ifdef KILOBOT
+    print_sp();
+#endif
     switch (bt->type)
     {
         case SEQM2:     return update_seqm(bt, 2);

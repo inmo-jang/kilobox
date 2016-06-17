@@ -957,8 +957,6 @@ public:
         for(auto i = words.begin() + 1; i != words.end(); ++i)
             btstring += *i;
         printf("BT strings is:\n%s\n", btstring.c_str());
-        //json j1 = json::parse(btstring);
-        //bt = new Node(j1);
         
         if (logfile != "")
         {
@@ -970,27 +968,8 @@ public:
         kilo_message_tx_success = (message_tx_success_t)&Btdisperse::message_tx_success_dummy;
         setup();
         
-        //bttest = mf();
-        bt = parse_tree("probm3(0.33,0.33,ml(),repeat(2,mf()),mr())");
-        
-        //bt = newnode(SEQM2,newnode(MR),newnode(ML));
-        //newnode(SEQM2,
-        //    newnode(PROBM2, 0.3,
-        //        newnode(MF),
-        //        newnode(ML)
-        //    ),
-        //    newnode(ML)
-        //);
-        //bt = newnode(SEQM2, newnode(IFLTCON, 3, 0.5), newnode(MF));
-        //bt = parse_tree("seqm2(mf(),ml())");
+        bt = parse_tree(btstring);
 
-        /*bt = newnode(SEQM2,
-                     newnode(REPEAT, 5,
-                             newnode(MF)),
-                     newnode(PROBM2, 0.5,
-                             newnode(MR),
-                             newnode(ML)));
-        */
 
 
     }

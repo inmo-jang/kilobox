@@ -16,25 +16,27 @@ region( circle [0 0 0.2 1] )
 #       tumble
 #
 define r0 position (
-ctrl "btdisperse [
-['selm',[
-    ['leaf', {'type':'mr'}],
-    ['repeat',1,[['leaf', {'type':'ml'}]]],
-    ['selm',[
-        ['seqm',[
-            ['leaf', {'type':'if','var1':2,'rel':'>','var2':2.000000}],
-            ['leaf', {'type':'if', 'con1':0, 'rel':'>', 'con2':1}],
-            ['leaf', {'type':'if','var1':1,'rel':'>','var2':4.000000}],
-            ['leaf', {'type':'if','var1':5,'rel':'>','con2':0.211297}]]],
-        ['leaf', {'type':'mr'}],
-        ['seqm',[
-            ['leaf', {'type':'if','var1':2,'rel':'>','con2':0.356352}],
-            ['leaf', {'type':'if','var1':8,'rel':'<','var2':3.000000}]]]]],
-    ['leaf', {'type':'if','var1':3,'rel':'>','var2':3.000000}]]]
+ctrl "btdisperse 
+    selm4(
+        probm2(0.3,
+            successl(),
+            failurel()
+        ),
+        ifltcon(5, 0.1),
+        seqm2(
+            ifltcon(6, 0),
+            repeat(5,
+                mf()
+            )
+        ),
+        probm3(0.33,0.33,
+            repeat(3,mf()),
+            repeat(3,ml()),
+            repeat(3,mr())
+        )
+    )
 
-
-
-]"
+"
 )
 
 

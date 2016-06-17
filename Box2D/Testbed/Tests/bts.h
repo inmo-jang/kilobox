@@ -5,28 +5,28 @@
 
 typedef enum
 {
-    SEQM2,
-    SEQM3,
-    SEQM4,
-    SELM2,
-    SELM3,
-    SELM4,
-    PROBM2,
-    PROBM3,
-    PROBM4,
-    MF,
-    ML,
-    MR,
-    IFLTVAR,
-    IFGTVAR,
-    IFLTCON,
-    IFGTCON,
-    SET,
-    REPEAT,
-    SUCCESSD,
-    FAILURED,
-    SUCCESSL,
-    FAILUREL
+    SEQM2,      // 0
+    SEQM3,      // 1
+    SEQM4,      // 2
+    SELM2,      // 3
+    SELM3,      // 4
+    SELM4,      // 5
+    PROBM2,     // 6
+    PROBM3,     // 7
+    PROBM4,     // 8
+    MF,         // 9
+    ML,         // 10
+    MR,         // 11
+    IFLTVAR,    // 12
+    IFGTVAR,    // 13
+    IFLTCON,    // 14
+    IFGTCON,    // 15
+    SET,        // 16
+    REPEAT,     // 17
+    SUCCESSD,   // 18
+    FAILURED,   // 19
+    SUCCESSL,   // 20
+    FAILUREL    // 21
 } Nodetype;
 
 typedef enum

@@ -214,16 +214,6 @@ struct Node *parse_tree(std::string s)
 {
     a = std::regex_token_iterator<std::string::iterator>(s.begin(), s.end(), e);
 
-    while(a != rend)
-    {
-        std::cout << "[" << *a << "]";
-        a++;
-    }
-    std::cout << std::endl;
-
-    a = std::regex_token_iterator<std::string::iterator>(s.begin(), s.end(), e);
-
-
     struct Node *n = pt();
     return n;
 }
