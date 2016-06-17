@@ -3,7 +3,11 @@
 #define _BT_H
 
 
-#ifdef KILOBOT
+#define KBCOMPILE
+
+#define KBCOMPILE
+
+#ifdef KBCOMPILE
 
 
 #endif
@@ -14,7 +18,7 @@
 
 
 
-#ifndef KILOBOT
+#ifndef KBCOMPILE
 #include <string>
 #include <json.hpp>
 using json = nlohmann::json;
@@ -32,7 +36,7 @@ namespace BT
         BT_RUNNING
     };
     
-#ifndef KILOBOT
+#ifndef KBCOMPILE
     const std::set<std::string> ctrl_type1  {"seq", "seqm", "sel", "selm", "par"};
     const std::set<std::string> ctrl_type2  {"prob", "probm"};
     const std::set<std::string> dec_type1   {"invert", "succeed", "fail"};
@@ -64,7 +68,7 @@ namespace BT
     {
     public:
         Node() {}
-#ifndef KILOBOT
+#ifndef KBCOMPILE
         Node(json &j);
 #endif
         Node(Children_t *c)
@@ -87,7 +91,7 @@ namespace BT
     class Priselmem_node : public Node
     {
     public:
-#ifndef KILOBOT
+#ifndef KBCOMPILE
         Priselmem_node(json &j) : Node(j) {}
 #endif
         Priselmem_node(Children_t *c) : Node(c) {}
@@ -99,7 +103,7 @@ namespace BT
     class Probselmem_node : public Node
     {
     public:
-#ifndef KILOBOT
+#ifndef KBCOMPILE
         Probselmem_node(json &j, json &p) : Node(j)
         {
             for(auto &prob : p)
@@ -139,7 +143,7 @@ namespace BT
     class Sequencemem_node : public Node
     {
     public:
-#ifndef KILOBOT
+#ifndef KBCOMPILE
         Sequencemem_node(json &j) : Node(j) {}
 #endif
         Sequencemem_node(Children_t *c) : Node(c) {}
@@ -149,7 +153,7 @@ namespace BT
     class Repeat_node : public Node
     {
     public:
-#ifndef KILOBOT
+#ifndef KBCOMPILE
         Repeat_node(json &j, int _r) : Node(j), r(_r) {}
 #endif
         virtual void    init();

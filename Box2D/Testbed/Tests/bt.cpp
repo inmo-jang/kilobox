@@ -1,6 +1,6 @@
 
 
-//#include <cassert>
+#include <cassert>
 #include <set>
 
 #include "bt.h"
@@ -49,7 +49,7 @@
 
 using namespace BT;
 
-#ifndef KILOBOT
+#ifndef KBCOMPILE
 #include <random>
 std::mt19937  gen;
 float rand_realrange(float low, float high)
@@ -274,7 +274,7 @@ Status Set_node::update()
     return BT_SUCCESS;
 }
 
-#ifndef KILOBOT
+#ifndef KBCOMPILE
 Node::Node(json &j)
 {
     // Really simple recursive descent parser with no error checking,
