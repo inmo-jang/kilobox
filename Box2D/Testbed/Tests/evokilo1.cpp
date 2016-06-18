@@ -1155,11 +1155,22 @@ void NNdisperse::loop()
         bboard[9]  = carrying_food;
         
         
-        set_vars(bboard);
-        tick(bt);
+        //set_vars(bboard);
+        //tick(bt);
         
-        int motion = (int)bboard[0];
-        found_food = (int)bboard[1];
+        //===============
+        // Run the neural net
+        float inputs[9];
+        float *outputs;
+        for(int i=0;i<9;i++)
+            inputs[i] = bboard[i+1];
+        outputs     = nn.nn_update(&inputs[0]);
+
+        int motion  = (outputs[0] > 0 ? 1 : 0) + (outputs[1] > 0 ? 2 : 0);
+        bboard[1]   = outputs[2];
+        //================
+        
+        found_food  = (int)bboard[1];
         
         set_motion(motion);
         

@@ -1097,14 +1097,18 @@ public:
                std::vector<std::string> _words, std::string _logfile = "") :
     Kilobot (_pos, _settings),
     words   (_words),
-    logfile (_logfile)
+    logfile (_logfile),
+    nn      (9, 9, 3, false)
+
     {
-        // Read in the Behaviour Tree
-        using namespace BT;
-        std::string btstring = "";
-        for(auto i = words.begin() + 1; i != words.end(); ++i)
-            btstring += *i;
-        printf("BT strings is:\n%s\n", btstring.c_str());
+        if (words.size()-1 == nn.NN_NUM_WEIGHTS)
+            for(int i=0; i<nn.NN_NUM_WEIGHTS; i++)
+                nn.nn_weights[i] = atof(words[i+1].c_str());
+        else
+        {
+            printf("Wrong number of weights in controller arguments, got %lu should be %d\n", words.size()-1, nn.NN_NUM_WEIGHTS);
+            exit(1);
+        }
         
         if (logfile != "")
         {
@@ -1116,7 +1120,6 @@ public:
         kilo_message_tx_success = (message_tx_success_t)&NNdisperse::message_tx_success_dummy;
         setup();
         
-        bt = parse_tree(btstring);
         
         
         
@@ -1168,8 +1171,7 @@ public:
     //BT::Blackboard bboard;
     
     float bboard[10];
-    struct Node *bt;
-    
+    NN nn;
     
     uint32_t last_update        = 0;
     
