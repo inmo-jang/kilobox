@@ -8,7 +8,7 @@
 #include "bts.h"
 
 
-#ifndef KILOBOT
+#ifndef KBCOMPILE
 float rand_realrange(float low, float high)
 {
     float r = ((float)rand()/RAND_MAX) * (high - low) + low;
@@ -120,7 +120,7 @@ struct Node
 
 
 
-#ifdef KILOBOT
+#ifdef KBCOMPILE
 // The kilobot has extremely limited RAM, only 2k bytes. Each node gets allocated
 // space on the heap with calloc and each node is quite small, between 7 and 23 bytes.
 // The standard memory allocator in avr-libc has a 2 byte overhead per allocation, giving
@@ -156,7 +156,7 @@ void print_sp()
 // at the end of previous nodes.
 int nsize(Nodetype type)
 {
-#ifdef KILOBOT
+#ifdef KBCOMPILE
     // Space is very tight on the kilobot
     switch (type)
     {
@@ -359,7 +359,7 @@ Status update_probm(struct Node *bt, int8_t count)
     // probm is slightly more problematic because of variable
     // number of probability values before the variable number
     // of children
-    DBPRINT("enter  %s %d\n", __func__, count);
+    DBPRINT("enter  %s %d %f\n", __func__, count, bt->data.pm4.p[0]);
     Status s = BT_FAILURE;
     float r = rand_realrange(0,1);
     float p = 0.0f;
@@ -389,7 +389,7 @@ Status update_probm(struct Node *bt, int8_t count)
         if (s != BT_RUNNING)
             bt->data.pm4.idx = -1;
     }
-    DBPRINT("return %s %d %f %d\n", __func__, count, r, s);
+    DBPRINT("return %s %d %f %f %d\n", __func__, count, bt->data.pm4.p[0], r, s);
     return s;
 }
 
@@ -420,33 +420,33 @@ Status update_mr()
 }
 Status update_ifltvar(struct Node *bt)
 {
-    DBPRINT("%s %f %f\n", __func__, vars[bt->data.ifv.op1] , vars[bt->data.ifv.op2]);
+    DBPRINT("%s %d %d\n", __func__, bt->data.ifv.op1 , bt->data.ifv.op2);
     return vars[bt->data.ifv.op1] < vars[bt->data.ifv.op2]  ? BT_SUCCESS : BT_FAILURE;
 }
 Status update_ifgtvar(struct Node *bt)
 {
-    DBPRINT("%s %f %f\n", __func__, vars[bt->data.ifv.op1] , vars[bt->data.ifv.op2]);
+    DBPRINT("%s %d %d\n", __func__, bt->data.ifv.op1 , bt->data.ifv.op2);
     return vars[bt->data.ifv.op1] >= vars[bt->data.ifv.op2] ? BT_SUCCESS : BT_FAILURE;
 }
 Status update_ifltcon(struct Node *bt)
 {
-    DBPRINT("%s %f %f\n", __func__, vars[bt->data.ifc.op1] , bt->data.ifc.op2);
+    DBPRINT("%s %d %f\n", __func__, bt->data.ifc.op1 , bt->data.ifc.op2);
     return vars[bt->data.ifc.op1] < bt->data.ifc.op2        ? BT_SUCCESS : BT_FAILURE;
 }
 Status update_ifgtcon(struct Node *bt)
 {
-    DBPRINT("%s %f %f\n", __func__, vars[bt->data.ifc.op1] , bt->data.ifc.op2);
+    DBPRINT("%s %d %f\n", __func__, bt->data.ifc.op1 , bt->data.ifc.op2);
     return vars[bt->data.ifc.op1] >= bt->data.ifc.op2       ? BT_SUCCESS : BT_FAILURE;
 }
 Status update_set(struct Node *bt)
 {
-    DBPRINT("%s\n", __func__);
+    DBPRINT("%s\n %d %f", __func__, bt->data.ifc.op1, bt->data.ifc.op2);
     vars[bt->data.ifc.op1] = bt->data.ifc.op2;
     return BT_SUCCESS;
 }
 Status update_repeat(struct Node *bt)
 {
-    DBPRINT("enter  %s\n", __func__);
+    DBPRINT("enter  %s %d %d\n", __func__, bt->data.rep.repeat, bt->data.rep.count);
     Status s = tick(bt->data.rep.op);
     if (s == BT_FAILURE)
     {
@@ -505,7 +505,7 @@ void init(struct Node *bt)
 }
 Status update(struct Node *bt)
 {
-#ifdef KILOBOT
+#ifdef KBCOMPILE
     print_sp();
 #endif
     switch (bt->type)
@@ -550,12 +550,6 @@ Status tick(struct Node *bt)
     return bt->status;
 }
 
-#ifdef SIMULATOR
-// Behaviour tree construction from JSON, only applicable in simulator
-
-
-
-#endif
 
 
 
