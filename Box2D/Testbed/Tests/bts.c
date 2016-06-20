@@ -187,6 +187,7 @@ int nsize(Nodetype type)
     return sizeof(struct Node);
 }
 
+typedef struct Node* Nodep;
 
 // Return a pointer to a new node of type type, with space allocated
 // and fields filled in
@@ -205,33 +206,33 @@ struct Node *newnode(Nodetype type, ...)
         case SEQM2:
         case SELM2:
         {
-            n->data.sm2.op[0] = va_arg(args, struct Node*);
-            n->data.sm2.op[1] = va_arg(args, struct Node*);
+            n->data.sm2.op[0] = va_arg(args, Nodep);
+            n->data.sm2.op[1] = va_arg(args, Nodep);
             break;
         }
         case SEQM3:
         case SELM3:
         {
-            n->data.sm3.op[0] = va_arg(args, struct Node*);
-            n->data.sm3.op[1] = va_arg(args, struct Node*);
-            n->data.sm3.op[2] = va_arg(args, struct Node*);
+            n->data.sm3.op[0] = va_arg(args, Nodep);
+            n->data.sm3.op[1] = va_arg(args, Nodep);
+            n->data.sm3.op[2] = va_arg(args, Nodep);
             break;
         }
         case SEQM4:
         case SELM4:
         {
-            n->data.sm4.op[0] = va_arg(args, struct Node*);
-            n->data.sm4.op[1] = va_arg(args, struct Node*);
-            n->data.sm4.op[2] = va_arg(args, struct Node*);
-            n->data.sm4.op[3] = va_arg(args, struct Node*);
+            n->data.sm4.op[0] = va_arg(args, Nodep);
+            n->data.sm4.op[1] = va_arg(args, Nodep);
+            n->data.sm4.op[2] = va_arg(args, Nodep);
+            n->data.sm4.op[3] = va_arg(args, Nodep);
             break;
         }
         case PROBM2:
         {
             n->data.pm2.idx     = -1;
             n->data.pm2.p[0]    = va_arg(args, double);
-            n->data.pm2.op[0]   = va_arg(args, struct Node*);
-            n->data.pm2.op[1]   = va_arg(args, struct Node*);
+            n->data.pm2.op[0]   = va_arg(args, Nodep);
+            n->data.pm2.op[1]   = va_arg(args, Nodep);
             break;
         }
         case PROBM3:
@@ -239,9 +240,9 @@ struct Node *newnode(Nodetype type, ...)
             n->data.pm3.idx     = -1;
             n->data.pm3.p[0]    = va_arg(args, double);
             n->data.pm3.p[1]    = va_arg(args, double);
-            n->data.pm3.op[0]   = va_arg(args, struct Node*);
-            n->data.pm3.op[1]   = va_arg(args, struct Node*);
-            n->data.pm3.op[2]   = va_arg(args, struct Node*);
+            n->data.pm3.op[0]   = va_arg(args, Nodep);
+            n->data.pm3.op[1]   = va_arg(args, Nodep);
+            n->data.pm3.op[2]   = va_arg(args, Nodep);
             break;
         }
         case PROBM4:
@@ -250,10 +251,10 @@ struct Node *newnode(Nodetype type, ...)
             n->data.pm4.p[0]    = va_arg(args, double);
             n->data.pm4.p[1]    = va_arg(args, double);
             n->data.pm4.p[2]    = va_arg(args, double);
-            n->data.pm4.op[0]   = va_arg(args, struct Node*);
-            n->data.pm4.op[1]   = va_arg(args, struct Node*);
-            n->data.pm4.op[2]   = va_arg(args, struct Node*);
-            n->data.pm4.op[3]   = va_arg(args, struct Node*);
+            n->data.pm4.op[0]   = va_arg(args, Nodep);
+            n->data.pm4.op[1]   = va_arg(args, Nodep);
+            n->data.pm4.op[2]   = va_arg(args, Nodep);
+            n->data.pm4.op[3]   = va_arg(args, Nodep);
             break;
         }
         case MF:
@@ -282,13 +283,13 @@ struct Node *newnode(Nodetype type, ...)
         case REPEAT:
         {
             n->data.rep.repeat  = va_arg(args, int);
-            n->data.rep.op      = va_arg(args, struct Node*);
+            n->data.rep.op      = va_arg(args, Nodep);
             break;
         }
         case SUCCESSD:
         case FAILURED:
         {
-            n->data.fix.op      = va_arg(args, struct Node*);
+            n->data.fix.op      = va_arg(args, Nodep);
             break;
         }
             
