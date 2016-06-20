@@ -68,13 +68,14 @@
 #endif
 
 #if TARGET_HOST_POSIX_X11
+#include <unistd.h>
 #    define _JS_MAX_AXES 16
 #    if HAVE_SYS_IOCTL_H
 #        include <sys/ioctl.h>
 #    endif
-#    if HAVE_FCNTL_H
+//#    if HAVE_FCNTL_H
 #        include <fcntl.h>
-#    endif
+//#    endif
 #    if HAVE_ERRNO
 #        include <errno.h>
 #    endif

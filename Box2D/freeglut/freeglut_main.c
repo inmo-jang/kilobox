@@ -38,6 +38,7 @@
 #else
 #    define VFPRINTF(s,f,a)
 #endif
+#include <sys/time.h>
 
 #ifdef _WIN32_WCE
 
