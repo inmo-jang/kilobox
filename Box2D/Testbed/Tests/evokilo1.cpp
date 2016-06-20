@@ -890,7 +890,7 @@ void Btdisperse::loop()
         bboard[8]  = (dnest - last_dnest) / 1000.0;
         bboard[9]  = carrying_food;
         
-        
+        DBPRINT("kb:%d\n",kilo_uid);
         set_vars(bboard);
         tick(bt);
         

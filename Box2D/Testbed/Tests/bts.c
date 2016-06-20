@@ -1,5 +1,6 @@
 
 #include <stdlib.h>
+#include <stdio.h>
 #include <stdint.h>
 #include <stdarg.h>
 
@@ -303,6 +304,8 @@ Status update_seqm(struct Node *bt, int8_t count)
 {
     // We use the sm4 union member because count ensures we don't
     // run off the end of the array for shorter cases
+    DBPRINT("%s %d\n", __func__, count);
+
     for(int8_t i = bt->data.sm4.idx; i < count; ++i)
     {
         Status s = tick(bt->data.sm4.op[i]);
@@ -325,6 +328,8 @@ Status update_selm(struct Node *bt, int8_t count)
 {
     // We use the sm4 union member because count ensures we don't
     // run off the end of the array for shorter cases
+    DBPRINT("%s %d\n", __func__, count);
+
     for(int8_t i = bt->data.sm4.idx; i < count; ++i)
     {
         Status s = tick(bt->data.sm4.op[i]);
@@ -348,6 +353,7 @@ Status update_probm(struct Node *bt, int8_t count)
     // probm is slightly more problematic because of variable
     // number of probability values before the variable number
     // of children
+    DBPRINT("%s %d\n", __func__, count);
     Status s = BT_FAILURE;
     float r = rand_realrange(0,1);
     float p = 0.0f;
@@ -382,6 +388,8 @@ Status update_probm(struct Node *bt, int8_t count)
 
 Status update_mf()
 {
+    DBPRINT("%s\n", __func__);
+
     if (vars[0] > 0.0f)
         return BT_RUNNING;
     vars[0] = 3.0f;
@@ -389,6 +397,7 @@ Status update_mf()
 }
 Status update_ml()
 {
+    DBPRINT("%s\n", __func__);
     if (vars[0] > 0.0f)
         return BT_RUNNING;
     vars[0] = 1.0f;
@@ -396,6 +405,7 @@ Status update_ml()
 }
 Status update_mr()
 {
+    DBPRINT("%s\n", __func__);
     if (vars[0] > 0.0f)
         return BT_RUNNING;
     vars[0] = 2.0f;
@@ -403,27 +413,33 @@ Status update_mr()
 }
 Status update_ifltvar(struct Node *bt)
 {
+    DBPRINT("%s\n", __func__);
     return vars[bt->data.ifv.op1] < vars[bt->data.ifv.op2]  ? BT_SUCCESS : BT_FAILURE;
 }
 Status update_ifgtvar(struct Node *bt)
 {
+    DBPRINT("%s\n", __func__);
     return vars[bt->data.ifv.op1] >= vars[bt->data.ifv.op2] ? BT_SUCCESS : BT_FAILURE;
 }
 Status update_ifltcon(struct Node *bt)
 {
+    DBPRINT("%s\n", __func__);
     return vars[bt->data.ifc.op1] < bt->data.ifc.op2        ? BT_SUCCESS : BT_FAILURE;
 }
 Status update_ifgtcon(struct Node *bt)
 {
+    DBPRINT("%s\n", __func__);
     return vars[bt->data.ifc.op1] >= bt->data.ifc.op2       ? BT_SUCCESS : BT_FAILURE;
 }
 Status update_set(struct Node *bt)
 {
+    DBPRINT("%s\n", __func__);
     vars[bt->data.ifc.op1] = bt->data.ifc.op2;
     return BT_SUCCESS;
 }
 Status update_repeat(struct Node *bt)
 {
+    DBPRINT("%s\n", __func__);
     Status s = tick(bt->data.rep.op);
     if (s == BT_FAILURE)
     {
@@ -442,6 +458,7 @@ Status update_repeat(struct Node *bt)
 }
 Status update_successd(struct Node *bt)
 {
+    DBPRINT("%s\n", __func__);
     Status s = tick(bt->data.fix.op);
     if (s == BT_RUNNING)
         return BT_RUNNING;
@@ -449,6 +466,7 @@ Status update_successd(struct Node *bt)
 }
 Status update_failured(struct Node *bt)
 {
+    DBPRINT("%s\n", __func__);
     Status s = tick(bt->data.fix.op);
     if (s == BT_RUNNING)
         return BT_RUNNING;
@@ -518,6 +536,7 @@ Status tick(struct Node *bt)
     bt->status = update(bt);
     if (bt->status != BT_RUNNING)
         finish(bt);
+    DBPRINT("%s, %d\n", __func__, bt->status);
     return bt->status;
 }
 

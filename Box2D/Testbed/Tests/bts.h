@@ -42,5 +42,12 @@ void            set_vars(float *v);
 struct Node     *newnode(Nodetype type,...);
 Status          tick(struct Node *bt);
 
+#define DEBUG
+
+#ifdef DEBUG
+#define DBPRINT(fmt, ...) printf(fmt, ##__VA_ARGS__)
+#else
+#define DBPRINT(fmt, ...)
+#endif
 
 #endif

@@ -1030,37 +1030,37 @@ public:
     
     
     
-    int     new_message         = 0;
-    float   last_density;
-    float   density             = 1000.0;
-    int     found_food          = 0;
-    int     detected_food       = 0;
-    int     detected_nest       = 0;
-    int     told_about_food     = 0;
-    int     dist_to_food        = 1000;
-    int     accum_dist_to_food  = 1000;
-    const int max_hops          = 7;
-    const int max_food_dist     = 500;
-    const int max_nest_dist     = 500;
-    int     min_hops_seen       = max_hops;
-    int     min_nest_hops_seen       = max_hops;
-    int     gradient            = max_hops;
-    int     nest_gradient            = max_hops;
+    int         new_message         = 0;
+    float       last_density;
+    float       density             = 1000.0;
+    int         found_food          = 0;
+    int         detected_food       = 0;
+    int         detected_nest       = 0;
+    int         told_about_food     = 0;
+    int         dist_to_food        = 1000;
+    int         accum_dist_to_food  = 1000;
+    const int   max_hops            = 7;
+    const int   max_food_dist       = 500;
+    const int   max_nest_dist       = 500;
+    int         min_hops_seen       = max_hops;
+    int         min_nest_hops_seen  = max_hops;
+    int         gradient            = max_hops;
+    int         nest_gradient       = max_hops;
     
-    int     dist_to_food_smooth[5];
-    int     dist_to_nest_smooth[5];
-    int     dtf_ptr = 0;
-    float   dfood               = 500.0;
-    float   last_dfood          = 500.0;
-    float   dnest               = 500.0;
-    float   last_dnest          = 500.0;
-    int     carrying_food       = 0;
-    int     last_detected_food  = 0;
-    int     last_detected_nest  = 0;
-    int         total_food      = 0;
-    int         total_pickup    = 0;
-    int     dist_to_nest        = 1000;
-    int     accum_dist_to_nest  = 1000;
+    int         dist_to_food_smooth[5];
+    int         dist_to_nest_smooth[5];
+    int         dtf_ptr = 0;
+    float       dfood               = 500.0;
+    float       last_dfood          = 500.0;
+    float       dnest               = 500.0;
+    float       last_dnest          = 500.0;
+    int         carrying_food       = 0;
+    int         last_detected_food  = 0;
+    int         last_detected_nest  = 0;
+    int         total_food          = 0;
+    int         total_pickup        = 0;
+    int         dist_to_nest        = 1000;
+    int         accum_dist_to_nest  = 1000;
     
     // Spread out until certain density reached or food is found
     // Run and tumble
