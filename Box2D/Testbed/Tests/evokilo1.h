@@ -969,6 +969,7 @@ public:
         setup();
         
         bt = parse_tree(btstring);
+        print_tree(bt,0);
         
         
         

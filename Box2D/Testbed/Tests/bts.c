@@ -551,6 +551,75 @@ Status tick(struct Node *bt)
     return bt->status;
 }
 
+void print_tree(struct Node *bt, int level)
+{
+    switch(bt->type)
+    {
+        case SEQM2:
+        {
+            printf("%3d seqm2\n",level);
+            print_tree(bt->data.sm2.op[0], level+1);
+            print_tree(bt->data.sm2.op[1], level+1);
+            break;
+        }
+        case SEQM3:
+        {
+            printf("%3d seqm3\n",level);
+            print_tree(bt->data.sm3.op[0], level+1);
+            print_tree(bt->data.sm3.op[1], level+1);
+            print_tree(bt->data.sm3.op[2], level+1);
+            break;
+        }
+        case SEQM4:
+        {
+            printf("%3d seqm4\n",level);
+            print_tree(bt->data.sm4.op[0], level+1);
+            print_tree(bt->data.sm4.op[1], level+1);
+            print_tree(bt->data.sm4.op[2], level+1);
+            print_tree(bt->data.sm4.op[3], level+1);
+            break;
+        }
+        case SELM2:
+        {
+            printf("%3d selm2\n",level);
+            print_tree(bt->data.sm2.op[0], level+1);
+            print_tree(bt->data.sm2.op[1], level+1);
+            break;
+        }
+        case SELM3:
+        {
+            printf("%3d selm3\n",level);
+            print_tree(bt->data.sm3.op[0], level+1);
+            print_tree(bt->data.sm3.op[1], level+1);
+            print_tree(bt->data.sm3.op[2], level+1);
+            break;
+        }
+        case SELM4:
+        {
+            printf("%3d selm4\n",level);
+            print_tree(bt->data.sm4.op[0], level+1);
+            print_tree(bt->data.sm4.op[1], level+1);
+            print_tree(bt->data.sm4.op[2], level+1);
+            print_tree(bt->data.sm4.op[3], level+1);
+            break;
+        }
+        case MF:
+        {
+            printf("%3d mf\n",level);
+            break;
+        }
+        case ML:
+        {
+            printf("%3d ml\n",level);
+            break;
+        }
+        case MR:
+        {
+            printf("%3d mr\n",level);
+            break;
+        }
+    }
+}
 
 
 
