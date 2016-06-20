@@ -683,6 +683,8 @@ void Btdisperse::setup()
         dist_to_food_smooth[i] = max_food_dist;
         dist_to_nest_smooth[i] = max_nest_dist;
     }
+    for(int i=0; i<10; i++)
+        bboard[i] = 0.0f;
 }
 
 float Btdisperse::calc_density()

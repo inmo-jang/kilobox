@@ -957,7 +957,8 @@ public:
         for(auto i = words.begin() + 1; i != words.end(); ++i)
             btstring += *i;
         printf("BT strings is:\n%s\n", btstring.c_str());
-        
+        bt = parse_tree(btstring);
+
         if (logfile != "")
         {
             //printf("Logfile is %s\n", logfile.c_str());
@@ -968,8 +969,7 @@ public:
         kilo_message_tx_success = (message_tx_success_t)&Btdisperse::message_tx_success_dummy;
         setup();
         
-        bt = parse_tree(btstring);
-        print_tree(bt,0);
+        //print_tree(bt,0);
         
         
         
