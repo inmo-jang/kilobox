@@ -732,7 +732,7 @@ void Btdisperse::message_rx(message_t *m, distance_measurement_t *d)
     int dist                = estimate_distance(d);
     int uid                 = m->data[0] | (m->data[1] << 8);
     neighbours_seen[uid]    = dist;
-    int heard_about_food    = m->data[2];
+    int heard_about_food    = m->data[2] > 0;
     int hops                = m->data[3];
     
     told_about_food         |= heard_about_food;
@@ -897,7 +897,7 @@ void Btdisperse::loop()
         tick(bt);
         
         int motion = (int)bboard[0];
-        found_food = (int)bboard[1];
+        found_food = bboard[1] > 0.5;
         
         set_motion(motion);
 
@@ -1170,9 +1170,10 @@ void NNdisperse::loop()
 
         int motion  = (outputs[0] > 0 ? 1 : 0) + (outputs[1] > 0 ? 2 : 0);
         bboard[1]   = outputs[2];
+        bboard[2]   = outputs[3];
         //================
         
-        found_food  = (int)bboard[1];
+        found_food  = bboard[1] > 0.5;
         
         set_motion(motion);
         

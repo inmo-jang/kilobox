@@ -1099,7 +1099,7 @@ public:
     Kilobot (_pos, _settings),
     words   (_words),
     logfile (_logfile),
-    nn      (9, 9, 3, false)
+    nn      (9, 9, 4, false)
 
     {
         if (words.size()-1 == nn.NN_NUM_WEIGHTS)
