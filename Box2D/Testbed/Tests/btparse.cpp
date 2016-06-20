@@ -70,34 +70,54 @@ struct Node *pt()
     a++;
     if (s == words[SEQM2])
     {
-        return newnode(SEQM2, pt(), pt());
+        struct Node *op1 = pt();
+        struct Node *op2 = pt();
+        return newnode(SEQM2, op1, op2);
     }
     else if (s == words[SEQM3])
     {
-        return newnode(SEQM3, pt(), pt(), pt());
+        struct Node *op1 = pt();
+        struct Node *op2 = pt();
+        struct Node *op3 = pt();
+        return newnode(SEQM3, op1, op2, op3);
     }
     else if (s == words[SEQM4])
     {
-        return newnode(SEQM4, pt(), pt(), pt(), pt());
+        struct Node *op1 = pt();
+        struct Node *op2 = pt();
+        struct Node *op3 = pt();
+        struct Node *op4 = pt();
+        return newnode(SEQM4, op1, op2, op3, op4);
     }
     else if (s == words[SELM2])
     {
-        return newnode(SELM2, pt(), pt());
+        struct Node *op1 = pt();
+        struct Node *op2 = pt();
+        return newnode(SELM2, op1, op2);
     }
     else if (s == words[SELM3])
     {
-        return newnode(SELM3, pt(), pt(), pt());
+        struct Node *op1 = pt();
+        struct Node *op2 = pt();
+        struct Node *op3 = pt();
+        return newnode(SELM3, op1, op2, op3);
     }
     else if (s == words[SELM4])
     {
-        return newnode(SELM4, pt(), pt(), pt(), pt());
+        struct Node *op1 = pt();
+        struct Node *op2 = pt();
+        struct Node *op3 = pt();
+        struct Node *op4 = pt();
+        return newnode(SELM4, op1, op2, op3, op4);
     }
     else if (s == words[PROBM2])
     {
         s = check("Unexpected end of tokens parsing probm2 p1\n");
         a++;
         double p1 = atof(s.c_str());
-        return newnode(PROBM2, p1, pt(), pt());
+        struct Node *op1 = pt();
+        struct Node *op2 = pt();
+        return newnode(PROBM2, p1, op1, op2);
     }
     else if (s == words[PROBM3])
     {
@@ -107,7 +127,10 @@ struct Node *pt()
         s = check("Unexpected end of tokens parsing probm3 p2\n");
         a++;
         double p2 = atof(s.c_str());
-        return newnode(PROBM3, p1, p2, pt(), pt(), pt());
+        struct Node *op1 = pt();
+        struct Node *op2 = pt();
+        struct Node *op3 = pt();
+        return newnode(PROBM3, p1, p2, op1, op2, op3);
     }
     else if (s == words[PROBM4])
     {
@@ -120,7 +143,11 @@ struct Node *pt()
         s = check("Unexpected end of tokens parsing probm4 p3\n");
         a++;
         double p3 = atof(s.c_str());
-        return newnode(PROBM4, p1, p2, p3, pt(), pt(), pt(), pt());
+        struct Node *op1 = pt();
+        struct Node *op2 = pt();
+        struct Node *op3 = pt();
+        struct Node *op4 = pt();
+        return newnode(PROBM4, p1, p2, p3, op1, op2, op3, op4);
     }
     else if (s == words[MF])
     {
