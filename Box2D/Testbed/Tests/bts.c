@@ -507,7 +507,7 @@ void init(struct Node *bt)
 Status update(struct Node *bt)
 {
 #ifdef KBCOMPILE
-    print_sp();
+    //print_sp();
 #endif
     switch (bt->type)
     {
@@ -551,6 +551,8 @@ Status tick(struct Node *bt)
     return bt->status;
 }
 
+
+#ifndef KBCOMPILE
 void print_tree(struct Node *bt, int level)
 {
     switch(bt->type)
@@ -603,6 +605,30 @@ void print_tree(struct Node *bt, int level)
             print_tree(bt->data.sm4.op[3], level+1);
             break;
         }
+        case PROBM2:
+        {
+            printf("%3d probm2 %f\n",level, bt->data.pm2.p[0]);
+            print_tree(bt->data.pm2.op[0], level+1);
+            print_tree(bt->data.pm2.op[1], level+1);
+            break;
+        }
+        case PROBM3:
+        {
+            printf("%3d probm3 %f %f\n",level, bt->data.pm3.p[0], bt->data.pm3.p[1]);
+            print_tree(bt->data.pm3.op[0], level+1);
+            print_tree(bt->data.pm3.op[1], level+1);
+            print_tree(bt->data.pm3.op[2], level+1);
+            break;
+        }
+        case PROBM4:
+        {
+            printf("%3d probm4 %f %f %f\n",level, bt->data.pm4.p[0], bt->data.pm4.p[1], bt->data.pm4.p[2]);
+            print_tree(bt->data.sm4.op[0], level+1);
+            print_tree(bt->data.sm4.op[1], level+1);
+            print_tree(bt->data.sm4.op[2], level+1);
+            print_tree(bt->data.sm4.op[3], level+1);
+            break;
+        }
         case MF:
         {
             printf("%3d mf\n",level);
@@ -620,6 +646,7 @@ void print_tree(struct Node *bt, int level)
         }
     }
 }
+#endif
 
 
 
