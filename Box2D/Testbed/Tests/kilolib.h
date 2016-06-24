@@ -455,8 +455,8 @@ namespace Kilolib
             omegabias       = rand_gaussian(settings->kbsigma_omegabias);
             
             // Each kilobot has a slightly different clock frequency,
-            // this puts 95% within +- 1%
-            clkbias         = 1 + rand_gaussian(0.005);
+            // this puts 95% within +- 5%
+            clkbias         = 1 + rand_gaussian(0.025);
             // Each clock starts at slightly different time, within 0.2s
             clkoffset       = rand_intrange(0, 200000);
             

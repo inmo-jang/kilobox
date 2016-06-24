@@ -1239,5 +1239,155 @@ public:
     
 };
 
+
+class Btsimple : public Kilobot
+{
+public:
+    // Minimal example kiloobt controller
+    
+    Btsimple(ModelPosition *_pos, Settings *_settings,
+               std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile)
+    {
+        // Read in the Behaviour Tree
+        using namespace BT;
+        std::string btstring = "";
+        for(auto i = words.begin() + 1; i != words.end(); ++i)
+            btstring += *i;
+        printf("BT strings is:\n%s\n", btstring.c_str());
+        bt = parse_tree(btstring);
+        print_tree(bt,0);
+
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&Btsimple::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&Btsimple::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&Btsimple::message_tx_success_dummy;
+        setup();
+        
+        
+        
+        
+    }
+    ~Btsimple()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    // Test of manual tree build
+    
+    
+    
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+    float metric() {return total_food;}
+    
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    // Behaviour tree
+    //BT::Node *bt;
+    //BT::Blackboard bboard;
+    
+    float bboard[6];
+    struct Node *bt;
+    
+    
+    uint32_t last_update        = 0;
+    
+    typedef std::map<int,int> ns_t;
+    ns_t    neighbours_seen;
+    
+    
+    
+    int         new_message         = 0;
+    float       last_density;
+    float       density             = 1000.0;
+    int         found_food          = 0;
+    int         detected_food       = 0;
+    int         detected_nest       = 0;
+    int         told_about_food     = 0;
+    int         dist_to_food        = 1000;
+    int         accum_dist_to_food  = 1000;
+    const int   max_hops            = 7;
+    const int   max_food_dist       = 500;
+    const int   max_nest_dist       = 500;
+    int         min_hops_seen       = max_hops;
+    int         min_nest_hops_seen  = max_hops;
+    int         hops_to_food        = max_hops;
+    int         hops_to_nest        = max_hops;
+    
+    int         dist_to_food_smooth[5];
+    int         dist_to_nest_smooth[5];
+    int         dtf_ptr = 0;
+    float       dfood               = 500.0;
+    float       last_dfood          = 500.0;
+    float       dnest               = 500.0;
+    float       last_dnest          = 500.0;
+    int         carrying_food       = 0;
+    int         total_food          = 0;
+    int         total_pickup        = 0;
+    int         dist_to_nest        = 1000;
+    int         accum_dist_to_nest  = 1000;
+    
+    // Spread out until certain density reached or food is found
+    // Run and tumble
+    // Stop when food or low enough density
+    // Run when concentration decreasing
+    // Tumble otherwise
+    // So:
+    //  Measure concentration
+    //      at a particular distance, a particular area is implied
+    //      area = pi*r^2
+    //      desnity = 1/area
+    //      calc densities due to each message, and add
+    // If food sensed, or food found in incoming message, set in outgoing
+    void setup();
+    void loop();
+    int get_filtered_environment();
+    void preamble();
+    void postamble();
+    
+    float calc_density();
+    void set_motion(int dir);
+    void message_rx(message_t *m, distance_measurement_t *d);
+    message_t *message_tx();
+    
+    
+    
+};
+
+
 #endif
 

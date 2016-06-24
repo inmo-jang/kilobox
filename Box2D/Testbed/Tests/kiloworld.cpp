@@ -198,6 +198,8 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
                 bots.push_back((Kilobot*)(new Btdisperse(mod, settings, words, logfile.c_str())));
             if (words[0] == "nndisperse")
                 bots.push_back((Kilobot*)(new NNdisperse(mod, settings, words, logfile.c_str())));
+            if (words[0] == "btsimple")
+                bots.push_back((Kilobot*)(new Btsimple(mod, settings, words, logfile.c_str())));
             
         }
     }
