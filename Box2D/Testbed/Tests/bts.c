@@ -623,10 +623,10 @@ void print_tree(struct Node *bt, int level)
         case PROBM4:
         {
             printf("%3d probm4 %f %f %f\n",level, bt->data.pm4.p[0], bt->data.pm4.p[1], bt->data.pm4.p[2]);
-            print_tree(bt->data.sm4.op[0], level+1);
-            print_tree(bt->data.sm4.op[1], level+1);
-            print_tree(bt->data.sm4.op[2], level+1);
-            print_tree(bt->data.sm4.op[3], level+1);
+            print_tree(bt->data.pm4.op[0], level+1);
+            print_tree(bt->data.pm4.op[1], level+1);
+            print_tree(bt->data.pm4.op[2], level+1);
+            print_tree(bt->data.pm4.op[3], level+1);
             break;
         }
         case MF:
