@@ -1347,9 +1347,10 @@ public:
     int         min_nest_hops_seen  = max_hops;
     int         hops_to_food        = max_hops;
     int         hops_to_nest        = max_hops;
-    
-    int         dist_to_food_smooth[5];
-    int         dist_to_nest_smooth[5];
+#define     SMOOTHING               5
+    int         dist_to_food_smooth[SMOOTHING];
+    float       density_smooth[SMOOTHING];
+    int         dist_to_nest_smooth[SMOOTHING];
     int         dtf_ptr = 0;
     float       dfood               = 500.0;
     float       last_dfood          = 500.0;
@@ -1361,6 +1362,15 @@ public:
     int         dist_to_nest        = 1000;
     int         accum_dist_to_nest  = 1000;
     
+#define     MAX_NEIGHBOURS          32
+    int         neighbours_seen_dist[MAX_NEIGHBOURS];
+    int         neighbours_seen_uid[MAX_NEIGHBOURS];
+    int         ns_ptr;
+#define     ENV_BUF_SIZE            8
+    uint32_t    last_env_update;
+    int         env_ptr;
+    int         env_buf[ENV_BUF_SIZE];
+
     // Spread out until certain density reached or food is found
     // Run and tumble
     // Stop when food or low enough density

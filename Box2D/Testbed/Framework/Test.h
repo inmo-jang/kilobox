@@ -77,6 +77,7 @@ struct Settings
         enableTrails        = 0;
         speed               = 0;
 		pause               = 1;
+        restart             = 0;
 		singleStep          = 0;
         time_to_draw        = 1;
         ctrlargs            = std::string("");
@@ -128,7 +129,8 @@ struct Settings
 	int32 enableSleep;
     int32 enableTrails;
     int32 speed;
-	int32 pause;
+    int32 pause;
+    int32 restart;
 	int32 singleStep;
     int32 time_to_draw;
     int32 seed;
