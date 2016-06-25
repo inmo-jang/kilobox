@@ -1443,8 +1443,9 @@ void Btsimple::loop()
         // Values are always boolean or in range -1.0 to 1.0
         bboard[1]  = carrying_food;
         bboard[2]  = told_about_food;
-        bboard[3]  = (density - last_density) / 1000.0;
-        bboard[4]  = (dfood - last_dfood) / 1000.0;
+        bboard[3]  = density / 1000.0;
+        bboard[4]  = (density - last_density) / 1000.0;
+        //bboard[4]  = (dfood - last_dfood) / 1000.0;
         bboard[5]  = (dnest - last_dnest) / 1000.0;
         
         DBPRINT("kb:%d\n",kilo_uid);
@@ -1705,8 +1706,9 @@ void NNsimple::loop()
         // Values are always boolean or in range -1.0 to 1.0
         bboard[1]  = carrying_food;
         bboard[2]  = told_about_food;
-        bboard[3]  = (density - last_density) / 1000.0;
-        bboard[4]  = (dfood - last_dfood) / 1000.0;
+        bboard[3]  = density / 1000.0;
+        bboard[4]  = (density - last_density) / 1000.0;
+        //bboard[4]  = (dfood - last_dfood) / 1000.0;
         bboard[5]  = (dnest - last_dnest) / 1000.0;
         
         DBPRINT("kb:%d\n",kilo_uid);
