@@ -1525,8 +1525,8 @@ void Btsimple::loop()
         {
             last_time += 1e6;
             char buf[1024];
-            //snprintf(buf, 1024,
-                     printf(
+            snprintf(buf, 1024,
+                     //printf(
                      "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%4d,%4d,%4d,%4d,%4d,%4d,%4d,%12f\n", pos->Token(), time/1e6,
                      pos->GetPose().x, pos->GetPose().y,
                      bboard[0], bboard[2], bboard[1], bboard[3], bboard[4], bboard[5],
