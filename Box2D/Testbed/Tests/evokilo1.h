@@ -1365,11 +1365,13 @@ public:
 #define     MAX_NEIGHBOURS          32
     int         neighbours_seen_dist[MAX_NEIGHBOURS];
     int         neighbours_seen_uid[MAX_NEIGHBOURS];
-    int         ns_ptr;
+    int         ns_ptr              = 0;
 #define     ENV_BUF_SIZE            8
     uint32_t    last_env_update;
     int         env_ptr;
     int         env_buf[ENV_BUF_SIZE];
+    
+    int ns_ptr_save = 0;
 
     // Spread out until certain density reached or food is found
     // Run and tumble

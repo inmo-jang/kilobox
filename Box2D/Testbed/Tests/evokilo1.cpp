@@ -1243,6 +1243,8 @@ void Btsimple::setup()
     }
     for(int i=0; i<5; i++)
         bboard[i] = 0.0f;
+    for(int i=0; i<ENV_BUF_SIZE; i++)
+        env_buf[i] = 0;
 }
 
 
@@ -1372,6 +1374,7 @@ void Btsimple::preamble()
     float raw_density       = 0;
     if (new_message)
     {
+        // We have messages, so we can recalul
         raw_density         = calc_density();
         
         if (min_hops_seen < max_hops)
@@ -1395,6 +1398,13 @@ void Btsimple::preamble()
             hops_to_nest    = max_hops;
             dist_to_nest    = max_nest_dist;
         }
+    }
+    else
+    {
+        // We have no message, default to assuming max dist from everything, but revised
+        // by environmental detection
+        dist_to_food = max_food_dist;
+        dist_to_nest = max_nest_dist;
     }
     if (detected_food)
     {
@@ -1462,7 +1472,6 @@ void Btsimple::postamble()
 
 void Btsimple::loop()
 {
-    int ns_ptr_save;
     // Always run the environment update
     if (kilo_ticks > last_env_update + 4)
     {
@@ -1525,12 +1534,12 @@ void Btsimple::loop()
         {
             last_time += 1e6;
             char buf[1024];
-            snprintf(buf, 1024,
-                     //printf(
-                     "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%4d,%4d,%4d,%4d,%4d,%4d,%4d,%12f\n", pos->Token(), time/1e6,
+            //snprintf(buf, 1024,
+                     printf(
+                     "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%4d,%4d,%4d,%4d,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
                      pos->GetPose().x, pos->GetPose().y,
                      bboard[0], bboard[2], bboard[1], bboard[3], bboard[4], bboard[5],
-                     msg.data[2], msg.data[3], hops_to_food,  new_message, ns_ptr_save, dist_to_food, dist_to_nest, kilo_ticks_real
+                     detected_food, detected_nest, hops_to_food,  ns_ptr_save, density, dfood, dnest, kilo_ticks_real
                      );
             Btsimple::log(buf);
         }
