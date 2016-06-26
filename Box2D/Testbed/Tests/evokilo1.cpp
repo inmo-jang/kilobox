@@ -1481,7 +1481,7 @@ void Btsimple::loop()
     }
 
     
-    if (kilo_ticks > last_update + 32)
+    if (kilo_ticks > last_update + 16)
     {
         last_update = kilo_ticks;
         // Main loop, run through here approximately once a second
@@ -1519,7 +1519,7 @@ void Btsimple::loop()
         
         set_motion(motion);
         
-        set_color(0,density/1000.0,0);
+        set_color(carrying_food,density/1000.0,0);
         
         ns_ptr_save = ns_ptr;
         postamble();
@@ -1534,8 +1534,8 @@ void Btsimple::loop()
         {
             last_time += 1e6;
             char buf[1024];
-            //snprintf(buf, 1024,
-                     printf(
+            snprintf(buf, 1024,
+            //printf(
                      "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%4d,%4d,%4d,%4d,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
                      pos->GetPose().x, pos->GetPose().y,
                      bboard[0], bboard[2], bboard[1], bboard[3], bboard[4], bboard[5],
