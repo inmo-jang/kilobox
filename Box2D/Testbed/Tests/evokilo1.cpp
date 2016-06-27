@@ -1003,25 +1003,42 @@ void NNdisperse::setup()
     msg.data[6]     = max_hops;
     msg.crc         = message_crc(&msg);
     last_density    = 0.0f;
-    for(int i=0; i<5; i++)
+    for(int i=0; i<SMOOTHING; i++)
     {
         dist_to_food_smooth[i] = max_food_dist;
         dist_to_nest_smooth[i] = max_nest_dist;
+        density_smooth[i]  = density;
     }
+    for(int i=0; i<10; i++)
+        bboard[i] = 0.0f;
+    for(int i=0; i<ENV_BUF_SIZE; i++)
+        env_buf[i] = 0;
 }
+
+int NNdisperse::get_filtered_environment()
+{
+    int counts[4] = {0,0,0,0};
+    for(int i=0; i<ENV_BUF_SIZE; i++)
+    {
+        counts[env_buf[i]]++;
+    }
+    if (counts[0] > ENV_BUF_SIZE / 2) return 0;
+    if (counts[1] > ENV_BUF_SIZE / 2) return 1;
+    if (counts[2] > ENV_BUF_SIZE / 2) return 2;
+    if (counts[3] > ENV_BUF_SIZE / 2) return 3;
+    return 0;
+}
+
 
 float NNdisperse::calc_density()
 {
     // Density = sum(1/pi*r^2)
     // Scale so in kilobots/m^2
     float d = 0.0f;
-    //printf("%3d: ", kilo_uid);
-    for(ns_t::iterator i=neighbours_seen.begin(); i!=neighbours_seen.end(); ++i)
+    for(int i = 0; i < ns_ptr; ++i)
     {
-        //printf("%4d ", i->second);
-        d += 1/(M_PI * pow((float)i->second / 1000.0, 2));
+        d += 1/(M_PI * pow((float)neighbours_seen_dist[i] / 1000.0, 2));
     }
-    //printf("\n");
     return d;
 }
 
@@ -1049,13 +1066,46 @@ void NNdisperse::set_motion(int dir)
     last_output = dir;
 }
 
+NNdisperse::message_t *NNdisperse::message_tx()
+{
+    // Update the food part of the message
+    msg.data[0]     = kilo_uid & 0xff;
+    msg.data[1]     = (kilo_uid >> 8) & 0xff;
+    msg.data[2]     = found_food;
+    msg.data[3]     = hops_to_food;
+    msg.data[4]     = dist_to_food & 0xff;
+    msg.data[5]     = dist_to_food >> 8;
+    msg.data[6]     = hops_to_nest;
+    msg.data[7]     = dist_to_nest & 0xff;
+    msg.data[8]     = dist_to_nest >> 8;
+    msg.crc         = message_crc(&msg);
+    return &msg;
+}
+
+
 void NNdisperse::message_rx(message_t *m, distance_measurement_t *d)
 {
     new_message             += 1;
     int dist                = estimate_distance(d);
     int uid                 = m->data[0] | (m->data[1] << 8);
-    neighbours_seen[uid]    = dist;
-    int heard_about_food    = m->data[2];
+    
+    int found = 0;
+    for(int i = 0; i < ns_ptr; ++i)
+    {
+        if (neighbours_seen_uid[i] == uid)
+        {
+            neighbours_seen_dist[i] = dist;
+            found                   = 1;
+        }
+    }
+    if (!found && ns_ptr < MAX_NEIGHBOURS)
+    {
+        neighbours_seen_uid[ns_ptr]     = uid;
+        neighbours_seen_dist[ns_ptr]    = dist;
+        ns_ptr++;
+    }
+    
+    int heard_about_food    = m->data[2] > 0;
     int hops                = m->data[3];
     
     told_about_food         |= heard_about_food;
@@ -1072,91 +1122,94 @@ void NNdisperse::message_rx(message_t *m, distance_measurement_t *d)
         accum_dist_to_nest  = (m->data[7] | (m->data[8] << 8)) + dist;
     }
     
-    
-}
-
-NNdisperse::message_t *NNdisperse::message_tx()
-{
-    // Update the food part of the message
-    msg.data[2]     = found_food;
-    msg.data[3]     = gradient;
-    msg.data[4]     = dist_to_food & 0xff;
-    msg.data[5]     = dist_to_food >> 8;
-    msg.data[6]     = nest_gradient;
-    msg.data[7]     = dist_to_nest & 0xff;
-    msg.data[8]     = dist_to_nest >> 8;
-    msg.crc         = message_crc(&msg);
-    return &msg;
 }
 
 void NNdisperse::preamble()
 {
     // Get the inputs needed for the BT
-    last_detected_food = detected_food;
-    last_detected_nest = detected_nest;
-    detected_food   = get_environment() == FOOD;
-    detected_nest   = get_environment() == NEST;
+    int env = get_filtered_environment();
+    detected_food   = env == FOOD;
+    detected_nest   = env == NEST;
+    float raw_density       = 0;
     if (new_message)
     {
-        density         = calc_density();
+        // We have messages, so we can recalul
+        raw_density         = calc_density();
         
         if (min_hops_seen < max_hops)
         {
-            gradient        = min_hops_seen + 1;
+            hops_to_food    = min_hops_seen + 1;
             dist_to_food    = accum_dist_to_food;
         }
         else
         {
-            gradient        = max_hops;
+            hops_to_food    = max_hops;
             dist_to_food    = max_food_dist;
         }
         
         if (min_nest_hops_seen < max_hops)
         {
-            nest_gradient   = min_nest_hops_seen + 1;
+            hops_to_nest    = min_nest_hops_seen + 1;
             dist_to_nest    = accum_dist_to_nest;
         }
         else
         {
-            nest_gradient   = max_hops;
+            hops_to_nest    = max_hops;
             dist_to_nest    = max_nest_dist;
         }
     }
+    else
+    {
+        // We have no message, default to assuming max dist from everything, but revised
+        // by environmental detection
+        dist_to_food = max_food_dist;
+        dist_to_nest = max_nest_dist;
+    }
     if (detected_food)
     {
-        gradient        = 0;
+        hops_to_food    = 0;
         dist_to_food    = 0;
     }
     if (detected_nest)
     {
-        nest_gradient   = 0;
+        hops_to_nest    = 0;
         dist_to_nest    = 0;
     }
     
     
-    last_dfood = dfood;
-    last_dnest = dnest;
+    last_dfood      = dfood;
+    last_dnest      = dnest;
+    last_density    = density;
+
     
     dist_to_food_smooth[dtf_ptr] = dist_to_food;
     dist_to_nest_smooth[dtf_ptr] = dist_to_nest;
-    dtf_ptr = (dtf_ptr + 1) % 5;
-    for(int i=0;i<5;i++)
+    density_smooth[dtf_ptr] = raw_density;
+
+    dtf_ptr = (dtf_ptr + 1) % SMOOTHING;
+    dfood = 0;
+    dnest = 0;
+    density = 0.0f;
+    for(int i=0;i<SMOOTHING;i++)
     {
         dfood += dist_to_food_smooth[i];
         dnest += dist_to_nest_smooth[i];
+        density += density_smooth[i];
     }
-    dfood /= 5;
-    dnest /= 5;
+    dfood /= SMOOTHING;
+    dnest /= SMOOTHING;
+    density /= SMOOTHING;
+
     
     
     // Little state machine for food transport: always collect food if in food area
     // and deposit it if in nest area
-    if (carrying_food && detected_nest && last_detected_nest)
+    if (carrying_food && detected_nest)
     {
         carrying_food = 0;
         total_food++;
     }
-    else if (!carrying_food && detected_food && last_detected_food)
+    else if (!carrying_food && detected_food)
     {
         carrying_food = 1;
         total_pickup++;
@@ -1167,11 +1220,10 @@ void NNdisperse::preamble()
 
 void NNdisperse::postamble()
 {
-    last_density    = density;
     
     
     // Reset the map of neighbour distances
-    neighbours_seen.erase(neighbours_seen.begin(), neighbours_seen.end());
+    ns_ptr              = 0;
     told_about_food     = 0;
     min_hops_seen       = max_hops;
     min_nest_hops_seen  = max_hops;
@@ -1180,8 +1232,15 @@ void NNdisperse::postamble()
 
 void NNdisperse::loop()
 {
+    // Always run the environment update
+    if (kilo_ticks > last_env_update + 4)
+    {
+        last_env_update = kilo_ticks;
+        env_buf[env_ptr] = get_environment();
+        env_ptr = (env_ptr+1) % ENV_BUF_SIZE;
+    }
     
-    if (kilo_ticks > last_update + 32)
+    if (kilo_ticks > last_update + 16)
     {
         last_update = kilo_ticks;
         // Main loop, run through here approximately once a second
@@ -1236,17 +1295,7 @@ void NNdisperse::loop()
         
         set_motion(motion);
         
-        
-        //if (found_food)
-        //    set_color(RGB(0,3,0));
-        //if ((int)bboard.vars[7] == 1)
-        //    set_color(RGB(3,0,0));
-        //set_color_greyscale((float)gradient/max_hops);
-        //set_color(bboard.vars[7], (float)dfood/max_food_dist, 0);
-        set_color(bboard[2], (float)dnest/max_nest_dist, bboard[7]);
-        //set_color(bboard.vars[7], (float)nest_gradient/max_hops, 0);
-        //set_color_greyscale(detected_food);
-        
+        set_color(carrying_food, density / 1000.0, bboard[7]);
         
         postamble();
         
@@ -1266,7 +1315,7 @@ void NNdisperse::loop()
                      pos->GetPose().x, pos->GetPose().y,
                      bboard[0], bboard[1], bboard[9], bboard[3], bboard[4], bboard[5], bboard[6],
                      bboard[7], bboard[8], bboard[2],
-                     msg.data[2], msg.data[3], gradient,  new_message, dist_to_food, dist_to_nest
+                     msg.data[2], msg.data[3], hops_to_food,  new_message, dist_to_food, dist_to_nest
                      );
             NNdisperse::log(buf);
         }
