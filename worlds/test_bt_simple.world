@@ -1,0 +1,101 @@
+
+# Set up world in which there is a central nest surrounded by food with
+# a 10cm gap between them
+region( rectangle [0 0 3 2 2] )
+region( circle [0 0 0.3 0] )
+region( circle [0 0 0.2 1] )
+
+global ( params [0.00125 0.06 0.001 0.2 0.032 20.0 5.0 5.0 0.8 0.1 0.1 0.000113 0.005 0.015 0.95] )
+
+
+
+#
+#
+#
+# 1 - carrying food
+# 2 - told about food
+# 3 - density
+# 4 - delta density
+# 5 - delta nest dist
+#
+#
+#
+
+#define r0 position (
+#ctrl "btsimple
+#successl()
+#"
+#)
+
+
+#define r1 position (
+#ctrl "btsimple
+#selm2(
+#    seqm3(
+#        ifgtcon(3,0.2),
+#        ml()
+#        repeat(2,mf()))
+#    seqm2(
+#        mr(),
+#        repeat(2,mf())))
+#"
+#)
+
+
+define r0 position (
+ctrl "btsimple
+selm2(
+    seqm2(
+        ifgtcon(1,0.5),
+        successd(
+            seqm2(
+                repeat(10,ml()),
+                repeat(50,mf())))),
+    selm4(
+        seqm2(
+            ifgtcon(3,0.7),
+            probm2(0.5,mr(),mf())),
+        seqm2(
+            ifgtcon(2,0.5),
+            mf()),
+        seqm2(
+            ifltcon(5,0.0),
+            probm2(0.5,ml(),mf())),
+        mf()))
+"
+)
+
+
+quit_time 300
+
+r0( pose [ -0.100000  -0.100000 0 -131.628872 ])
+r0( pose [ -0.050000  -0.100000 0 125.076145 ])
+r0( pose [ 0.000000  -0.100000 0 94.958863 ])
+r0( pose [ 0.050000  -0.100000 0 -88.175151 ])
+r0( pose [ 0.100000  -0.100000 0 -1.643369 ])
+r0( pose [ -0.100000  -0.050000 0 -18.183217 ])
+r0( pose [ -0.050000  -0.050000 0 54.573470 ])
+r0( pose [ 0.000000  -0.050000 0 103.940406 ])
+r0( pose [ 0.050000  -0.050000 0 -146.210549 ])
+r0( pose [ 0.100000  -0.050000 0 -169.794908 ])
+r0( pose [ -0.100000  0.000000 0 120.875437 ])
+r0( pose [ -0.050000  0.000000 0 -24.203856 ])
+r0( pose [ 0.000000  0.000000 0 94.420830 ])
+r0( pose [ 0.050000  0.000000 0 -179.241821 ])
+r0( pose [ 0.100000  0.000000 0 -19.660610 ])
+r0( pose [ -0.100000  0.050000 0 79.754412 ])
+r0( pose [ -0.050000  0.050000 0 -97.645600 ])
+r0( pose [ 0.000000  0.050000 0 160.297450 ])
+r0( pose [ 0.050000  0.050000 0 144.513885 ])
+r0( pose [ 0.100000  0.050000 0 -168.987606 ])
+r0( pose [ -0.100000  0.100000 0 -170.839490 ])
+r0( pose [ -0.050000  0.100000 0 14.908490 ])
+r0( pose [ 0.000000  0.100000 0 158.093699 ])
+r0( pose [ 0.050000  0.100000 0 -42.766474 ])
+r0( pose [ 0.100000  0.100000 0 -102.024217 ])
+
+#
+#
+#
+#
+

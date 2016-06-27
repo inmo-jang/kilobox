@@ -1,0 +1,117 @@
+
+# Set up world in which there is a central nest surrounded by food with
+# a 10cm gap between them
+region( rectangle [0 0 3 2 2] )
+region( circle [0 0 0.3 0] )
+region( circle [0 0 0.2 1] )
+
+
+#
+# Disperse until density reached:
+#   if density < target
+#       stay still
+#   else if density going down
+#       run
+#   else
+#       tumble
+#
+define r0 position (
+ctrl "btdisperse 
+   selm3(
+    seqm2(
+        ifltcon(2,0.5),
+        successd(
+            selm3(
+                seqm2(
+                    ifgtcon(3,0.5),
+                    seqm3(
+                        ifltcon(1,0.5),
+                        set(1,1),
+                        probm2(0.5,
+                            set(2,1),
+                            successl()))),
+                seqm2(
+                    ifgtcon(4,0.5),
+                    seqm3(
+                        ifltcon(1,0.5),
+                        set(1,1),
+                        probm2(0.5,
+                            set(2,1),
+                            successl()))),
+                selm4(
+                    probm2(0.3,
+                        successl(),
+                        failurel()),
+                    ifltcon(5,0.1),
+                    seqm2(
+                        ifltcon(6,0),
+                        repeat(5,
+                            mf())),
+                    probm3(0.33,0.33,
+                        repeat(3,
+                            mf()),
+                        repeat(3,
+                            ml()),
+                        repeat(3,
+                            mr())))))),
+    seqm2(
+        ifltcon(9,0.5),
+        successd(
+            selm2(
+                seqm2(
+                    ifltcon(7,0),
+                    repeat(5,
+                        mf())),
+                probm3(0.33,0.33,
+                    repeat(3,
+                        mf()),
+                    repeat(3,
+                        ml()),
+                    repeat(3,
+                        mr()))))),
+    selm2(
+        seqm2(
+            ifltcon(8,0),
+            repeat(5,
+                mf())),
+        probm3(0.33,0.33,
+            repeat(3,
+                mf()),
+            repeat(3,
+                ml()),
+            repeat(3,
+                mr())))) 
+"
+)
+
+
+
+#
+quit_time 300
+r0( pose [ -0.100000  -0.100000 0 -131.628872 ])
+r0( pose [ -0.050000  -0.100000 0 125.076145 ])
+r0( pose [ 0.000000  -0.100000 0 94.958863 ])
+r0( pose [ 0.050000  -0.100000 0 -88.175151 ])
+r0( pose [ 0.100000  -0.100000 0 -1.643369 ])
+r0( pose [ -0.100000  -0.050000 0 -18.183217 ])
+r0( pose [ -0.050000  -0.050000 0 54.573470 ])
+r0( pose [ 0.000000  -0.050000 0 103.940406 ])
+r0( pose [ 0.050000  -0.050000 0 -146.210549 ])
+r0( pose [ 0.100000  -0.050000 0 -169.794908 ])
+r0( pose [ -0.100000  0.000000 0 120.875437 ])
+r0( pose [ -0.050000  0.000000 0 -24.203856 ])
+r0( pose [ 0.000000  0.000000 0 94.420830 ])
+r0( pose [ 0.050000  0.000000 0 -179.241821 ])
+r0( pose [ 0.100000  0.000000 0 -19.660610 ])
+r0( pose [ -0.100000  0.050000 0 79.754412 ])
+r0( pose [ -0.050000  0.050000 0 -97.645600 ])
+r0( pose [ 0.000000  0.050000 0 160.297450 ])
+r0( pose [ 0.050000  0.050000 0 144.513885 ])
+r0( pose [ 0.100000  0.050000 0 -168.987606 ])
+r0( pose [ -0.100000  0.100000 0 -170.839490 ])
+r0( pose [ -0.050000  0.100000 0 14.908490 ])
+r0( pose [ 0.000000  0.100000 0 158.093699 ])
+r0( pose [ 0.050000  0.100000 0 -42.766474 ])
+r0( pose [ 0.100000  0.100000 0 -102.024217 ])
+
+# fitness 34.768411 f_z 24.768411  f_com 1.000000 

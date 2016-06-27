@@ -1,0 +1,158 @@
+
+# Set up world in which there is a central nest surrounded by food with
+# a 10cm gap between them
+region( rectangle [0 0 3 2 2] )
+region( circle [0 0 0.3 0] )
+region( circle [0 0 0.2 1] )
+
+global ( params [0.00125 0.06 0.0005 0.3 0.032 20.0 5.0 5.0 0.8 0.1 0.1 0.000113 0.005 0.015 0.95] )
+#
+# Disperse until density reached:
+#   if density < target
+#       stay still
+#   else if density going down
+#       run
+#   else
+#       tumble
+#
+define r0 position (
+ctrl "btdisperse
+successd(
+    seqm4(
+        successd(
+            seqm4(
+                seqm2(
+                    seqm2(
+                        ifltvar(4, 3), 
+                        ml()), 
+                    seqm2(
+                        ifltvar(2, 9), 
+                        ml())), 
+                successd(
+                    selm4(
+                        failurel(), 
+                        successl(), 
+                        mf(), 
+                        seqm3(
+                            seqm3(
+                                probm3(0.686484, 0.978739, 
+                                    successl(), 
+                                    successl(), 
+                                    failured(
+                                        repeat(8, 
+                                            mf()))), 
+                                seqm2(
+                                    seqm2(
+                                        ifltvar(4, 3), 
+                                        ml()), 
+                                    seqm2(
+                                        ifltvar(3, 9), 
+                                        ml())), 
+                                ifltvar(6, 3)), 
+                            probm2(0.309562, 
+                                ifgtvar(5, 5), 
+                                probm2(0.713406, 
+                                    ml(), 
+                                    failurel())), 
+                            probm2(0.599217, 
+                                probm2(0.934336, 
+                                    successl(), 
+                                    mr()), 
+                                repeat(4, 
+                                    ml()))))), 
+                seqm2(
+                    seqm2(
+                        ifltvar(6, 3), 
+                        ml()), 
+                    ml()), 
+                probm4(0.548855, 0.289968, 0.379402, 
+                    probm3(0.934336, 0.978739, 
+                        ml(), 
+                        failurel(), 
+                        mr()), 
+                    ml(), 
+                    successd(
+                        ml()), 
+                    failured(
+                        mr())))), 
+        successd(
+            selm4(
+                seqm2(
+                    seqm4(
+                        seqm2(
+                            seqm2(
+                                ifltvar(5, 3), 
+                                ml()), 
+                            ml()), 
+                        successd(
+                            seqm4(
+                                failurel(), 
+                                successl(), 
+                                mf(), 
+                                successl())), 
+                        seqm4(
+                            seqm2(
+                                seqm2(
+                                    ifltvar(5, 3), 
+                                    ml()), 
+                                ml()), 
+                            selm4(
+                                successl(), 
+                                seqm3(
+                                    ifgtcon(9, -0.815107), 
+                                    ifltcon(9, 0.001430), 
+                                    failurel()), 
+                                failurel(), 
+                                ml()), 
+                            failured(
+                                repeat(8, 
+                                    mf())), 
+                            mf()), 
+                        mf()), 
+                    ml()), 
+                successl(), 
+                mf(), 
+                seqm4(
+                    failurel(), 
+                    successl(), 
+                    seqm2(
+                        ifltvar(1, 2), 
+                        ml()), 
+                    successl()))), 
+        failured(
+            repeat(2, 
+                mf())), 
+        ifltvar(4, 3)))"
+)
+
+
+
+#
+quit_time 300
+r0( pose [ -0.100000  -0.100000 0 -131.628872 ])
+r0( pose [ -0.050000  -0.100000 0 125.076145 ])
+r0( pose [ 0.000000  -0.100000 0 94.958863 ])
+r0( pose [ 0.050000  -0.100000 0 -88.175151 ])
+r0( pose [ 0.100000  -0.100000 0 -1.643369 ])
+r0( pose [ -0.100000  -0.050000 0 -18.183217 ])
+r0( pose [ -0.050000  -0.050000 0 54.573470 ])
+r0( pose [ 0.000000  -0.050000 0 103.940406 ])
+r0( pose [ 0.050000  -0.050000 0 -146.210549 ])
+r0( pose [ 0.100000  -0.050000 0 -169.794908 ])
+r0( pose [ -0.100000  0.000000 0 120.875437 ])
+r0( pose [ -0.050000  0.000000 0 -24.203856 ])
+r0( pose [ 0.000000  0.000000 0 94.420830 ])
+r0( pose [ 0.050000  0.000000 0 -179.241821 ])
+r0( pose [ 0.100000  0.000000 0 -19.660610 ])
+r0( pose [ -0.100000  0.050000 0 79.754412 ])
+r0( pose [ -0.050000  0.050000 0 -97.645600 ])
+r0( pose [ 0.000000  0.050000 0 160.297450 ])
+r0( pose [ 0.050000  0.050000 0 144.513885 ])
+r0( pose [ 0.100000  0.050000 0 -168.987606 ])
+r0( pose [ -0.100000  0.100000 0 -170.839490 ])
+r0( pose [ -0.050000  0.100000 0 14.908490 ])
+r0( pose [ 0.000000  0.100000 0 158.093699 ])
+r0( pose [ 0.050000  0.100000 0 -42.766474 ])
+r0( pose [ 0.100000  0.100000 0 -102.024217 ])
+
+# fitness 34.768411 f_z 24.768411  f_com 1.000000 
