@@ -680,7 +680,7 @@ void Btdisperse::setup()
     msg.data[6]     = max_hops;
     msg.crc         = message_crc(&msg);
     last_density    = 0.0f;
-    for(int i=0; i<5; i++)
+    for(int i=0; i<SMOOTHING; i++)
     {
         dist_to_food_smooth[i] = max_food_dist;
         dist_to_nest_smooth[i] = max_nest_dist;
@@ -743,6 +743,22 @@ void Btdisperse::set_motion(int dir)
     last_output = dir;
 }
 
+Btdisperse::message_t *Btdisperse::message_tx()
+{
+    // Update the food part of the message
+    msg.data[0]     = kilo_uid & 0xff;
+    msg.data[1]     = (kilo_uid >> 8) & 0xff;
+    msg.data[2]     = found_food;
+    msg.data[3]     = hops_to_food;
+    msg.data[4]     = dist_to_food & 0xff;
+    msg.data[5]     = dist_to_food >> 8;
+    msg.data[6]     = hops_to_nest;
+    msg.data[7]     = dist_to_nest & 0xff;
+    msg.data[8]     = dist_to_nest >> 8;
+    msg.crc         = message_crc(&msg);
+    return &msg;
+}
+
 void Btdisperse::message_rx(message_t *m, distance_measurement_t *d)
 {
     new_message             += 1;
@@ -784,21 +800,6 @@ void Btdisperse::message_rx(message_t *m, distance_measurement_t *d)
     
 }
 
-Btdisperse::message_t *Btdisperse::message_tx()
-{
-    // Update the food part of the message
-    msg.data[0]     = kilo_uid & 0xff;
-    msg.data[1]     = (kilo_uid >> 8) & 0xff;
-    msg.data[2]     = found_food;
-    msg.data[3]     = hops_to_food;
-    msg.data[4]     = dist_to_food & 0xff;
-    msg.data[5]     = dist_to_food >> 8;
-    msg.data[6]     = hops_to_nest;
-    msg.data[7]     = dist_to_nest & 0xff;
-    msg.data[8]     = dist_to_nest >> 8;
-    msg.crc         = message_crc(&msg);
-    return &msg;
-}
 
 void Btdisperse::preamble()
 {
