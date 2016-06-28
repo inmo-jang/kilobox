@@ -1606,10 +1606,11 @@ void Btsimple::loop()
         
         // Values are always boolean or in range -1.0 to 1.0
         bboard[2]  = carrying_food;
-        bboard[3]  = receive_signal;
-        bboard[4]  = (density - last_density) / 1000.0;
-        bboard[5]  = (dfood - last_dfood) / 1000.0;
-        bboard[6]  = (dnest - last_dnest) / 1000.0;
+        bboard[3]  = detected_food;
+        bboard[4]  = receive_signal;
+        bboard[5]  = (density - last_density) / 1000.0;
+        bboard[6]  = (dfood - last_dfood) / 1000.0;
+        bboard[7]  = (dnest - last_dnest) / 1000.0;
         
         DBPRINT("kb:%d\n",kilo_uid);
         set_vars(bboard);
@@ -1639,7 +1640,7 @@ void Btsimple::loop()
             //printf(
                      "%12s,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%12f,%4d,%4d,%4d,%4d,%12f,%12f,%12f,%12f\n", pos->Token(), time/1e6,
                      pos->GetPose().x, pos->GetPose().y,
-                     bboard[0], bboard[2], bboard[1], bboard[3], bboard[4], bboard[5],
+                     bboard[0], bboard[1], bboard[2], bboard[3], bboard[4], bboard[5],
                      detected_food, detected_nest, hops_to_food,  ns_ptr_save, density, dfood, dnest, kilo_ticks_real
                      );
             Btsimple::log(buf);

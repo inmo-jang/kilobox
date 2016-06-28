@@ -1343,7 +1343,7 @@ public:
     // Behaviour tree
     //BT::Node *bt;
     //BT::Blackboard bboard;
-    static const int bboard_size = 7;
+    static const int bboard_size = 8;
     float bboard[bboard_size];
     struct Node *bt;
     
