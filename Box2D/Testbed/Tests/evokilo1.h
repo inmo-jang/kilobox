@@ -1334,8 +1334,8 @@ public:
     // Behaviour tree
     //BT::Node *bt;
     //BT::Blackboard bboard;
-    
-    float bboard[6];
+    static const int bboard_size = 7;
+    float bboard[bboard_size];
     struct Node *bt;
     
     
@@ -1349,10 +1349,10 @@ public:
     int         new_message         = 0;
     float       last_density;
     float       density             = 1000.0;
-    int         found_food          = 0;
+    int         send_signal         = 0;
     int         detected_food       = 0;
     int         detected_nest       = 0;
-    int         told_about_food     = 0;
+    int         receive_signal      = 0;
     int         dist_to_food        = 1000;
     int         accum_dist_to_food  = 1000;
     const int   max_hops            = 7;

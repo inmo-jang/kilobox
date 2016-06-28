@@ -1298,7 +1298,7 @@ void Btsimple::setup()
         dist_to_nest_smooth[i] = max_nest_dist;
         density_smooth[i]  = density;
     }
-    for(int i=0; i<5; i++)
+    for(int i=0; i<bboard_size; i++)
         bboard[i] = 0.0f;
     for(int i=0; i<ENV_BUF_SIZE; i++)
         env_buf[i] = 0;
@@ -1378,10 +1378,10 @@ void Btsimple::message_rx(message_t *m, distance_measurement_t *d)
         ns_ptr++;
     }
 
-    int heard_about_food    = m->data[2] > 0;
+    int signal              = m->data[2];
     int hops                = m->data[3];
     
-    told_about_food         |= heard_about_food;
+    receive_signal         |= signal;
     if (hops < min_hops_seen)
     {
         min_hops_seen       = hops;
@@ -1403,7 +1403,7 @@ Btsimple::message_t *Btsimple::message_tx()
     // Update the food part of the message
     msg.data[0]     = kilo_uid & 0xff;
     msg.data[1]     = (kilo_uid >> 8) & 0xff;
-    msg.data[2]     = carrying_food;
+    msg.data[2]     = send_signal;
     msg.data[3]     = hops_to_food;
     msg.data[4]     = dist_to_food & 0xff;
     msg.data[5]     = dist_to_food >> 8;
@@ -1516,7 +1516,7 @@ void Btsimple::postamble()
     
     // Reset the map of neighbour distances
     ns_ptr              = 0;
-    told_about_food     = 0;
+    receive_signal      = 0;
     min_hops_seen       = max_hops;
     min_nest_hops_seen  = max_hops;
     new_message         = 0;
@@ -1543,31 +1543,31 @@ void Btsimple::loop()
         
         // Outputs or state variables:
         //  [0] motion
-        
+        //  [1] send signal (to message subsystem)
         
         // Inputs:
-        //  [1] carrying_food
-        //  [2] told_about_food (from message subsystem)
-        //  [3] density
+        //  [2] carrying_food
+        //  [3] receive signal (from message subsystem)
         //  [4] delta_density
-        //  [5] delta_nest_dist
+        //  [5] delta_food_dist
+        //  [6] delta_nest_dist
         
         // Motor values always reset to zero, then potentially altered
         bboard[0] = 0;
         
         // Values are always boolean or in range -1.0 to 1.0
-        bboard[1]  = carrying_food;
-        bboard[2]  = told_about_food;
-        bboard[3]  = density / 1000.0;
+        bboard[2]  = carrying_food;
+        bboard[3]  = receive_signal;
         bboard[4]  = (density - last_density) / 1000.0;
-        //bboard[4]  = (dfood - last_dfood) / 1000.0;
-        bboard[5]  = (dnest - last_dnest) / 1000.0;
+        bboard[5]  = (dfood - last_dfood) / 1000.0;
+        bboard[6]  = (dnest - last_dnest) / 1000.0;
         
         DBPRINT("kb:%d\n",kilo_uid);
         set_vars(bboard);
         tick(bt);
         
         int motion = (int)bboard[0];
+        send_signal = bboard[1] > 0.5;
         
         set_motion(motion);
         
