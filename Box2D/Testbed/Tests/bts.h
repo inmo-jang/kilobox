@@ -43,7 +43,7 @@ struct Node     *newnode(Nodetype type,...);
 Status          tick(struct Node *bt);
 void print_tree(struct Node *bt, int level);
 
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #define DBPRINT(fmt, ...) printf(fmt, ##__VA_ARGS__)
