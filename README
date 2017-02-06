@@ -30,6 +30,7 @@ make
 Example simulation
 ==================
 
+./Testbed/Testbed ../kilobox/worlds/orbit.world
 ./Testbed/Testbed ../kilobox/worlds/test_forage.world
 
 
