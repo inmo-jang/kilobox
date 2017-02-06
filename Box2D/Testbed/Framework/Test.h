@@ -77,6 +77,7 @@ struct Settings
         enableTrails        = 0;
         speed               = 0;
 		pause               = 1;
+        restart             = 0;
 		singleStep          = 0;
         time_to_draw        = 1;
         ctrlargs            = std::string("");
@@ -89,10 +90,10 @@ struct Settings
         seed                = 1;
         //-----------------------
         // Specific kilobot settings
-        kbsigma_vbias       = 0.00125;
-        kbsigma_omegabias   = 0.06;
-        kbsigma_vnoise      = 0.0001;
-        kbsigma_omeganoise  = 0.0001;
+        kbsigma_vbias       = 0.0013;
+        kbsigma_omegabias   = 0.0675;
+        kbsigma_vnoise      = 0.001;
+        kbsigma_omeganoise  = 0.01;
         kbdia               = 0.032;
         kbdensity           = 20.0;
         kblineardamp        = 5.0;
@@ -100,7 +101,7 @@ struct Settings
         kbfriction          = 0.8;
         kbrestitution       = 0.1;
         kbsenserad          = 0.1;
-        kbspeedconst        = 0.000113;
+        kbspeedconst        = 0.000114;
         kbwheeloffset       = 0.005;
         kbwheeldist         = 0.015;
         kbmsgsuccess        = 0.95;
@@ -129,6 +130,7 @@ struct Settings
     int32 enableTrails;
     int32 speed;
 	int32 pause;
+	int32 restart;
 	int32 singleStep;
     int32 time_to_draw;
     int32 seed;

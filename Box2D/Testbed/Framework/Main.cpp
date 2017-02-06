@@ -424,6 +424,14 @@ static void SingleStep(int)
 	settings.singleStep = 1;
 }
 
+static void Restart(int)
+{
+    settings.pause = 1;
+    settings.restart = 1;
+    delete test;
+    test = entry->createFcn(&settings);
+}
+
 #include <getopt.h>
 
 const char* USAGE = 
@@ -627,6 +635,7 @@ void rungui(int argc, char** argv)
 
 	glui->add_button("Pause", 0, Pause);
 	glui->add_button("Single Step", 0, SingleStep);
+    glui->add_button("Restart", 0, Restart);
 
 	glui->add_button("Quit", 0,(GLUI_Update_CB)Exit);
 	glui->set_main_gfx_window( mainWindow );

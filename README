@@ -19,7 +19,7 @@ Ubuntu, haven't tried with a clean install. Uses C++11.
 
 git clone https://siteks@bitbucket.org/siteks/kilobox.git
 cd kilobox
-git checkout thin_framework
+git checkout arena_sim
 cd ..
 mkdir kilobox_build
 cd kilobox_build
@@ -30,7 +30,7 @@ make
 Example simulation
 ==================
 
-./Testbed/Testbed ../kilobox/worlds/test100.world
+./Testbed/Testbed ../kilobox/worlds/test_forage.world
 
 
 Notes
@@ -82,7 +82,7 @@ similar command line interface to Stage and move away from the Box2D philosophy 
 accurate simulation appearance in GUI to as fast as possible sim in both GUI and 
 command line.
 
-Testbench/Tests contains the code for the actual kilobot world and API emulation.
+Testbed/Tests contains the code for the actual kilobot world and API emulation.
 
 kiloworld.cpp/h
 ---------------
@@ -134,23 +134,125 @@ defining the robot.
 
 
 
-To Do
-=====
 
-1)  Update GUI so the sim speed can be controlled
-2)  Generalise the mechanism for pulling in controller code. I think Stage
-    used libtool but I never investigated too deeply
-2a) Make build scripts in some form so that just controller code can be built
-    and linked against the simulator? Rather than rebuilding the entire code
-    for just controller changes
-3)  Array simulation. Running multiple copies of the kilobot arena within the
-    same simulated world. This will probably be necessary to get the amount of 
-    work per timestep sufficiently high that OpenCL acceleration has real benefits.
-    I've started this, kiloworld.h has xgrid and ygrid which cause an array to be 
-    created. The individual simulations diverge, this may be because they are at
-    different physical locations and thus different floating point effects apply
-4)  Profile and analyse the performance of the 2D physics engine in order to 
-    accelerate it using OpenCL. 
+
+
+
+
+Adding a new controller
+=======================
+
+The above text was written some time ago, since then, further controllers have been
+added for my own use but there is still no general mechanism. Here is how to add 
+your own controller.
+
+This is hacky and could definitely be more user-friendly. 
+
+The intent was that a controller would be written in virtually the same way for the simulator
+and for the kilobot. To that end, you need to write a class inheriting from Kilobot, with two
+methods, setup() and loop(). The Kilobot class provides the standard kilobot API, except for
+delay(). 'global' variables go in the class declaration, and can be initialised because this 
+is c++11. The setup() and loop() methods then use almost identical code to the kilobot
+code with some small exceptions:
+
+You can't use delay(). Its very hard to implement nicely in a sim.
+
+Setting the message callbacks has to be done with some extra syntax
+
+Kilobot:        kilo_message_tx = tx_message;
+Simulation:     kilo_message_tx = (message_tx_t)&controller_class_name::tx_message;
+
+Some code has to be added elsewhere to fit everything together. So:
+
+1) Write a controller class in evokilo1.cpp and evokilo1.h, with the class inheriting from Kilobot
+2) At the beginning of evokilo1.cpp, add another line to initialise the logging file pointer
+3) Modify kiloworld.cpp around line 180 so that a reference in the world file will
+    result in the instantiation of your new controller
+
+
+You can pass arguments to your controller class using --args="stuff" on the command line.
+
+Logging is implemented with a singleton file pointer, so all instances of a controller
+write to the same file.
+Specify a log file with the command line syntax:
+
+Testbed -g ../kilobox/worlds/orbit/world --args="log test.log"
+
+
+
+Worldfile format
+================
+
+The worldfile code is mostly lifted from Stage. Parsin is a bit delicate, with poor error
+reporting. If something doesn't work, add spaces between tokens like brackets. # for comments.
+
+An example:
+
+
+region( rectangle [0 0 3 2 2] )
+region( circle [0 0 0.2 1] )
+# Specify a rectangular region centered on (0,0) with size (3,2) metres, returning 2
+# overlayed with a circular region centered on (0,0) with radius 0.2 m, returning 1
+#
+# Using the api function get_environment() will return the topmost (last set) region value
+# at the point the kilobot is.
+
+define r0 position ( ctrl "evokilo2 -3.187500 3.093750" )
+# Defines robot type r0, with controller evokilo2, and parameters -3.187500 3.093750. The parameters are
+# passed as a list of words to the controller class on construction.
+
+global ( params [0.001759 0.095316 0.000971 0.028605 0.032000 20.000000 5.000000 5.000000 0.695555 0.100000 0.110767 0.000078 0.006223 0.011603 0.843987] )
+# Specify simulator parameters. These are:
+#       Name                Default Meaning
+#   1   sigma_vbias         0.0013  stddev of gaussian used to set velocity bias
+#   2   sigma_omegabias     0.0675  stddev of gaussian used to set angular velocity bias
+#   3   sigma_vnoise        0.001   stddev of gaussian added to velocity at each timestep
+#   4   sigma_omeganoise    0.01    stddev of gaussian added to angular velocity at each timestep
+#   5   dia                 0.032   diameter of kilobot
+#   6   density             20.0    density of kilobot in kg/m^2
+#   7   lineardamp          5.0     linear velocity damping coefficient    
+#   8   angulardamp         5.0     angular velocity damping coefficient
+#   9   friction            0.8     mu between kilobots
+#   10  restitution         0.1     restitution between kilobots
+#   11  senserad            0.1     sensor radius, distance messages can travel
+#   12  speedconst          1.14e-4 constant to convert the motor speed (70) to linear 'wheel' velocity 
+#   13  wheeloffset         0.005   offset of wheel axis from centre of robot
+#   14  wheeldist           0.015   distance between wheels
+#   15  msgsuccess          0.95    probability a message will be successfully received
+#
+# The bias and noise figures were obtained by measuring the actual performance of ~20
+# calibrated kilobots in forward and turning motion.
+#
+# The kilobot motion is approximated by two-wheel kinematics, these constants give roughly 
+# the right motion
+
+quit_time 300
+# Run the simulation for 300 simulated seconds. Ignored in GUI mode.
+
+r0( pose [ -0.100000  -0.100000 0 -131.628872 ])
+r0( pose [ -0.250000  -0.150000 0 -90.1234 ])
+# Instantiate two robots of type r0 at position (-0.1,-0.1) and (-0.25,-0.15) metres.
+
+
+
+Running a simulation
+====================
+
+Testbed <worldfile>
+
+Will start the GUI. This is a hacked version of the Box2D one. Set the speed with the
+radio buttons. You can drag the kilobots while the sim is running. Use 'z' and 'x' to zoom
+in and out in the main window.
+
+
+Options:
+
+-g              Run in non-gui mode, respect the "quit_time" command in worldfile
+--args "str"    Pass "str" to all controllers
+--seed <num>    Set the random seed. All controllers have their own random number generator
+                so that it is possible to run reproducible sims. 
+                The seed each one gets is <num> + id.
+
 
 
 

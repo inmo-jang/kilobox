@@ -21,12 +21,37 @@
 
 using namespace Kilolib;
 
-
+//-------------------------------------------------------------
+// Add your file logging pointer here
+//-------------------------------------------------------------
 // Single class variable for logging file pointer
-FILE *Evokilo1::lfp = NULL;
-FILE *Evokilo2::lfp = NULL;
-FILE *Evokilo3::lfp = NULL;
-FILE *Evokilo4::lfp = NULL;
+FILE *Minimal_example::lfp  = NULL;
+FILE *Orbit_star::lfp       = NULL;
+FILE *Orbit_planet::lfp     = NULL;
+FILE *Evokilo1::lfp         = NULL;
+FILE *Evokilo2::lfp         = NULL;
+FILE *Evokilo3::lfp         = NULL;
+FILE *Evokilo4::lfp         = NULL;
+
+
+void Minimal_example::setup()
+{
+    last_update     = kilo_ticks;
+}
+void Minimal_example::loop()
+{
+    if (kilo_ticks > last_update + 16)
+    {
+        last_update = kilo_ticks;
+        set_color(RGB((kilo_ticks>>4)%2,0,0));
+    }
+}
+
+
+
+
+
+
 
 
 float sigmoid(float x) {return tanh(x);}
