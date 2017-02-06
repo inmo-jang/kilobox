@@ -18,9 +18,6 @@ Ubuntu, haven't tried with a clean install. Uses C++11.
 
 
 git clone https://siteks@bitbucket.org/siteks/kilobox.git
-cd kilobox
-git checkout arena_sim
-cd ..
 mkdir kilobox_build
 cd kilobox_build
 cmake ../kilobox/Box2D
