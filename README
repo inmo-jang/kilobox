@@ -253,4 +253,24 @@ Options:
 
 
 
+Speed
+=====
+
+Running with 400 robots  for 300 simulated second gives:
+
+time ./Testbed/Testbed -g ../kilobox/worlds/test_400_kilobots.world
+...
+real	1m0.487s
+user	0m58.934s
+sys	0m0.233s
+
+
+So 5x real time, or racc of 300*400/60 = 2000
+
+
+25 robots for 3000 simulated seconds take 2.12 seconds, or racc of 3000*25/2.12 = 35000
+
+Performance doesn't scale very well..
+
+
 
