@@ -420,7 +420,6 @@ namespace Kilolib
             omega_goal          (0.0),
             xdot_goal           (0.0),
             ydot_goal           (0.0),
-            ambient             (ModelStigmergy::colour_t(0,0,0,0)),
             led_r               (1.0),
             led_g               (1.0),
             led_b               (1.0),
@@ -496,7 +495,6 @@ namespace Kilolib
         void check_messages();
         
         float   dt;
-        double  simtime;
 
         
         // Each kilobot has its own random number generator
@@ -509,9 +507,7 @@ namespace Kilolib
         float                      omega_goal;
         float                      xdot_goal;
         float                      ydot_goal;
-        // Pheromone strength
-        float                      pheromone;
-        ModelStigmergy::colour_t    ambient;
+
         
         // Vector of locations to plot trails
         std::vector<Pose>           trail;
@@ -722,6 +718,10 @@ namespace Kilolib
         void set_color_msg(float c)
         {
             msgcolour = Color(c);
+        }
+        void set_pheromone()
+        {
+            pos->kworld->set_pheromone(pos->pose.x, pos->pose.y);
         }
         //-------------------------------------------------
 

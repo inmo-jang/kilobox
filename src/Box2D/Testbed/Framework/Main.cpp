@@ -128,6 +128,7 @@ void simstep()
         // Fast forward realtime to current simtime if just enabled controlled speed
         realtime = simtime / speedmult;
     last_sm = speedmult;
+    settings.viewZoom = viewZoom;
     
     if (!speedmult || (simtime / speedmult < realtime))
     {
@@ -573,43 +574,44 @@ void rungui(int argc, char** argv)
 	glui = GLUI_Master.create_glui_subwindow( mainWindow, 
 		GLUI_SUBWINDOW_RIGHT );
 
-	glui->add_statictext("Tests");
-	GLUI_Listbox* testList =
-		glui->add_listbox("", &testSelection);
-
-	glui->add_separator();
-
-	GLUI_Spinner* velocityIterationSpinner =
-		glui->add_spinner("Vel Iters", GLUI_SPINNER_INT, &settings.velocityIterations);
-	velocityIterationSpinner->set_int_limits(1, 500);
-
-	GLUI_Spinner* positionIterationSpinner =
-		glui->add_spinner("Pos Iters", GLUI_SPINNER_INT, &settings.positionIterations);
-	positionIterationSpinner->set_int_limits(0, 100);
-
-	GLUI_Spinner* hertzSpinner =
-		glui->add_spinner("Hertz", GLUI_SPINNER_FLOAT, &settingsHz);
-
-	hertzSpinner->set_float_limits(5.0f, 200.0f);
-
-	glui->add_checkbox("Sleep", &settings.enableSleep);
-	glui->add_checkbox("Warm Starting", &settings.enableWarmStarting);
-	glui->add_checkbox("Time of Impact", &settings.enableContinuous);
-	glui->add_checkbox("Sub-Stepping", &settings.enableSubStepping);
+//	glui->add_statictext("Tests");
+//	GLUI_Listbox* testList =
+//		glui->add_listbox("", &testSelection);
+//
+//	glui->add_separator();
+//
+//	GLUI_Spinner* velocityIterationSpinner =
+//		glui->add_spinner("Vel Iters", GLUI_SPINNER_INT, &settings.velocityIterations);
+//	velocityIterationSpinner->set_int_limits(1, 500);
+//
+//	GLUI_Spinner* positionIterationSpinner =
+//		glui->add_spinner("Pos Iters", GLUI_SPINNER_INT, &settings.positionIterations);
+//	positionIterationSpinner->set_int_limits(0, 100);
+//
+//	GLUI_Spinner* hertzSpinner =
+//		glui->add_spinner("Hertz", GLUI_SPINNER_FLOAT, &settingsHz);
+//
+//	hertzSpinner->set_float_limits(5.0f, 200.0f);
+//
+//	glui->add_checkbox("Sleep", &settings.enableSleep);
+//	glui->add_checkbox("Warm Starting", &settings.enableWarmStarting);
+//	glui->add_checkbox("Time of Impact", &settings.enableContinuous);
+//	glui->add_checkbox("Sub-Stepping", &settings.enableSubStepping);
 
 	//glui->add_separator();
 
 	GLUI_Panel* drawPanel =	glui->add_panel("Draw");
-	glui->add_checkbox_to_panel(drawPanel, "Shapes", &settings.drawShapes);
-	glui->add_checkbox_to_panel(drawPanel, "Joints", &settings.drawJoints);
-	glui->add_checkbox_to_panel(drawPanel, "AABBs", &settings.drawAABBs);
-	glui->add_checkbox_to_panel(drawPanel, "Contact Points", &settings.drawContactPoints);
-	glui->add_checkbox_to_panel(drawPanel, "Contact Normals", &settings.drawContactNormals);
-	glui->add_checkbox_to_panel(drawPanel, "Contact Impulses", &settings.drawContactImpulse);
-	glui->add_checkbox_to_panel(drawPanel, "Friction Impulses", &settings.drawFrictionImpulse);
-	glui->add_checkbox_to_panel(drawPanel, "Center of Masses", &settings.drawCOMs);
-	glui->add_checkbox_to_panel(drawPanel, "Statistics", &settings.drawStats);
-	glui->add_checkbox_to_panel(drawPanel, "Profile", &settings.drawProfile);
+    glui->add_checkbox_to_panel(drawPanel, "Trails", &settings.enableTrails);
+	glui->add_checkbox_to_panel(drawPanel, "Stigmergy", &settings.drawStigmergy);
+//	glui->add_checkbox_to_panel(drawPanel, "Joints", &settings.drawJoints);
+//	glui->add_checkbox_to_panel(drawPanel, "AABBs", &settings.drawAABBs);
+//	glui->add_checkbox_to_panel(drawPanel, "Contact Points", &settings.drawContactPoints);
+//	glui->add_checkbox_to_panel(drawPanel, "Contact Normals", &settings.drawContactNormals);
+//	glui->add_checkbox_to_panel(drawPanel, "Contact Impulses", &settings.drawContactImpulse);
+//	glui->add_checkbox_to_panel(drawPanel, "Friction Impulses", &settings.drawFrictionImpulse);
+//	glui->add_checkbox_to_panel(drawPanel, "Center of Masses", &settings.drawCOMs);
+//	glui->add_checkbox_to_panel(drawPanel, "Statistics", &settings.drawStats);
+//	glui->add_checkbox_to_panel(drawPanel, "Profile", &settings.drawProfile);
 
     GLUI_Panel* simPanel =	glui->add_panel("Sim");
     GLUI_RadioGroup *rgroup = glui->add_radiogroup_to_panel(simPanel, &settings.speed);
@@ -621,17 +623,16 @@ void rungui(int argc, char** argv)
     glui->add_radiobutton_to_group(rgroup, "20x");
     glui->add_radiobutton_to_group(rgroup, "50x");
     glui->add_radiobutton_to_group(rgroup, "100x");
-	glui->add_checkbox_to_panel(simPanel, "Trails", &settings.enableTrails);
 
 
 	int32 testCount = 0;
 	TestEntry* e = g_testEntries;
-	while (e->createFcn)
-	{
-		testList->add_item(testCount, e->name);
-		++testCount;
-		++e;
-	}
+//	while (e->createFcn)
+//	{
+//		testList->add_item(testCount, e->name);
+//		++testCount;
+//		++e;
+//	}
 
 	glui->add_button("Pause", 0, Pause);
 	glui->add_button("Single Step", 0, SingleStep);

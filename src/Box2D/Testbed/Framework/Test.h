@@ -57,6 +57,7 @@ struct Settings
 	Settings()
 	{
 		viewCenter.Set(0.0f, 0.0f);
+        viewZoom            = 0.05f;
 		hz                  = 60.0f;
 		velocityIterations  = 8;
 		positionIterations  = 3;
@@ -70,6 +71,7 @@ struct Settings
 		drawCOMs            = 0;
 		drawStats           = 0;
 		drawProfile         = 0;
+        drawStigmergy       = 1;
 		enableWarmStarting  = 1;
 		enableContinuous    = 1;
 		enableSubStepping   = 0;
@@ -110,6 +112,7 @@ struct Settings
 	}
 
 	b2Vec2 viewCenter;
+    float32 viewZoom;
 	float32 hz;
 	int32 velocityIterations;
 	int32 positionIterations;
@@ -123,6 +126,7 @@ struct Settings
 	int32 drawCOMs;
 	int32 drawStats;
 	int32 drawProfile;
+    int32 drawStigmergy;
 	int32 enableWarmStarting;
 	int32 enableContinuous;
 	int32 enableSubStepping;

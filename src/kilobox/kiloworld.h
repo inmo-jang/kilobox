@@ -36,6 +36,8 @@ namespace Kilolib
         {}
         virtual void render() = 0;
         virtual int read_region(float xp, float yp) = 0;
+        virtual void update(float dt) = 0;
+        virtual void set_pheromone(float xp, float yp) {}
     protected:
         float x;
         float y;
@@ -50,6 +52,7 @@ namespace Kilolib
             r(_r)
         {}
         void render();
+        void update(float dt) {}
         int read_region(float xp, float yp);
     protected:
         float r;
@@ -60,16 +63,53 @@ namespace Kilolib
     public:
         Rectangle(float _x, float _y, float _xs, float _ys, int _rt)
         :   Region(_x, _y, _rt),
-            xs(_xs),
-            ys(_ys)
+        xs(_xs),
+        ys(_ys)
         {}
         void render();
+        void update(float dt) {}
         int read_region(float xp, float yp);
     protected:
         float xs;
         float ys;
     };
-
+    
+    class Stigmergy : public Region
+    {
+    public:
+        Stigmergy(float _xs, float _ys, float _decay, float _diffusion, float _radius, float _rate, Settings *_s)
+        :   Region(0, 0, 0),
+        xsize       (_xs),
+        ysize       (_ys),
+        decay       (_decay),
+        diffusion   (_diffusion),
+        radius      (_radius),
+        rate        (_rate),
+        resolution  (200),
+        s           (_s)
+        {
+            xres    = xsize * resolution;
+            yres    = ysize * resolution;
+            data.resize(xres * yres, 0);
+            printf("Creating stigmergy region xs:%f ys:%f decay:%f diff:%f rad:%f rate:%f\n",
+                   xsize, ysize, decay, diffusion, radius, rate);
+        }
+        void render();
+        void update(float dt);
+        int read_region(float xp, float yp);
+        
+        
+    protected:
+        float xsize, ysize, decay, diffusion, radius, rate, resolution;
+        Settings *s;
+    private:
+        int                 xres, yres;
+        float               internal_dt = 0;
+        std::vector<float>  data;
+        float               get_data(int x, int y) {return data.data()[y * xres + x];}
+        void                set_pheromone(float xp, float yp);
+    };
+    
 
     class Kiloworld : public Test
     {
@@ -114,6 +154,7 @@ namespace Kilolib
         }
 
         int get_environment(float x, float y);
+        void set_pheromone(float xp, float yp);
 
 
     private:

@@ -32,6 +32,7 @@ FILE *Evokilo1::lfp         = NULL;
 FILE *Evokilo2::lfp         = NULL;
 FILE *Evokilo3::lfp         = NULL;
 FILE *Evokilo4::lfp         = NULL;
+FILE *Stigmergy_example::lfp= NULL;
 
 
 void Minimal_example::setup()
@@ -45,6 +46,24 @@ void Minimal_example::loop()
         last_update = kilo_ticks;
         set_color(RGB((kilo_ticks>>4)%2,0,0));
     }
+}
+
+void Stigmergy_example::setup()
+{
+    last_update     = kilo_ticks;
+}
+void Stigmergy_example::loop()
+{
+    if (kilo_ticks > last_update + 16)
+    {
+        last_update = kilo_ticks;
+        set_color(RGB((kilo_ticks>>4)%2,0,0));
+        int16_t e = get_environment();
+        
+        printf("data %d\n", e);
+    }
+    set_pheromone();
+
 }
 
 

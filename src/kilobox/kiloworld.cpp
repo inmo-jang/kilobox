@@ -24,6 +24,8 @@ void Kiloworld::Step(Settings* settings)
         simtime = dt * steps;
         for(int i=0; i<bots.size(); i++)
             bots[i]->update(dt, simtime);
+        for(int i=0; i<regions.size(); i++)
+            regions[i]->update(dt);
     }
     //run the default physics and rendering
     Test::Step(settings);
@@ -138,6 +140,12 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
                 //printf("rectangle %f %f %f %f %i\n", x, y, xs, ys, rt);
                 regions.push_back((Region*)(new Rectangle(x, y, xs, ys, rt)));
             }
+            if (wf->PropertyExists(entity, "stigmergy"))
+            {
+                float rate, radius, decay, diffusion;
+                wf->ReadTuple(entity, "stigmergy", 0, 4, "ffff", &rate, &radius, &decay, &diffusion);
+                regions.push_back((Region*)(new Stigmergy(xsize, ysize, decay, diffusion, radius, rate, settings)));
+            }
         }
         if (entity_parent == 0 && !strcmp(typestr, "position"))
         {
@@ -193,6 +201,8 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
                 bots.push_back((Kilobot*)(new Evokilo3(mod, settings, words, logfile.c_str())));
             if (words[0] == "evokilo4")
                 bots.push_back((Kilobot*)(new Evokilo4(mod, settings, words, logfile.c_str())));
+            if (words[0] == "stigmergy_example")
+                bots.push_back((Kilobot*)(new Stigmergy_example(mod, settings, words, logfile.c_str())));
             //----------------------------------------------------------------------------------
             
         }
@@ -381,6 +391,28 @@ void Rectangle::render()
     glDisable(GL_BLEND);
 }
 
+void Stigmergy::render()
+{
+    if (!s->drawStigmergy)
+        return;
+    glEnable(GL_BLEND);
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glRasterPos2f(-1.5, -1.0);
+    // FIXME!! This number is purely by trial and error - why??
+    float zoom = 0.072 / s->viewZoom;
+    glPixelZoom(zoom, zoom);
+    //printf("%f\n",s->viewZoom);
+    std::vector<float> surface(data.size() * 4);
+    for (int i = 0; i < data.size(); i++)
+    {
+        surface[(i<<2) ]    = data[i];
+        surface[(i<<2) + 1] = 0.0;
+        surface[(i<<2) + 2] = 0.0;
+        surface[(i<<2) + 3] = 0.3;
+    }
+    glDrawPixels(xres, yres, GL_RGBA, GL_FLOAT, surface.data());
+    glDisable(GL_BLEND);
+}
 
 int Kiloworld::get_environment(float x, float y)
 {
@@ -395,6 +427,13 @@ int Kiloworld::get_environment(float x, float y)
     return 0;
 }
 
+void Kiloworld::set_pheromone(float xp, float yp)
+{
+    // Only the Stigmery region type overloads the set_pheromone method
+    for (auto &r : regions)
+        r->set_pheromone(xp, yp);
+    //printf("Setting %f %f\n", xp, yp);
+}
 
 int Circle::read_region(float xp, float yp)
 {
@@ -416,6 +455,60 @@ int Rectangle::read_region(float xp, float yp)
 }
 
 
+int Stigmergy::read_region(float xp, float yp)
+{
+    int ixp = (xp + xsize / 2) * resolution;
+    int iyp = (yp + ysize / 2) * resolution;
+    if ((ixp < 0) || (ixp >= xres) || (iyp < 0) || (iyp >= yres))
+        return -1;
+    return get_data(ixp, iyp) > 0.5;
+}
+
+
+void Stigmergy::set_pheromone(float xp, float yp)
+{
+    // Deposit pheromone in the environment
+    // Pheromone is added at <rate>, spread over a circle of <radius>
+    // Pheromone decays exponentially at <decay> dt
+    
+    int ixp = (xp + xsize / 2) * resolution;
+    int iyp = (yp + ysize / 2) * resolution;
+    if ((ixp < 0) || (ixp >= xres) || (iyp < 0) || (iyp >= yres))
+        return;
+    // Brute force circle plotting
+    int ir      = radius * resolution;
+    float ppmsq = resolution * resolution;
+    int irsq    = radius * radius * ppmsq;
+    float rate_per_pixel = rate / (M_PI * radius * radius * ppmsq);
+    for(int y = -ir; y <= +ir; y++)
+    {
+        int ysq     = y * y;
+        int yptr    = (iyp + y) * xres;
+        for(int x = -ir; x <= ir; x++)
+            if(x * x + ysq <= irsq)
+            {
+                int p = yptr + ixp + x;
+                if ((p >= 0) && (p < data.size()))
+                {
+                    data.data()[p] += rate_per_pixel * internal_dt;
+                    if (data.data()[p] > 1.0)
+                        data.data()[p] = 1.0;
+                    //printf("ps %3d %3d %f\n", ixp + x, iyp + y, data.data()[p]);
+                }
+            }
+    }
+}
+
+void Stigmergy::update(float dt)
+{
+    // Do exponential decay
+    // Save the timestep for use elsewhere. This is a bit hacky, should be accessable.
+    
+    // We would put diffusion here if doing it
+    internal_dt = dt;
+    for (auto &i : data)
+        i += i * decay * dt;
+}
 
 
 
