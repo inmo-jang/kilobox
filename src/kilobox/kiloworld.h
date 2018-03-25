@@ -9,8 +9,8 @@
 	#include "freeglut/freeglut.h"
 #endif
 
-#include "../Framework/Test.h"
-#include "../Framework/Render.h"
+#include "Testbed/Framework/Test.h"
+#include "Testbed/Framework/Render.h"
 
 //#include "kilolib.h"
 #include "worldfile.h"

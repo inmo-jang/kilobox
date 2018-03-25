@@ -18,8 +18,8 @@
 #include <cstdio>
 
 
-#include "../Framework/Test.h"
-#include "../Framework/Render.h"
+#include "Testbed/Framework/Test.h"
+#include "Testbed/Framework/Render.h"
 #include "kiloworld.h"
 
 #define DEGTORAD 0.0174532925199432957f

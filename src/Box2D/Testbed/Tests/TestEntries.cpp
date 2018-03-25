@@ -25,7 +25,7 @@
 	#include "freeglut/freeglut.h"
 #endif
 
-#include "kiloworld.h"
+#include "../../../kilobox/kiloworld.h"
 
 
 TestEntry g_testEntries[] =
