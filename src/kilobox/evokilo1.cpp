@@ -13,8 +13,6 @@
 #include <algorithm>
 #include <iterator>
 
-//#include "stage.hh"
-//using namespace Stg;
 
 #include "kilolib.h"
 #include "evokilo1.h"
@@ -34,7 +32,7 @@ FILE *Evokilo3::lfp         = NULL;
 FILE *Evokilo4::lfp         = NULL;
 FILE *Stigmergy_example::lfp= NULL;
 
-
+//-------------------------------------------------------------
 void Minimal_example::setup()
 {
     last_update     = kilo_ticks;
@@ -47,10 +45,15 @@ void Minimal_example::loop()
         set_color(RGB((kilo_ticks>>4)%2,0,0));
     }
 }
+//-------------------------------------------------------------
 
+
+
+//-------------------------------------------------------------
 void Stigmergy_example::setup()
 {
     last_update     = kilo_ticks;
+    enable_pheromone();
 }
 void Stigmergy_example::loop()
 {
@@ -60,11 +63,10 @@ void Stigmergy_example::loop()
         set_color(RGB((kilo_ticks>>4)%2,0,0));
         int16_t e = get_environment();
         
-        printf("data %d\n", e);
+        printf("pheromone %d\n", e);
     }
-    set_pheromone();
-
 }
+//-------------------------------------------------------------
 
 
 
@@ -73,6 +75,7 @@ void Stigmergy_example::loop()
 
 
 
+//-------------------------------------------------------------
 float sigmoid(float x) {return tanh(x);}
 
 float *NN::nn_update(float *inputs)
@@ -211,7 +214,9 @@ void Evokilo1::loop()
     }
     
 }
+//-------------------------------------------------------------
 
+//-------------------------------------------------------------
 void Evokilo2::setup()
 {
     // Set the callbacks
@@ -331,7 +336,9 @@ void Evokilo2::loop()
     }
     
 }
+//-------------------------------------------------------------
 
+//-------------------------------------------------------------
 void Evokilo3::setup()
 {
     // Set the callbacks
@@ -415,8 +422,10 @@ void Evokilo3::loop()
     }
     
 }
+//-------------------------------------------------------------
 
 
+//-------------------------------------------------------------
 void Evokilo4::setup()
 {
     // Set the callbacks
@@ -540,5 +549,6 @@ void Evokilo4::loop()
     }
     
 }
+//-------------------------------------------------------------
 
 

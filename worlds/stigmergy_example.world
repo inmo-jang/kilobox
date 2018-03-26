@@ -1,0 +1,19 @@
+#
+# The stigmergy region holds pheromone from the kilobots. The parameters are:
+#   
+#   rate        Rate of pheromone deposition per second
+#   radius      Radius of circle over which pheromone is deposited (meters)
+#   decay       Exponential decay rate constant
+#   diffusion   Diffusion constant (not implemented yet)
+#
+# The function get_environment() returns 1 if there is > 0.5 pheromone present
+#
+region ( stigmergy [100.0 0.03 -0.01 0.0] )
+
+
+define r0 position ( ctrl "stigmergy_example" )
+
+
+quit_time 300
+r0( pose [ 0.000000  0.000000 0 0 ])
+

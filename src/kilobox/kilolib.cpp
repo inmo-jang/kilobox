@@ -209,6 +209,10 @@ void Kilobot::update(float delta_t, float simtime)
     loop();
 
     // Leave pheromone trace in environment
+    if (pheromone)
+        pos->kworld->set_pheromone(pos->pose.x, pos->pose.y);
+    
+    
     // Do the physics, this always happens every tick, regardless of loop schelduling
     // This consists of working out what forces to apply to get our desired goal velocities
     // and then applying them

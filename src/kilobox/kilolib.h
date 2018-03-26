@@ -424,6 +424,7 @@ namespace Kilolib
             led_g               (1.0),
             led_b               (1.0),
             msgcolour           (0.5),
+            pheromone           (false),
             current_left_m      (0),
             current_right_m     (0),
             timer0_freq         (8e6/1024),
@@ -513,9 +514,11 @@ namespace Kilolib
         std::vector<Pose>           trail;
 
         // LED colour
-        float led_r, led_g, led_b;
+        float                       led_r, led_g, led_b;
         // Message colour
-        Color msgcolour;
+        Color                       msgcolour;
+        // Pheromone enable
+        bool                        pheromone;
         
         // Current motor values
         int                         current_left_m;
@@ -527,6 +530,7 @@ namespace Kilolib
         float                       clkbias;
         // Clock offset in usec
         usec_t                      clkoffset;
+
         
         
 
@@ -719,9 +723,13 @@ namespace Kilolib
         {
             msgcolour = Color(c);
         }
-        void set_pheromone()
+        void enable_pheromone()
         {
-            pos->kworld->set_pheromone(pos->pose.x, pos->pose.y);
+            pheromone = true;
+        }
+        void disable_pheromone()
+        {
+            pheromone = false;
         }
         //-------------------------------------------------
 

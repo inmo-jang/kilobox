@@ -613,7 +613,7 @@ void rungui(int argc, char** argv)
 //	glui->add_checkbox_to_panel(drawPanel, "Statistics", &settings.drawStats);
 //	glui->add_checkbox_to_panel(drawPanel, "Profile", &settings.drawProfile);
 
-    GLUI_Panel* simPanel =	glui->add_panel("Sim");
+    GLUI_Panel* simPanel =	glui->add_panel("Sim speed");
     GLUI_RadioGroup *rgroup = glui->add_radiogroup_to_panel(simPanel, &settings.speed);
     glui->add_radiobutton_to_group(rgroup, "Full");
     glui->add_radiobutton_to_group(rgroup, "1x");

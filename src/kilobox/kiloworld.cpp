@@ -395,13 +395,28 @@ void Stigmergy::render()
 {
     if (!s->drawStigmergy)
         return;
+    
+    const float x = 1.5, y = 1.0;
     glEnable(GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glRasterPos2f(-1.5, -1.0);
-    // FIXME!! This number is purely by trial and error - why??
-    float zoom = 0.072 / s->viewZoom;
-    glPixelZoom(zoom, zoom);
-    //printf("%f\n",s->viewZoom);
+    glRasterPos2f(-x, -y);
+    
+    // To get the pixel zoom ratio, we need to project from world coordinates to
+    // window (pixel) coordinates, then divide by the actual size of the stigmergy
+    // array
+    double m[16], p[16];
+    int v[4];
+    double x1, y1, z1, x2, y2, z2;
+    glGetDoublev(GL_PROJECTION_MATRIX, p);
+    glGetDoublev(GL_MODELVIEW_MATRIX, m);
+    glGetIntegerv(GL_VIEWPORT, v);
+    gluProject(-x, -y, 0, m, p, v, &x1, &y1, &z1);
+    gluProject( x,  y, 0, m, p, v, &x2, &y2, &z2);
+    //printf("%f %f\n", (x2 - x1) / xres, (y2 - y1) / yres);
+    glPixelZoom((x2 - x1) / xres, (y2 - y1) / yres);
+    
+    // Now create a new pixel array that has an alpha channel so we can blend
+    // with transparency
     std::vector<float> surface(data.size() * 4);
     for (int i = 0; i < data.size(); i++)
     {
@@ -411,6 +426,7 @@ void Stigmergy::render()
         surface[(i<<2) + 3] = 0.3;
     }
     glDrawPixels(xres, yres, GL_RGBA, GL_FLOAT, surface.data());
+    glPixelZoom(1.0, 1.0);
     glDisable(GL_BLEND);
 }
 
