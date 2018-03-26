@@ -37,7 +37,7 @@ namespace Kilolib
         virtual void render() = 0;
         virtual int read_region(float xp, float yp) = 0;
         virtual void update(float dt) = 0;
-        virtual void set_pheromone(float xp, float yp) {}
+        virtual void set_pheromone(float xp, float yp, float a) {}
     protected:
         float x;
         float y;
@@ -77,12 +77,12 @@ namespace Kilolib
     class Stigmergy : public Region
     {
     public:
-        Stigmergy(float _xs, float _ys, float _decay, float _diffusion, float _radius, float _rate, Settings *_s)
+        Stigmergy(float _xs, float _ys, float _decay, float _disp, float _radius, float _rate, Settings *_s)
         :   Region(0, 0, 0),
         xsize       (_xs),
         ysize       (_ys),
         decay       (_decay),
-        diffusion   (_diffusion),
+        displacement(_disp),
         radius      (_radius),
         rate        (_rate),
         resolution  (200),
@@ -91,8 +91,8 @@ namespace Kilolib
             xres    = xsize * resolution;
             yres    = ysize * resolution;
             data.resize(xres * yres, 0);
-            printf("Creating stigmergy region xs:%f ys:%f decay:%f diff:%f rad:%f rate:%f\n",
-                   xsize, ysize, decay, diffusion, radius, rate);
+            printf("Creating stigmergy region xs:%f ys:%f decay:%f disp:%f rad:%f rate:%f\n",
+                   xsize, ysize, decay, displacement, radius, rate);
         }
         void render();
         void update(float dt);
@@ -100,14 +100,14 @@ namespace Kilolib
         
         
     protected:
-        float xsize, ysize, decay, diffusion, radius, rate, resolution;
+        float xsize, ysize, decay, displacement, radius, rate, resolution;
         Settings *s;
     private:
         int                 xres, yres;
         float               internal_dt = 0;
         std::vector<float>  data;
         float               get_data(int x, int y) {return data.data()[y * xres + x];}
-        void                set_pheromone(float xp, float yp);
+        void                set_pheromone(float xp, float yp, float a);
     };
     
 
@@ -154,7 +154,7 @@ namespace Kilolib
         }
 
         int get_environment(float x, float y);
-        void set_pheromone(float xp, float yp);
+        void set_pheromone(float xp, float yp, float a);
 
 
     private:

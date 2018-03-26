@@ -443,11 +443,11 @@ int Kiloworld::get_environment(float x, float y)
     return 0;
 }
 
-void Kiloworld::set_pheromone(float xp, float yp)
+void Kiloworld::set_pheromone(float xp, float yp, float a)
 {
     // Only the Stigmery region type overloads the set_pheromone method
     for (auto &r : regions)
-        r->set_pheromone(xp, yp);
+        r->set_pheromone(xp, yp, a);
     //printf("Setting %f %f\n", xp, yp);
 }
 
@@ -481,11 +481,15 @@ int Stigmergy::read_region(float xp, float yp)
 }
 
 
-void Stigmergy::set_pheromone(float xp, float yp)
+void Stigmergy::set_pheromone(float xp, float yp, float a)
 {
     // Deposit pheromone in the environment
     // Pheromone is added at <rate>, spread over a circle of <radius>
     // Pheromone decays exponentially at <decay> dt
+    
+    // Transform displacement in robot frame to world frame
+    xp += -displacement * cos(a);
+    yp += -displacement * sin(a);
     
     int ixp = (xp + xsize / 2) * resolution;
     int iyp = (yp + ysize / 2) * resolution;

@@ -485,7 +485,6 @@ namespace Kilolib
 
 
 
-        void render();
         void rendersensor();
         void renderbody();
         void update_motion();
