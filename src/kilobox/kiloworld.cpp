@@ -423,7 +423,7 @@ void Stigmergy::render()
         surface[(i<<2) ]    = data[i];
         surface[(i<<2) + 1] = 0.0;
         surface[(i<<2) + 2] = 0.0;
-        surface[(i<<2) + 3] = 0.3;
+        surface[(i<<2) + 3] = data[i] * 0.7;
     }
     glDrawPixels(xres, yres, GL_RGBA, GL_FLOAT, surface.data());
     glPixelZoom(1.0, 1.0);
