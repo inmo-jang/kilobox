@@ -420,10 +420,15 @@ void Stigmergy::render()
     std::vector<float> surface(data.size() * 4);
     for (int i = 0; i < data.size(); i++)
     {
-        surface[(i<<2) ]    = data[i];
+        float p;
+        if (s->binaryPhero)
+            p = data[i] > 0.5 ? 1.0 : 0.0;
+        else
+            p = data[i];
+        surface[(i<<2) ]    = p;
         surface[(i<<2) + 1] = 0.0;
         surface[(i<<2) + 2] = 0.0;
-        surface[(i<<2) + 3] = data[i] * 0.7;
+        surface[(i<<2) + 3] = p * 0.7;
     }
     glDrawPixels(xres, yres, GL_RGBA, GL_FLOAT, surface.data());
     glPixelZoom(1.0, 1.0);

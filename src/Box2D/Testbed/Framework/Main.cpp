@@ -602,7 +602,8 @@ void rungui(int argc, char** argv)
 
 	GLUI_Panel* drawPanel =	glui->add_panel("Draw");
     glui->add_checkbox_to_panel(drawPanel, "Trails", &settings.enableTrails);
-	glui->add_checkbox_to_panel(drawPanel, "Stigmergy", &settings.drawStigmergy);
+    glui->add_checkbox_to_panel(drawPanel, "Stigmergy", &settings.drawStigmergy);
+    glui->add_checkbox_to_panel(drawPanel, "Binary pheromone", &settings.binaryPhero);
 //	glui->add_checkbox_to_panel(drawPanel, "Joints", &settings.drawJoints);
 //	glui->add_checkbox_to_panel(drawPanel, "AABBs", &settings.drawAABBs);
 //	glui->add_checkbox_to_panel(drawPanel, "Contact Points", &settings.drawContactPoints);

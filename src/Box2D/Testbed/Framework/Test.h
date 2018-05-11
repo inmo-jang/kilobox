@@ -127,6 +127,7 @@ struct Settings
 	int32 drawStats;
 	int32 drawProfile;
     int32 drawStigmergy;
+    int32 binaryPhero;
 	int32 enableWarmStarting;
 	int32 enableContinuous;
 	int32 enableSubStepping;
