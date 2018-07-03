@@ -11,7 +11,7 @@ int Kilobot::ids = 0;
 
 
 
-void Kilobot::make_kilobot(float xp, float yp, float th)
+void Kilobot::make_kilobot(float xp, float yp, float th, float density)
 {
     // Create the body
     b2BodyDef   kbdef;
@@ -31,7 +31,7 @@ void Kilobot::make_kilobot(float xp, float yp, float th)
     c.m_radius = settings->kbdia/2.0;
     // Create the fixture for the body
     kfdef.shape             = &c;
-    kfdef.density           = settings->kbdensity;
+    kfdef.density           = density ? density : settings->kbdensity;
     kfdef.friction          = settings->kbfriction;
     kfdef.restitution       = settings->kbrestitution;
     kfdef.filter.categoryBits   = KILOBOT;

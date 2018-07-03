@@ -175,6 +175,7 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
             mod->pose.x = x + xoffset;
             mod->pose.y = y + yoffset;
             mod->pose.a = a;
+            mod->density = z;
             mod->world = m_world;
             mod->kworld = this;
             // tokenize the argument string into words

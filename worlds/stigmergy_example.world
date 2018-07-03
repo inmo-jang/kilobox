@@ -15,5 +15,6 @@ define r0 position ( ctrl "stigmergy_example" )
 
 
 quit_time 300
-r0( pose [ 0.000000  0.000000 0 0 ])
+r0( pose [ 0.000000  0.000000 10000 0 ])
+r0( pose [ 0.100000  0.000000 0 0 ])
 

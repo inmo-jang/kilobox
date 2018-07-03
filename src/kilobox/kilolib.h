@@ -369,6 +369,7 @@ public:
     b2World     *world;
     Pose        pose;
     Color       color;
+    float       density;
     Pose GetPose() 
     {
         return pose;
@@ -439,7 +440,7 @@ namespace Kilolib
         {
             // Generate a unique ID, pre-increment so that first ID is 1
             kilo_uid = ++ids;
-            make_kilobot(pos->GetPose().x, pos->GetPose().y, pos->GetPose().a);
+            make_kilobot(pos->GetPose().x, pos->GetPose().y, pos->GetPose().a, pos->density);
 
             // Give the robot a name
             pos->token = string_format("kilobot:%d", kilo_uid);
@@ -491,7 +492,7 @@ namespace Kilolib
         void update(float delta_t, float simtime);
 
     private:
-        void make_kilobot(float xp, float yp, float th);
+        void make_kilobot(float xp, float yp, float th, float density = 0);
         void check_messages();
         
         float   dt;
