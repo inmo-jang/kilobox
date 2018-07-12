@@ -483,8 +483,11 @@ namespace Kilolib
         
         virtual float metric() {return 0.0; }
         
-
-
+        // This method will be called at the end of the simulation, overload
+        // it to eg output stats
+        virtual void finish() {
+            printf("%s\n",__PRETTY_FUNCTION__);
+        }
 
         void rendersensor();
         void renderbody();
@@ -567,11 +570,7 @@ namespace Kilolib
         virtual void setup()    = 0;
         virtual void loop()     = 0;
         
-        // This method will be called at the end of the simulation, overload
-        // it to eg output stats
-        virtual void finish() {
-            //printf("%s\n",__PRETTY_FUNCTION__);
-        }
+
         
         // Message container type
         typedef struct {

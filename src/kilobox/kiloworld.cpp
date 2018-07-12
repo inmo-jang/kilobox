@@ -58,6 +58,9 @@ void Kiloworld::Step(Settings* settings)
 
 void Kiloworld::Finish(Settings *settings)
 {
+    for(int i=0; i<bots.size(); i++)
+        bots[i]->finish();
+    
     printf("Sim about to finish\n");
 }
 
