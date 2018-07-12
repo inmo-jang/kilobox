@@ -61,6 +61,12 @@ void Kiloworld::Finish(Settings *settings)
     for(int i=0; i<bots.size(); i++)
         bots[i]->finish();
     
+    // Get total food
+    int f = 0;
+    for(int i=0; i<bots.size(); i++)
+        f += bots[i]->metric();
+    printf("Food:%8i\n", f);
+    
     printf("Sim about to finish\n");
 }
 
