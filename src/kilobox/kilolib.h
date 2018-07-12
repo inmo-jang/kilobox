@@ -486,7 +486,7 @@ namespace Kilolib
         // This method will be called at the end of the simulation, overload
         // it to eg output stats
         virtual void finish() {
-            printf("%s\n",__PRETTY_FUNCTION__);
+            //printf("%s\n",__PRETTY_FUNCTION__);
         }
 
         void rendersensor();
