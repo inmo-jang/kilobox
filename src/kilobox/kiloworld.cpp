@@ -275,18 +275,28 @@ void Kiloworld::build_world()
     // Get any command line args for the controllers
     ctrlarg_words = split(settings->ctrlargs);
     
-    // Make a grid of arenas
-    for(int y=0; y<ygrid; y++)
+    float radius = wf->ReadFloat(entity, "arena_radius", 0);
+    if (radius == 0)
     {
-        for(int x=0; x<xgrid; x++)
+        // Make a grid of arenas
+        for(int y=0; y<ygrid; y++)
         {
-            // Make arena of fixed lines
-            float xp = (xsize + gridmargin) * x;
-            float yp = (ysize + gridmargin) * y;
-            make_static_box(xsize, ysize, xp, yp);
-            parse_worldfile(xp, yp);
+            for(int x=0; x<xgrid; x++)
+            {
+                // Make arena of fixed lines
+                float xp = (xsize + gridmargin) * x;
+                float yp = (ysize + gridmargin) * y;
+                make_static_box(xsize, ysize, xp, yp);
+                parse_worldfile(xp, yp);
+            }
         }
     }
+    else
+    {
+        make_static_polygon(radius, 64, 0, 0);
+        parse_worldfile(0, 0);
+    }
+    
     printf("Params are:\n");
     printf("kbsigma_vbias       %f\n",settings->kbsigma_vbias);
     printf("kbsigma_omegabias   %f\n",settings->kbsigma_omegabias);
@@ -322,6 +332,35 @@ void Kiloworld::make_static_box(float xs, float ys, float xp, float yp)
     vs[3].Set(xp-xs/2, yp+ys/2);
     b2ChainShape perimeter;
     perimeter.CreateLoop(vs, 4);
+    
+    // Create the fixture attached to the arena body
+    // The fixture is created directly from the shape because
+    // we are not altering the default properties of the created
+    // fixture
+    arena_fixture.push_back(arena->CreateFixture(&perimeter, 0));
+}
+
+void Kiloworld::make_static_polygon(float radius, int sides, float xp, float yp)
+{
+    // Create the body
+    b2BodyDef   arenadef;
+    b2Body      *arena = m_world->CreateBody(&arenadef);
+    
+    if (sides > 64)
+    {
+        printf("Maximum of 100 sided polygon for arena\n");
+    }
+    // Create the shape of the fixture
+    b2Vec2 vs[64];
+    for (int i = 0; i < sides; i++)
+    {
+        float angle = (float)i * 2 * M_PI / sides;
+        float x = xp + radius * cos(angle);
+        float y = yp + radius * sin(angle);
+        vs[i].Set(x, y);
+    }
+    b2ChainShape perimeter;
+    perimeter.CreateLoop(vs, sides);
     
     // Create the fixture attached to the arena body
     // The fixture is created directly from the shape because
