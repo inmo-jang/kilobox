@@ -32,6 +32,7 @@ include_directories (
     ../..
 )
 
+find_package(OpenGL REQUIRED)
 if(APPLE)
 	# We are not using the Apple's framework version, but X11's
 	include_directories( /usr/X11/include )
