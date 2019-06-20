@@ -445,7 +445,7 @@ void Stigmergy::render()
     if (!s->drawStigmergy)
         return;
     
-    const float x = 1.5, y = 1.0;
+    const float x = xsize / 2.0, y = ysize / 2.0;
     glEnable(GL_BLEND);
     glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glRasterPos2f(-x, -y);
