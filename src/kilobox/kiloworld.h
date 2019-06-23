@@ -35,7 +35,7 @@ namespace Kilolib
             rt(_rt)
         {}
         virtual void render() = 0;
-        virtual int read_region(float xp, float yp) = 0;
+        virtual int read_region(float xp, float yp, bool thresh=true) = 0;
         virtual void update(float dt) = 0;
         virtual void set_pheromone(float xp, float yp, float a) {}
     protected:
@@ -53,7 +53,7 @@ namespace Kilolib
         {}
         void render();
         void update(float dt) {}
-        int read_region(float xp, float yp);
+        int read_region(float xp, float yp, bool thresh);
     protected:
         float r;
     };
@@ -68,7 +68,7 @@ namespace Kilolib
         {}
         void render();
         void update(float dt) {}
-        int read_region(float xp, float yp);
+        int read_region(float xp, float yp, bool thresh);
     protected:
         float xs;
         float ys;
@@ -96,7 +96,7 @@ namespace Kilolib
         }
         void render();
         void update(float dt);
-        int read_region(float xp, float yp);
+        int read_region(float xp, float yp, bool thresh);
         
         
     protected:
@@ -154,7 +154,7 @@ namespace Kilolib
             return new Kiloworld(settings);
         }
 
-        int get_environment(float x, float y);
+        int get_environment(float x, float y, bool thresh=true);
         void set_pheromone(float xp, float yp, float a);
 
 

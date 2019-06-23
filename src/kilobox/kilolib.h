@@ -705,7 +705,7 @@ namespace Kilolib
 
         typedef ModelStigmergy::colour_t colour_t;
         //-------------------------------------------------
-        int16_t get_environment()
+        int16_t get_environment(bool thresh = true)
         {
             // THIS IS NOT PART OF THE STANDARD API!!
             // To be implemented using some sort of modulation
@@ -714,7 +714,7 @@ namespace Kilolib
             // Now actually implemented based on the modulation pattern
             // of the DLP projector
 
-            int env = pos->kworld->get_environment(pos->pose.x, pos->pose.y);
+            int env = pos->kworld->get_environment(pos->pose.x, pos->pose.y, thresh);
             //printf("x:%10f y:%10f rt:%2i\n",pos->pose.x, pos->pose.y, env);
             return env;
         }

@@ -484,13 +484,13 @@ void Stigmergy::render()
     glDisable(GL_BLEND);
 }
 
-int Kiloworld::get_environment(float x, float y)
+int Kiloworld::get_environment(float x, float y, bool thresh)
 {
     // Ask all regions if we are in their area. Positive if yes,
     // first to respond is used
     for(int i=regions.size()-1; i>=0; i--)
     {
-        int r = regions[i]->read_region(x, y);
+        int r = regions[i]->read_region(x, y, thresh);
         if (r >= 0)
             return r;
     }
@@ -505,7 +505,7 @@ void Kiloworld::set_pheromone(float xp, float yp, float a)
     //printf("Setting %f %f\n", xp, yp);
 }
 
-int Circle::read_region(float xp, float yp)
+int Circle::read_region(float xp, float yp, bool thresh)
 {
     //printf("Checking circle at %f %f %f %i\n", x, y, r, rt);
     if (sqrt((xp - x) * (xp - x) + (yp - y) * (yp - y)) < r)
@@ -513,7 +513,7 @@ int Circle::read_region(float xp, float yp)
     return -1;
 }
 
-int Rectangle::read_region(float xp, float yp)
+int Rectangle::read_region(float xp, float yp, bool thresh)
 {
     //printf("Checking rectangle at %f %f %f %f%i\n", x, y, xs, ys, rt);
     if (    (xp > (x - xs/2)) 
@@ -525,13 +525,15 @@ int Rectangle::read_region(float xp, float yp)
 }
 
 
-int Stigmergy::read_region(float xp, float yp)
+int Stigmergy::read_region(float xp, float yp, bool thresh)
 {
     int ixp = (xp + xsize / 2) * resolution;
     int iyp = (yp + ysize / 2) * resolution;
     if ((ixp < 0) || (ixp >= xres) || (iyp < 0) || (iyp >= yres))
         return -1;
-    return get_data(ixp, iyp) > 0.5;
+    if (thresh)
+        return get_data(ixp, iyp) > 0.5;
+    return get_data(ixp, iyp) * 1000;
 }
 
 

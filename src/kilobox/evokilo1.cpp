@@ -62,8 +62,9 @@ void Stigmergy_example::loop()
         last_update = kilo_ticks;
         set_color(RGB((kilo_ticks>>4)%2,0,0));
         int16_t e = get_environment();
+        int16_t e1 = get_environment(false);
         
-        printf("pheromone %d\n", e);
+        printf("pheromone %d %d\n", e, e1);
     }
 }
 //-------------------------------------------------------------
