@@ -445,7 +445,8 @@ const char* USAGE =
   "  --args \"str\"   : define an argument string to be passed to all controllers\n"
   "  --help         : print this message\n"
   "  -h             : equivalent to --help\n"
-  "  -?             : equivalent to --help\n"
+  "  --dynamic      : dynamic regions\n"
+  "  -d             : dynamic regions\n"
   "  --seed <num>   : random seed\n"
   "  --params \"p1 p2 ... p12\" : Set simulator parameters (floating point numbers)"
 
@@ -457,7 +458,8 @@ static struct option longopts[] = {
 	{ "help",  optional_argument,   NULL,  'h' },
 	{ "args",  required_argument,   NULL,  'a' },
 	{ "seed",  required_argument,   NULL,  's' },
-	{ "params",  required_argument,   NULL,  'p' },
+    { "params",  required_argument,   NULL,  'p' },
+    { "dynamic",  required_argument,   NULL,  'd' },
 	{ NULL, 0, NULL, 0 }
 };
 
@@ -471,7 +473,7 @@ int main(int argc, char** argv)
 
     int ch=0, optindex=0;
     bool showclock = false;
-    while ((ch = getopt_long(argc, argv, "cgh?", longopts, &optindex)) != -1)
+    while ((ch = getopt_long(argc, argv, "acgh?sdp", longopts, &optindex)) != -1)
     {
         switch(ch)
         {
@@ -496,6 +498,10 @@ int main(int argc, char** argv)
             case 's':
                 settings.seed = strtol(optarg, 0, 10);
                 printf("Set random seed to %d\n", settings.seed);
+                break;
+            case 'd':
+                settings.dynamic = true;
+                printf("Using dynamic regions\n");
                 break;
             case 'p':
             {

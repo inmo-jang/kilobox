@@ -11,6 +11,8 @@
 using namespace Kilolib;
 
 
+
+ 
 void Kiloworld::Step(Settings* settings)
 {
     float dt = settings->hz > 0.0f ? 1.0f / settings->hz : float32(0.0f);
@@ -27,6 +29,10 @@ void Kiloworld::Step(Settings* settings)
         for(int i=0; i<regions.size(); i++)
             regions[i]->update(dt);
     }
+    
+    if (settings->dynamic)
+        update_regions();
+    
     //run the default physics and rendering
     Test::Step(settings);
     

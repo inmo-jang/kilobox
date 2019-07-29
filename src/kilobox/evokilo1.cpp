@@ -553,3 +553,24 @@ void Evokilo4::loop()
 //-------------------------------------------------------------
 
 
+
+void Kiloworld::update_regions()
+{
+    // Set region 0 position to centre of mass of robots
+    float x = 0;
+    float y = 0;
+    for (int i = 0; i < bots.size(); i++)
+    {
+        x += bots[i]->pos->pose.x;
+        y += bots[i]->pos->pose.y;
+    }
+    x /= bots.size();
+    y /= bots.size();
+    if (regions.size() > 0)
+    {
+        regions[0]->set_position(x, y);
+    }
+}
+
+
+

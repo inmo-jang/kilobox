@@ -90,6 +90,7 @@ struct Settings
         elapsed_time        = 0;
         show_time           = false;
         seed                = 1;
+        dynamic             = false;
         //-----------------------
         // Specific kilobot settings
         kbsigma_vbias       = 0.0013;
@@ -139,6 +140,7 @@ struct Settings
 	int32 singleStep;
     int32 time_to_draw;
     int32 seed;
+    bool dynamic;
     std::string ctrlargs;
     std::string worldfile;
     std::string params;

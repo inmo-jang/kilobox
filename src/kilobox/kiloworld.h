@@ -38,6 +38,7 @@ namespace Kilolib
         virtual int read_region(float xp, float yp, bool thresh=true) = 0;
         virtual void update(float dt) = 0;
         virtual void set_pheromone(float xp, float yp, float a) {}
+        void set_position(float xp, float yp) {x = xp; y = yp;}
     protected:
         float x;
         float y;
@@ -193,6 +194,8 @@ namespace Kilolib
         Worldfile *wf;
 
         std::vector<std::string> ctrlarg_words;
+        
+        void update_regions();
        
     };
 
