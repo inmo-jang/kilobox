@@ -144,8 +144,9 @@ namespace Kilolib
         
         void build_world();
         void parse_worldfile(float xoffset, float yoffset);
-        void make_static_box(float xsize, float ysize, float xpos, float ypos);
+        void make_static_box(float xs, float ys, float xp, float yp);
         void make_static_polygon(float radius, int sides, float xpos, float ypos);
+        void make_static_fence(float x1, float y1, float x2, float y2);
         void render_arena();
         void make_kilobot(float xp, float yp, float th);
         

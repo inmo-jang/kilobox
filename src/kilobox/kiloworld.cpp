@@ -161,6 +161,13 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
                 wf->ReadTuple(entity, "stigmergy", 0, 4, "ffff", &rate, &radius, &decay, &diffusion);
                 regions.push_back((Region*)(new Stigmergy(xsize, ysize, decay, diffusion, radius, rate, settings)));
             }
+            if (wf->PropertyExists(entity, "fence"))
+            {
+                float x1, y1, x2, y2;
+                wf->ReadTuple(entity, "fence", 0, 4, "ffff", &x1, &y1, &x2, &y2);
+                printf("fence %f %f %f %f\n", x1, y1, x2, y2);
+                make_static_fence(x1, y1, x2, y2);
+            }
         }
         if (entity_parent == 0 && !strcmp(typestr, "position"))
         {
@@ -346,6 +353,33 @@ void Kiloworld::make_static_box(float xs, float ys, float xp, float yp)
     arena_fixture.push_back(arena->CreateFixture(&perimeter, 0));
 }
 
+void Kiloworld::make_static_fence(float x1, float y1, float x2, float y2)
+{
+    // Create the body
+    b2BodyDef   arenadef;
+    b2Body      *arena = m_world->CreateBody(&arenadef);
+    
+    // Make a rectangle out of line
+    float theta = atan2f(y2 - y1, x2 - x1);
+    const float eps = 0.001;
+    float c1 = eps * cos(theta);
+    float s1 = eps * sin(theta);
+    // Create the shape of the fixture
+    b2Vec2 vs[4];
+    vs[0].Set(x1 + s1, y1 - c1);
+    vs[1].Set(x2 + s1, y2 - c1);
+    vs[2].Set(x2 - s1, y2 + c1);
+    vs[3].Set(x1 - s1, y1 + c1);
+    b2ChainShape perimeter;
+    perimeter.CreateLoop(vs, 4);
+    
+    // Create the fixture attached to the arena body
+    // The fixture is created directly from the shape because
+    // we are not altering the default properties of the created
+    // fixture
+    arena_fixture.push_back(arena->CreateFixture(&perimeter, 0));
+}
+
 void Kiloworld::make_static_polygon(float radius, int sides, float xp, float yp)
 {
     // Create the body
@@ -386,7 +420,7 @@ void Kiloworld::render_arena()
 
         b2Vec2 v1 = vertices[0];
 
-        glColor3f(0.0f, 1.0f, 0.0f);
+        glColor3f(0.0f, 0.5f, 0.0f);
         glBegin(GL_LINES);
         for (int32 i = 1; i < count; ++i)
         {
