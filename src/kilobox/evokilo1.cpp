@@ -101,7 +101,7 @@ else{
 		//random movement by kilobots
 		//choose out of 0,1,2 and assign to variable e.
 		
-		rand_index = rand() % 3;
+		rand_index = rand_soft() % 3;
 		e = my_array[rand_index];
 		
 	}
@@ -187,7 +187,7 @@ void rand_static::loop()
 		//random movement by kilobots
 		//choose out of 0,1,2 and assign to variable e.
 		
-		rand_index = rand() % 3;
+		rand_index = rand_soft() % 3;
 		e = my_array[rand_index];
 		
 	}
@@ -219,7 +219,7 @@ void rand_static::loop()
         // Logging example
         {
             usec_t time = pos->GetWorld()->SimTimeNow();
-            if (time - last_time >= 1e6 && all_out == 1)
+            if (time - last_time >= 1e6)
             {
                 last_time += 1e6;
                 char buf[1024];

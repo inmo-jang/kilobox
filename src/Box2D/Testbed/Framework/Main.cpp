@@ -453,13 +453,13 @@ const char* USAGE =
 ;
 
 static struct option longopts[] = {
-	{ "gui",  optional_argument,   NULL,  'g' },
-	{ "clock",  optional_argument,   NULL,  'c' },
-	{ "help",  optional_argument,   NULL,  'h' },
+	{ "gui", no_argument,   NULL,  'g' },
+	{ "clock",  no_argument,   NULL,  'c' },
+	{ "help",  no_argument,   NULL,  'h' },
 	{ "args",  required_argument,   NULL,  'a' },
 	{ "seed",  required_argument,   NULL,  's' },
     { "params",  required_argument,   NULL,  'p' },
-    { "dynamic",  required_argument,   NULL,  'd' },
+    { "dynamic",  no_argument,   NULL,  'd' },
 	{ NULL, 0, NULL, 0 }
 };
 
