@@ -12,12 +12,21 @@
 #include <sstream>
 #include <algorithm>
 #include <iterator>
+#include <cmath>
 
 
 #include "kilolib.h"
 #include "evokilo1.h"
+//global variable:
+bool delay_term;
+extern bool AOI_reached;
+extern bool all_out;
+extern float offc_x;
+extern float offc_y;
+
 
 using namespace Kilolib;
+
 
 //-------------------------------------------------------------
 // Add your file logging pointer here
@@ -31,22 +40,849 @@ FILE *Evokilo2::lfp         = NULL;
 FILE *Evokilo3::lfp         = NULL;
 FILE *Evokilo4::lfp         = NULL;
 FILE *Stigmergy_example::lfp= NULL;
-
+FILE *Disperse_magenta::lfp = NULL;
+FILE *left_right::lfp	    = NULL;
+FILE *Iterative_deep::lfp   = NULL;
+FILE *forward_right::lfp    = NULL;
+FILE *forward_right_left::lfp    = NULL;
+FILE *forward_right_correct::lfp = NULL;
+FILE *rand_static::lfp 		 = NULL;
 //-------------------------------------------------------------
 void Minimal_example::setup()
 {
     last_update     = kilo_ticks;
+    last_update2    = kilo_ticks;
+	last_update3    = kilo_ticks;
+	count = 0;
+	wait_time = kilo_ticks;
+	wait = 1;
+	AOI_reached = 0;
 }
 void Minimal_example::loop()
 {
+	if(kilo_ticks > last_update3 + 320){
+		last_update3 = kilo_ticks;
+		delay_term = 1;
+		wait = 1;
+	}
+    if(kilo_ticks > wait_time + 160){
+	wait_time = kilo_ticks;
+	wait = 0;
+	
+	}
+	if(wait == 1){
+
+	//do nothing
+	
+	}
+else{
     if (kilo_ticks > last_update + 16)
     {
         last_update = kilo_ticks;
-        set_color(RGB((kilo_ticks>>4)%2,0,0));
-    }
+	region = get_environment();
+
+	if(region == MAGEN){
+		//change colour of kilobot to red
+		set_color(RGB(0,3,0));
+			}
+	else if(region == NON){
+		//change colour of kilobot to black
+		set_color(RGB(3,0,0));
+		
+			}
+    }			
+    if (kilo_ticks > last_update2 + 16){
+	
+	last_update2 = kilo_ticks;
+	//region = get_environment();
+
+	if(region == MAGEN){	
+		count = 0;
+		//random movement by kilobots
+		//choose out of 0,1,2 and assign to variable e.
+		
+		rand_index = rand() % 3;
+		e = my_array[rand_index];
+		
+	}
+	else if(region == NON && count < 1){
+		//stationary
+		count = count + 1;
+	}
+	else{
+		e = 3;
+	}
+	
+	if(e == 0){
+		spinup_motors();		
+		set_motors(kilo_straight_left,kilo_straight_right);
+	}
+	else if(e == 1){
+		spinup_motors();
+		set_motors(kilo_turn_left,0);
+	}
+	else if(e == 2){
+		spinup_motors();
+		set_motors(0,kilo_turn_right);
+	}
+	else{
+		set_motors(0,0);	
+	}
+        }
+}		
+//-----------------------------------------------------
+        // Logging example
+        {
+            usec_t time = pos->GetWorld()->SimTimeNow();
+            if (time - last_time >= 1e6 && AOI_reached ==1)
+            {
+                last_time += 1e6;
+                char buf[1024];
+                snprintf(buf, 1024, "%12s,%12f,%12f,%12f\n", pos->Token(), time/1e6,
+                         pos->GetPose().x, pos->GetPose().y);
+               	Minimal_example::log(buf);
+		
+            }
+        }
+        //-----------------------------------------------------
+    	
+}
+void rand_static::setup()
+{
+    last_update     = kilo_ticks;
+    last_update2    = kilo_ticks;
+    count = 0;
+    all_out = 0;	
+    
+}
+
+
+
+void rand_static::loop()
+{
+    
+
+    if (kilo_ticks > last_update + 16)
+    {
+        last_update = kilo_ticks;
+	region = get_environment();
+
+	if(region == MAGEN){
+		//change colour of kilobot to red
+		set_color(RGB(0,3,0));
+			}
+	else if(region == NON){
+		//change colour of kilobot to black
+		set_color(RGB(3,0,0));
+		
+			}
+    }			
+    if (kilo_ticks > last_update2 + 16){
+	
+	last_update2 = kilo_ticks;
+	//region = get_environment();
+	
+	if(region == MAGEN){	
+		count = 0;
+		//random movement by kilobots
+		//choose out of 0,1,2 and assign to variable e.
+		
+		rand_index = rand() % 3;
+		e = my_array[rand_index];
+		
+	}
+	else if(region == NON && count < 1){
+		//stationary
+		count = count + 1;
+	}
+	else{
+		e = 3;
+	}
+	
+	if(e == 0 ){
+		spinup_motors();		
+		set_motors(kilo_straight_left,kilo_straight_right);
+	}
+	else if(e == 1){
+		spinup_motors();
+		set_motors(kilo_turn_left,0);
+	}
+	else if(e == 2){
+		spinup_motors();
+		set_motors(0,kilo_turn_right);
+	}
+	else{
+		set_motors(0,0);	
+	}
+        }
+	//-----------------------------------------------------
+        // Logging example
+        {
+            usec_t time = pos->GetWorld()->SimTimeNow();
+            if (time - last_time >= 1e6 && all_out == 1)
+            {
+                last_time += 1e6;
+                char buf[1024];
+                snprintf(buf, 1024, "%12s,%12f,%12f,%12f\n", pos->Token(), time/1e6,
+                         pos->GetPose().x, pos->GetPose().y);
+               	rand_static::log(buf);
+            }
+        }
+        //-----------------------------------------------------
+
+    	
+}
+
+void left_right::setup()
+{
+    last_update     = kilo_ticks;
+    last_update2    = kilo_ticks;
+	last_update3    = kilo_ticks;
+	count = 0;
+}
+void left_right::loop()
+{
+	if(kilo_ticks > last_update3 + 320){
+		last_update3 = kilo_ticks;
+		//delay_term = 1;
+	}
+    
+
+    if (kilo_ticks > last_update + 16)
+    {
+        last_update = kilo_ticks;
+	region = get_environment();
+
+	if(region == MAGEN){
+		//change colour of kilobot to red
+		set_color(RGB(0,3,0));
+			}
+	else if(region == NON){
+		//change colour of kilobot to black
+		set_color(RGB(3,0,0));
+		
+			}
+    }			
+    if (kilo_ticks > last_update2 + 16){
+	
+	last_update2 = kilo_ticks;
+	//region = get_environment();
+
+	if(region == MAGEN){	
+		
+		set_motors(kilo_straight_left,0);
+	}
+	
+	else{
+		set_motors(0,kilo_straight_right);	
+	}
+        }
+		
+//-----------------------------------------------------
+        // Logging example
+        {
+            usec_t time = pos->GetWorld()->SimTimeNow();
+            if (time - last_time >= 1e6)
+            {
+                last_time += 1e6;
+                char buf[1024];
+                //snprintf(buf, 1024, "%12s,%12f,%12f,%12f, %12f,%12f\n", pos->Token(), time/1e6,
+                         //pos->GetPose().x, pos->GetPose().y, offc_x, offc_y);
+               	Minimal_example::log(buf);
+            }
+        }
+        //-----------------------------------------------------
+    	
+}
+//define minimal example as problem for random walk in magenta, stationary in none.
+
+void Iterative_deep::setup()
+{
+    last_update     = kilo_ticks;
+	update	    = kilo_ticks;
+    last_update2    = kilo_ticks;
+    last_update3    = kilo_ticks;
+wait_time = kilo_ticks;
+    count = 0;
+    
+}
+void Iterative_deep::loop()
+{
+	if(kilo_ticks > last_update3 + 320){
+		last_update3 = kilo_ticks;
+		//delay_term = 1;
+	}
+    
+    region = get_environment();
+
+ //   if (kilo_ticks > last_update + 16)
+ //  {
+  //      last_update = kilo_ticks;
+	
+
+//	if(region == MAGEN){
+		//change colour of kilobot to red
+//		set_color(RGB(0,3,0));
+//			}
+//	else if(region == NON){
+		//change colour of kilobot to black
+//		set_color(RGB(3,0,0));
+		
+//			}
+    //}	
+	if(kilo_ticks > wait_time + 160){
+	wait_time = kilo_ticks;
+	if(region == MAGEN){
+		
+		if(go_left == 1){
+			set_motors(0,kilo_turn_right);
+			set_color(RGB(3,0,0));
+			
+		}
+        	else{
+			set_motors(kilo_turn_left,kilo_turn_right);
+			set_color(RGB(0,0,3));
+		}
+		
+		
+    		if (kilo_ticks > update + a*16){
+			
+			update = kilo_ticks;
+			if(go_left == 1){
+				a = a + b;
+				go_left = 0;
+			}
+			else{
+				a = 2;
+				go_left = 1;
+			}
+			b = b+1;
+		}
+
+	}
+	else if(region == NON && count < 10){
+		//stationary
+		count = count + 1;
+	}
+	else{
+		set_motors(0,0);
+	}
+	
+	
+	//-----------------------------------------------------
+        // Logging example
+        {
+            usec_t time = pos->GetWorld()->SimTimeNow();
+            if (time - last_time >= 1e6)
+            {
+                last_time += 1e6;
+                char buf[1024];
+                //snprintf(buf, 1024, "%12s,%12f,%12f,%12f\n", pos->Token(), time/1e6,
+                  //       pos->GetPose().x, pos->GetPose().y);
+                Minimal_example::log(buf);
+            }
+        }
+        //-----------------------------------------------------
+
+    }	
+}
+void forward_right::setup()
+{
+    last_update     = kilo_ticks;
+	update	    = kilo_ticks;
+    last_update2    = kilo_ticks;
+    last_update3    = kilo_ticks;
+	wait_time = kilo_ticks;
+    count = 0;
+	wait = 0;
+	
+    
+}
+void forward_right::loop()
+{
+	if(kilo_ticks > last_update3 + 320){
+		last_update3 = kilo_ticks;
+		//delay_term = 1;
+		go_left = 0;
+		
+		
+	}
+    
+    region = get_environment();
+
+	if(kilo_ticks > wait_time + 160){
+		wait_time = kilo_ticks;
+		
+	
+	
+	
+	if(region == MAGEN){
+		//count = 0;
+		if(go_left == 1){
+			set_motors(0,kilo_turn_right);
+			set_color(RGB(3,0,0));
+			
+		}
+        	else{
+			set_motors(kilo_straight_left,kilo_straight_right);
+			set_color(RGB(0,0,3));
+		}
+		
+		
+		
+    		if (kilo_ticks > update + a*16){
+			
+			update = kilo_ticks;
+			if(go_left == 1){
+				a = 8;
+				go_left = 0;
+			}
+			else{
+				a = 1;
+				go_left = 1;
+			}
+			
+		}
+
+	}
+	else if(region == NON && count < 10){
+		//stationary
+		count = count + 1;
+		//set_motors(kilo_turn_left,0);
+		//set_color(RGB(0,3,0));
+	}
+	else{
+		set_motors(0,0);
+	}
+	
+	
+	//-----------------------------------------------------
+        // Logging example
+        {
+            usec_t time = pos->GetWorld()->SimTimeNow();
+            if (time - last_time >= 1e6)
+            {
+                last_time += 1e6;
+                char buf[1024];
+                snprintf(buf, 1024, "%12s,%12f,%12f,%12f\n", pos->Token(), time/1e6,
+                         pos->GetPose().x, pos->GetPose().y);
+                Minimal_example::log(buf);
+            }
+        }
+        //-----------------------------------------------------
+}
+    	
+}
+void forward_right_correct::setup()
+{
+    last_update     = kilo_ticks;
+	update	    = kilo_ticks;
+    last_update2    = kilo_ticks;
+    last_update3    = kilo_ticks;
+	wait_time = kilo_ticks;
+    count = 0;
+	wait = 0;
+	
+    
+}
+void forward_right_correct::loop()
+{
+	if(kilo_ticks > last_update3 + 320){
+		last_update3 = kilo_ticks;
+		//delay_term = 1;
+		go_left = 0;
+		wait = 1;	
+	}
+    
+    region = get_environment();
+	
+		if(kilo_ticks > wait_time + 160){
+			wait_time = kilo_ticks;
+			wait = 0;
+	
+	
+		}
+		if(wait == 1){
+
+
+		//do nothing
+
+		}
+		else{
+		if(region == MAGEN){
+			//count = 0;
+			if(go_left == 1){
+				set_motors(0,kilo_turn_right);
+				set_color(RGB(3,0,0));
+			
+			}
+			else{
+				set_motors(kilo_straight_left,kilo_straight_right);
+				set_color(RGB(0,0,3));
+			}
+		
+		
+		
+	    		if (kilo_ticks > update + a*16){
+			
+				update = kilo_ticks;
+				if(go_left == 1){
+					a = 8;
+					go_left = 0;
+				}
+				else{
+					a = 1;
+					go_left = 1;
+				}
+			
+			}
+
+		}
+		else if(region == NON && count < 10){
+			//stationary
+			count = count + 1;
+			//set_motors(kilo_turn_left,0);
+			//set_color(RGB(0,3,0));
+		}
+		else{
+			set_motors(0,0);
+		}
+	
+	
+		//-----------------------------------------------------
+		// Logging example
+		{
+		    usec_t time = pos->GetWorld()->SimTimeNow();
+		    if (time - last_time >= 1e6)
+		    {
+		        last_time += 1e6;
+		        char buf[1024];
+		        snprintf(buf, 1024, "%12s,%12f,%12f,%12f\n", pos->Token(), time/1e6,
+		                 pos->GetPose().x, pos->GetPose().y);
+		        Minimal_example::log(buf);
+		    }
+		}
+		//-----------------------------------------------------
+	}
+    	
+}
+
+
+
+
+void ring::setup()
+{
+    last_update     = kilo_ticks;
+	update	    = kilo_ticks;
+    last_update2    = kilo_ticks;
+    last_update3    = kilo_ticks;
+	wait_time = kilo_ticks;
+    count = 0;
+	wait = 0;
+	
+    
+}
+#define BLUE 1
+void ring::loop()
+{
+	if(kilo_ticks > last_update3 + 320){
+		last_update3 = kilo_ticks;
+		//delay_term = 1;
+		go_left = 0;
+		wait = 1;	
+	}
+    
+    region = get_environment();
+	
+		if(kilo_ticks > wait_time + 160){
+			wait_time = kilo_ticks;
+			wait = 0;
+	
+	
+		}
+		if(wait == 1){
+
+
+		//do nothing
+
+		}
+		else{
+		if(region == BLUE){
+
+		
+			if(go_right == 1){
+				set_motors(0,kilo_turn_right);
+				set_color(RGB(3,0,0));
+			
+			}
+			else{
+				set_motors(kilo_straight_left,kilo_straight_right);
+				set_color(RGB(0,0,3));
+			}
+		
+		
+		
+	    		if (kilo_ticks > update + a*16){
+			
+				update = kilo_ticks;
+				if(go_left == 1){
+					a = 2;
+					go_left = 0;
+					go_right = 0;
+				}
+				else if(go_right == 1){
+					a = 1;
+					go_left = 0;
+					go_right = 0;
+				}
+				else{
+
+					a = 3;
+					
+					go_right = 0;
+				}
+			
+			}
+
+
+
+
+		}
+		else if(region == MAGEN){
+			//count = 0;
+			if(go_left == 1){
+				set_motors(kilo_turn_left,0);
+				set_color(RGB(3,0,0));
+			
+			}
+			else{
+				set_motors(kilo_straight_left,kilo_straight_right);
+				set_color(RGB(0,0,3));
+			}
+		
+		
+		
+	    		if (kilo_ticks > update + a*16){
+			
+				update = kilo_ticks;
+				if(go_left == 1){
+					a = 8;
+					go_left = 0;
+				}
+				else{
+					a = 1;
+					go_left = 1;
+				}
+			
+			}
+
+		}
+		else if(region == NON && count < 10){
+			//stationary
+			count = count + 1;
+			//set_motors(kilo_turn_left,0);
+			//set_color(RGB(0,3,0));
+		}
+		else{
+			set_motors(0,0);
+		}
+	
+	}
+		//-----------------------------------------------------
+		// Logging example
+		{
+		    usec_t time = pos->GetWorld()->SimTimeNow();
+		    if (time - last_time >= 1e6)
+		    {
+		        last_time += 1e6;
+		        char buf[1024];
+		        snprintf(buf, 1024, "%12s,%12f,%12f,%12f\n", pos->Token(), time/1e6,
+		                 pos->GetPose().x, pos->GetPose().y);
+		        Minimal_example::log(buf);
+		    }
+		}
+		//-----------------------------------------------------
+	
+    	
+}
+
+
+
+
+void forward_right_left::setup()
+{
+    last_update     = kilo_ticks;
+	update	    = kilo_ticks;
+    last_update2    = kilo_ticks;
+    last_update3    = kilo_ticks;
+    count = 0;
+	wait_time = kilo_ticks;
+    
+}
+void forward_right_left::loop()
+{
+	if(kilo_ticks > last_update3 + 10000){
+		last_update3 = kilo_ticks;
+		//delay_term = 1;
+		//go_right = 1;
+		//go_left = 0;
+		//go_forward = 0;
+	}
+    
+    region = get_environment();
+
+ //   if (kilo_ticks > last_update + 16)
+ //  {
+  //      last_update = kilo_ticks;
+	
+
+//	if(region == MAGEN){
+		//change colour of kilobot to red
+//		set_color(RGB(0,3,0));
+//			}
+//	else if(region == NON){
+		//change colour of kilobot to black
+//		set_color(RGB(3,0,0));
+		
+//			}
+    //}	
+	if(kilo_ticks > wait_time + 160){
+	wait_time = kilo_ticks;
+	if(region == MAGEN){
+		
+		if(go_right == 1){
+			set_motors(0,kilo_turn_right);
+			set_color(RGB(3,0,0));
+			
+		}
+        	else if(go_forward == 1){
+			set_motors(kilo_turn_left,kilo_turn_right);
+			set_color(RGB(0,0,3));
+		}
+		else if(go_left == 1){
+			set_motors(kilo_turn_left,0);
+			set_color(RGB(0,3,0));
+		}
+		
+		
+    		if (kilo_ticks > update + a*32){
+			
+			update = kilo_ticks;
+			if(go_forward == 1){
+				a = 3;
+				go_forward = 0;
+				go_left = 1;
+				
+			}
+			else if(go_left == 1){
+				a = 3;
+				go_left = 0;
+				go_right = 1;
+			}
+			else if(go_right == 1){	
+				a = 3;
+				go_right = 0;
+				go_forward = 1;
+			
+			}
+			
+		}
+
+	}
+	else if(region == NON && count < 10){
+		//stationary
+		count = count + 1;
+		set_motors(kilo_straight_left,kilo_straight_right);
+
+	}
+	else{
+		set_motors(0,0);
+	}
+	
+	
+	//-----------------------------------------------------
+        // Logging example
+        {
+            usec_t time = pos->GetWorld()->SimTimeNow();
+            if (time - last_time >= 1e6)
+            {
+                last_time += 1e6;
+                char buf[1024];
+                snprintf(buf, 1024, "%12s,%12f,%12f,%12f\n", pos->Token(), time/1e6,
+                         pos->GetPose().x, pos->GetPose().y);
+                Minimal_example::log(buf);
+            }
+        }
+        //-----------------------------------------------------
+}
+    	
 }
 //-------------------------------------------------------------
+void Disperse_magenta::setup()
+{
 
+    
+  
+	last_update = kilo_ticks;
+	last_update2 = kilo_ticks;
+	kilo_message_tx     = (message_tx_t)&Disperse_magenta::message_tx;
+    	kilo_message_rx     = (message_rx_t)&Disperse_magenta::message_rx;
+	kilo_message_tx_success = (message_tx_success_t)&Disperse_magenta::message_tx_success;
+	
+}
+
+void Disperse_magenta::loop()
+{	
+	int region;
+	int speed;
+	if(kilo_ticks > last_update2 + 10000){
+		last_update2 = kilo_ticks;
+		//delay_term = 1;
+	}
+	if(kilo_ticks > last_update + 32){
+		
+		last_update = kilo_ticks;
+		rand_num = rand_hard();
+		dice = (rand_num % 3);
+		
+		region = get_environment();
+		if(region == MAGEN && new_message == 1){
+			new_message = 0;
+			speed = 200;
+			set_color(RGB(3,0,0));
+		}
+		else if(region == MAGEN && new_message == 0){
+			speed = 100;
+			set_color(RGB(0,3,0));
+		}
+		else if(region == NON && new_message == 1){
+			new_message = 0;			
+			speed = 70;
+			set_color(RGB(0,0,3));
+			
+		}
+		else if(region == NON && new_message == 0){
+			speed = 0;
+			set_color(RGB(3,3,0));
+		}
+		
+		if(dice == 0){		//go foward
+			spinup_motors();		
+			set_motors(speed,speed);
+		}
+		else if(dice == 1){			//go left
+			spinup_motors();
+			set_motors(speed,0);	
+		}
+		else{			//go right
+			spinup_motors();
+			set_motors(0,speed);	
+		}
+		
+	}
+
+	
+}
 
 
 //-------------------------------------------------------------
@@ -554,23 +1390,22 @@ void Evokilo4::loop()
 
 
 
-void Kiloworld::update_regions()
-{
+//void Kiloworld::update_regions_c()
+//{
     // Set region 0 position to centre of mass of robots
-    float x = 0;
-    float y = 0;
-    for (int i = 0; i < bots.size(); i++)
-    {
-        x += bots[i]->pos->pose.x;
-        y += bots[i]->pos->pose.y;
-    }
-    x /= bots.size();
-    y /= bots.size();
-    if (regions.size() > 0)
-    {
-        regions[0]->set_position(x, y);
-    }
-}
-
+//    float x = 0;
+//    float y = 0;
+//    for (int i = 0; i < bots.size(); i++)
+//    {
+//        x += bots[i]->pos->pose.x;
+//        y += bots[i]->pos->pose.y;
+//    }
+//    x /= bots.size();
+//    y /= bots.size();
+//    if (regions.size() > 0)
+//    {
+//        regions[0]->set_position(x, y);
+//    }
+//}
 
 

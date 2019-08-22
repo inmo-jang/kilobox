@@ -411,6 +411,7 @@ namespace Kilolib
 
     class Kilobot
     {
+	friend class Kiloworld;
     public:
         static int ids;
         Kilobot(ModelPosition *_pos, Settings *_settings)
@@ -437,6 +438,7 @@ namespace Kilolib
             kilo_straight_right (70),
             kilo_turn_left      (70),
             kilo_turn_right     (70)
+
         {
             // Generate a unique ID, pre-increment so that first ID is 1
             kilo_uid = ++ids;
@@ -775,8 +777,10 @@ namespace Kilolib
             led_g = col.g;
             led_b = col.b;
         }
-        
+	
+        friend class Kiloworld;
     };
+
 };
 
 

@@ -6,13 +6,22 @@
 
 #include "kiloworld.h"
 #include "evokilo1.h"
+//#include "evokilo1.cpp"
 #include "worldfile.h"
+#include "kilolib.h"
+
+extern bool delay_term;
+extern bool goal_reached;
+bool AOI_reached;
+ float offc_x;
+ float offc_y;
+bool all_out;
+
 
 using namespace Kilolib;
 
 
 
- 
 void Kiloworld::Step(Settings* settings)
 {
     float dt = settings->hz > 0.0f ? 1.0f / settings->hz : float32(0.0f);
@@ -30,9 +39,14 @@ void Kiloworld::Step(Settings* settings)
             regions[i]->update(dt);
     }
     
-    if (settings->dynamic)
-        update_regions();
-    
+    	//if (settings->dynamic && delay_term == 1){
+        //update_regions_offc_target_stop_multiple();
+	//delay_term = 0;
+    	//}
+
+	if(settings ->dynamic){
+		record_end();
+	}
     //run the default physics and rendering
     Test::Step(settings);
     
@@ -88,6 +102,7 @@ static std::vector<std::string> split(std::string s)
 
 void Kiloworld::parse_worldfile(float xoffset, float yoffset)
 {
+	
     // Scan the parsed data structure, first for a global defn, then
     // for everything else, since the global settings my impact on the rest
     // eg for choosing a random bias value
@@ -161,13 +176,6 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
                 wf->ReadTuple(entity, "stigmergy", 0, 4, "ffff", &rate, &radius, &decay, &diffusion);
                 regions.push_back((Region*)(new Stigmergy(xsize, ysize, decay, diffusion, radius, rate, settings)));
             }
-            if (wf->PropertyExists(entity, "fence"))
-            {
-                float x1, y1, x2, y2;
-                wf->ReadTuple(entity, "fence", 0, 4, "ffff", &x1, &y1, &x2, &y2);
-                printf("fence %f %f %f %f\n", x1, y1, x2, y2);
-                make_static_fence(x1, y1, x2, y2);
-            }
         }
         if (entity_parent == 0 && !strcmp(typestr, "position"))
         {
@@ -212,6 +220,20 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
             //----------------------------------------------------------------------------------
             if (words[0] == "minimal_example")
                 bots.push_back((Kilobot*)(new Minimal_example(mod, settings, words, logfile.c_str())));
+		if (words[0] == "rand_static")
+                bots.push_back((Kilobot*)(new rand_static(mod, settings, words, logfile.c_str())));
+	    if (words[0] == "left_right")
+                bots.push_back((Kilobot*)(new left_right(mod, settings, words, logfile.c_str())));
+	    if (words[0] == "iterative_deep")
+                bots.push_back((Kilobot*)(new Iterative_deep(mod, settings, words, logfile.c_str())));
+	    if (words[0] == "forward_right")
+                bots.push_back((Kilobot*)(new forward_right(mod, settings, words, logfile.c_str())));
+		if (words[0] == "forward_right_correct")
+                bots.push_back((Kilobot*)(new forward_right(mod, settings, words, logfile.c_str())));
+	    if (words[0] == "forward_right_left")
+                bots.push_back((Kilobot*)(new forward_right_left(mod, settings, words, logfile.c_str())));
+            if (words[0] == "disperse_magenta")
+                bots.push_back((Kilobot*)(new Disperse_magenta(mod, settings, words, logfile.c_str())));
             if (words[0] == "orbit_star")
                 bots.push_back((Kilobot*)(new Orbit_star(mod, settings, words, logfile.c_str())));
             if (words[0] == "orbit_planet")
@@ -226,6 +248,8 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
                 bots.push_back((Kilobot*)(new Evokilo4(mod, settings, words, logfile.c_str())));
             if (words[0] == "stigmergy_example")
                 bots.push_back((Kilobot*)(new Stigmergy_example(mod, settings, words, logfile.c_str())));
+  //if (words[0] == "kiloworld")
+                //bots.push_back((Kilobot*)(new Kiloworld(mod, settings, words, logfile.c_str())));
             //----------------------------------------------------------------------------------
             
         }
@@ -353,33 +377,6 @@ void Kiloworld::make_static_box(float xs, float ys, float xp, float yp)
     arena_fixture.push_back(arena->CreateFixture(&perimeter, 0));
 }
 
-void Kiloworld::make_static_fence(float x1, float y1, float x2, float y2)
-{
-    // Create the body
-    b2BodyDef   arenadef;
-    b2Body      *arena = m_world->CreateBody(&arenadef);
-    
-    // Make a rectangle out of line
-    float theta = atan2f(y2 - y1, x2 - x1);
-    const float eps = 0.001;
-    float c1 = eps * cos(theta);
-    float s1 = eps * sin(theta);
-    // Create the shape of the fixture
-    b2Vec2 vs[4];
-    vs[0].Set(x1 + s1, y1 - c1);
-    vs[1].Set(x2 + s1, y2 - c1);
-    vs[2].Set(x2 - s1, y2 + c1);
-    vs[3].Set(x1 - s1, y1 + c1);
-    b2ChainShape perimeter;
-    perimeter.CreateLoop(vs, 4);
-    
-    // Create the fixture attached to the arena body
-    // The fixture is created directly from the shape because
-    // we are not altering the default properties of the created
-    // fixture
-    arena_fixture.push_back(arena->CreateFixture(&perimeter, 0));
-}
-
 void Kiloworld::make_static_polygon(float radius, int sides, float xp, float yp)
 {
     // Create the body
@@ -420,7 +417,7 @@ void Kiloworld::render_arena()
 
         b2Vec2 v1 = vertices[0];
 
-        glColor3f(0.0f, 0.5f, 0.0f);
+        glColor3f(0.0f, 1.0f, 0.0f);
         glBegin(GL_LINES);
         for (int32 i = 1; i < count; ++i)
         {
@@ -447,6 +444,7 @@ void Circle::render()
         case(1): glColor4f(0.0, 1.0, 0.0, 0.2);break;
         case(2): glColor4f(1.0, 0.0, 1.0, 0.2);break;
         case(3): glColor4f(0.0, 1.0, 1.0, 0.2);break;
+	case(4): glColor4f(0.0, 0.0, 1.0, 0.5);break;
     }
     glBegin(GL_TRIANGLE_FAN);
     for(int i=0; i<32; i++)
@@ -455,6 +453,7 @@ void Circle::render()
         float xp = x + r * cos(th);
         float yp = y + r * sin(th);
         glVertex2f(xp, yp);
+	
     }
     glEnd();
     glDisable(GL_BLEND);
@@ -470,6 +469,7 @@ void Rectangle::render()
         case(1): glColor4f(0.0, 1.0, 0.0, 0.2);break;
         case(2): glColor4f(1.0, 0.0, 1.0, 0.2);break;
         case(3): glColor4f(0.0, 1.0, 1.0, 0.2);break;
+	case(4): glColor4f(0.0, 1.0, 0.0, 0.8);break;
     }
     glBegin(GL_QUADS);
     glVertex2f(x - xs/2, y - ys/2);
@@ -551,6 +551,8 @@ int Circle::read_region(float xp, float yp, bool thresh)
     if (sqrt((xp - x) * (xp - x) + (yp - y) * (yp - y)) < r)
         return rt;
     return -1;
+	 
+	
 }
 
 int Rectangle::read_region(float xp, float yp, bool thresh)
@@ -625,6 +627,416 @@ void Stigmergy::update(float dt)
     for (auto &i : data)
         i += i * decay * dt;
 }
+void Kiloworld::update_regions()
+{
+//FURTHEST
+//Find centre of mass at time step
+
+	float x = 0;
+	float y = 0;
+	for (int i = 0; i < bots.size(); i++)
+	{
+		x += bots[i]->pos->pose.x;
+		y += bots[i]->pos->pose.y;
+	}
+	x /= bots.size();
+	y /= bots.size();
+	
+	std::vector<float> diffs = {};
+	std::vector<float>::iterator max;
+//Find distances from each kilobot to centre of mass 
+	for(int i = 0; i < bots.size() ; i++)
+	{
+		float diff_x = x - bots[i]->pos->pose.x;
+		float diff_y = y - bots[i]->pos->pose.y;
+		diffs.push_back(std::sqrt(std::pow((diff_x),2) + std::pow((diff_y),2)));
+	}
+//Put region centre over furthest kilobot from the centre of mass
+	max = std::max_element(diffs.begin(),diffs.end());
+	int posit = std::distance(diffs.begin(),max);
+	float new_x = bots[posit] -> pos -> pose.x;
+	float new_y = bots[posit] -> pos -> pose.y;
+	
+	if (regions.size() > 0)
+    	{
+        regions[0]->set_position(new_x, new_y);
+    	}
+	
+	
+} 
+#define MAX_DIST 0.01
+void Kiloworld::update_regions_offc()
+{
+
+//FURTHEST
+//Find centre of mass at time step
+	float offc_x;
+	float offc_y;
+	float x = 0;
+	float y = 0;
+	for (int i = 0; i < bots.size(); i++)
+	{
+		x += bots[i]->pos->pose.x;
+		y += bots[i]->pos->pose.y;
+	}
+	x /= bots.size();
+	y /= bots.size();
+	
+	std::vector<float> diffs = {};
+	std::vector<float>::iterator max;
+//Find distances from each kilobot to centre of mass 
+	for(int i = 0; i < bots.size() ; i++)
+	{
+		float diff_x = x - bots[i]->pos->pose.x;
+		float diff_y = y - bots[i]->pos->pose.y;
+		float distance = std::sqrt(std::pow((diff_x),2) + std::pow((diff_y),2));
+		if(distance > MAX_DIST){
+			large_nbrhood = 1;
+		}
+		diffs.push_back(distance);
+	}
+	
+
+//Put region centre over furthest kilobot from the centre of mass
+	
+	if(large_nbrhood != 1){
+		if (regions.size() > 0)
+    		{
+        		regions[0]->set_position(offc_x, offc_y);
+    		}
+	}
+	else{
+	max = std::max_element(diffs.begin(),diffs.end());
+	int posit = std::distance(diffs.begin(),max);
+	float new_x = bots[posit] -> pos -> pose.x;
+	float new_y = bots[posit] -> pos -> pose.y;
+	
+	
+	float theta = std::atan2(new_y,new_x);
+	offc_x = 0.7*std::cos(theta) + new_x;
+	offc_y = 0.7*std::sin(theta) + new_y;
+		if (regions.size() > 0)
+    		{
+        		regions[0]->set_position(offc_x, offc_y);
+    		}
+	}
+	
+}
+
+ 
+
+void Kiloworld::update_regions_offc_target()
+{
+
+//FURTHEST
+//Find centre of mass at time step
+	float offc_x;
+	float offc_y;
+	float targ_x = 1;
+	float targ_y = 0.1;
+	float x = 0;
+	float y = 0;
+	for (int i = 0; i < bots.size(); i++)
+	{
+		x += bots[i]->pos->pose.x;
+		y += bots[i]->pos->pose.y;
+	}
+	x /= bots.size();
+	y /= bots.size();
+	
+	std::vector<float> diffs = {};
+	std::vector<float>::iterator max;
+//Find distances from each kilobot to centre of mass 
+	for(int i = 0; i < bots.size() ; i++)
+	{
+		float diff_x = targ_x - bots[i]->pos->pose.x; 	//change to x if want furthest from GCM
+		float diff_y = targ_y - bots[i]->pos->pose.y;
+		float distance = std::sqrt(std::pow((diff_x),2) + std::pow((diff_y),2));
+		if(distance > MAX_DIST){
+			large_nbrhood = 1;
+		}
+		diffs.push_back(distance);
+	}
+	
+
+//Put region centre over furthest kilobot from the centre of mass
+	
+	if(large_nbrhood != 1){
+		if (regions.size() > 0)
+    		{
+        		regions[0]->set_position(offc_x, offc_y);
+    		}
+	}
+	else{
+	
+	max = std::max_element(diffs.begin(),diffs.end());
+	int posit = std::distance(diffs.begin(),max);
+	float new_x = bots[posit] -> pos -> pose.x;
+	float new_y = bots[posit] -> pos -> pose.y;
+	
+	float alpha = atan2(-(targ_y + new_y),(new_x - targ_x));
+	
+	float offc_targ_x = 0.075*std::cos(alpha) + new_x;
+	float offc_targ_y = 0.075*std::sin(alpha) + new_y;
+		if (regions.size() > 0)
+    		{
+        		regions[0]->set_position(offc_targ_x, offc_targ_y);
+			regions[1]->set_position(targ_x,targ_y);
+    		}
+	}
+	
+} 
+void Kiloworld::update_regions_offc_target_stop_multiple()
+{
+
+//FURTHEST
+//Find distance from each kilobot (outside goal radius) to target
+	float targ_x = 0.3;			
+	float targ_y = 0.4;
+	float x = 0;
+	float y = 0;
+	std::vector<float> bots_x ={};
+	std::vector<float> bots_y ={};
+	
+	for (int i = 0; i < bots.size(); i++)
+	{	
+			
+		float x_R = bots[i]->pos->pose.x;
+		float y_R = bots[i]->pos->pose.y;
+
+		float difference = std::sqrt(std::pow(targ_x - x_R,2) + std::pow(targ_y - y_R,2));
+		if(difference < 0.2){
+			//don't add to vector
+			//goal_reached = 1;
+			x += x_R;
+			y += y_R;
+		}
+		else{
+			x += x_R;
+			y += y_R;
+			bots_x.push_back(x_R);
+			bots_y.push_back(y_R);
+
+		}
+	}
+
+	if(bots_x.size() != 0){
+
+	x /= bots.size();		//distance from LCM, not GCM
+	y /= bots.size();
+	
+	std::vector<float> diffs = {};
+	
+//Find distances from each kilobot to centre of mass 
+	for(int i = 0; i < bots_x.size() ; i++)
+	{	
+		
+		float diff_x = x - bots_x[i];
+		float diff_y = y - bots_y[i];
+		float distance = std::sqrt(std::pow((diff_x),2) + std::pow((diff_y),2));
+		//if(distance > MAX_DIST){
+		//	large_nbrhood = 1;
+		//}
+		diffs.push_back(distance);
+	}
+	
+	
+	for(int j = 0; j< regions.size() - 1 ; j++){
+		
+		if(bots_x.size() == 0){
+		// do nothing in order to keep regions in their most recent placement
+		
+		}
+		else{
+
+			float far_x;
+			float far_y;
+			int posit;
+		
+
+			std::vector<float>::iterator max = std::max_element(diffs.begin(),diffs.end());
+			posit = std::distance(diffs.begin(),max);
+
+
+			far_x = bots_x[posit];
+			far_y = bots_y[posit];
+
+		
+
+		
+			diffs.erase(diffs.begin() + posit);
+			bots_x.erase(bots_x.begin() + posit);
+			bots_y.erase(bots_y.begin() + posit);
+		
+			std::vector<float> furthest_diff = {};
+			for(int i = 0 ; i < regions_x.size() ; i++){
+		
+				furthest_diff.push_back(std::sqrt(std::pow((regions_x[i] - far_x),2) +std::pow((regions_y[i] - far_y),2)));
+			}
+		
+		
+
+			std::vector<float>::iterator min = std::min_element(furthest_diff.begin(),furthest_diff.end());
+			posit = std::distance(furthest_diff.begin(),min);
+			
+
+			float alpha = atan2((far_y - targ_y),(far_x - targ_x));
+			regions_x[posit] = 0.099*std::cos(alpha) + far_x;
+			a_x[posit] = (0.099*std::cos(alpha) + far_x);
+			regions_y[posit] = 0.099*std::sin(alpha) + far_y;
+			a_y[posit] = (0.099*std::sin(alpha) + far_y);	
+		
+			regions_x[posit] = 100;
+			regions_y[posit] = 100;
+	
+			}
+		}
+	//}
+	regions_x = a_x;
+	regions_y = a_y;
+	
+	
+//Put region centre over furthest kilobot from the centre of mass
+	if(regions.size() > 0){
+						
+		for(int i = 0 ; i < (regions.size() - 1) ; i++){
+			regions[i] ->set_position(a_x[i],a_y[i]);
+	
+		}
+		
+		regions[(regions.size() - 1)] ->set_position(targ_x,targ_y);
+	
+	
+	}
+	}
+else{	
+	AOI_reached = 1;
+	if(regions.size() > 0){
+		for(int i = 0 ; i < (regions.size() - 1) ; i++){
+			regions[i] ->set_position(targ_x,targ_y);
+	
+		}
+		regions[(regions.size() - 1)] ->set_position(targ_x,targ_y);
+	}
+
+}
+} 
+void Kiloworld::update_regions_offc_target_stop()
+{
+
+//FURTHEST
+//Find distance from each kilobot (outside goal radius) to target
+	float targ_x = 0.5;			
+	float targ_y = 0.4;
+	float x = 0;
+	float y = 0;
+	std::vector<float> bots_x ={};
+	std::vector<float> bots_y ={};
+	for (int i = 0; i < bots.size(); i++)
+	{	
+			
+		float x_R = bots[i]->pos->pose.x;
+		float y_R = bots[i]->pos->pose.y;
+
+		float difference = std::sqrt(std::pow(targ_x - x_R,2) + std::pow(targ_y - y_R,2));
+		if(difference < 0.3){
+			//don't add to vector
+			//goal_reached = 1;
+		}
+		else{
+			x += x_R;
+			y += y_R;
+			bots_x.push_back(x_R);
+			bots_y.push_back(y_R);
+
+		}
+	}
+	if(bots_x.size() != 0){
+
+	x /= bots_x.size();		//distance from LCM, not GCM
+	y /= bots_y.size();
+	
+	std::vector<float> diffs = {};
+	std::vector<float>::iterator max;
+//Find distances from each kilobot to centre of mass 
+	for(int i = 0; i < bots_x.size() ; i++)
+	{	
+		
+		float diff_x = x - bots_x[i];
+		float diff_y = y - bots_y[i];
+		float distance = std::sqrt(std::pow((diff_x),2) + std::pow((diff_y),2));
+		//if(distance > MAX_DIST){
+		//	large_nbrhood = 1;
+		//}
+		diffs.push_back(distance);
+	}
+	
+
+//Put region centre over furthest kilobot from the centre of mass
+	max = std::max_element(diffs.begin(),diffs.end());
+	int posit = std::distance(diffs.begin(),max);
+	float new_x;
+	float new_y;
+	if(diffs.size() > 1){
+		new_x = bots_x[posit]; 		//Position of furthest from CM
+		new_y = bots_y[posit]; 
+		
+	}
+	else{
+		new_x = bots_x[0];
+		new_y = bots_y[0];	
+	}
+	float alpha = atan2((new_y - targ_y),(new_x - targ_x));
+	float offc_targ_x = 0.099*std::cos(alpha) + new_x;	//New position of region
+	float offc_targ_y = 0.099*std::sin(alpha) + new_y;
+	if (regions.size() > 0)
+	{
+		regions[0]->set_position(offc_targ_x, offc_targ_y);
+		regions[1]->set_position(targ_x,targ_y);
+		regions[2]->set_position(targ_x,targ_y);
+	}
+	}
+	else{
+		regions[0]->set_position(targ_x,targ_y);
+		regions[1]->set_position(targ_x,targ_y);
+		regions[2]->set_position(targ_x,targ_y);
+		
+	}
+	
+} 
+
+void Kiloworld::record_end(){
+	count_0 = 0;
+	std::vector<float> diffs = {};
+	for(int i = 0 ; i < bots.size() ; i++){
+		float x_R = bots[i]->pos->pose.x;
+ 		float y_R = bots[i]->pos->pose.y;
+		float difference = std::sqrt(std::pow(0 - x_R,2) + std::pow(0 - y_R,2));
+		diffs.push_back(difference);
+	}
+	
+	for(int i = 0; i < diffs.size() ; i++){
+	
+		if(diffs[i] > 0.19999){
+			count_0 = count_0 + 1;
+		}
+		else{
+			//count = 0;
+		}	
+	}
+	if(count_0 == 4){
+		all_out = 1;
+	}
+	else{
+		all_out = 0;
+	}
+	if(regions.size() > 0){
+		regions[0] -> set_position(0,0);
+	}
+	
+}
+
+
 
 
 

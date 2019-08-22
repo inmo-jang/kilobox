@@ -105,12 +105,651 @@ public:
     //------------------------------------------------------------
     // Kilobot user functions
     //------------------------------------------------------------
-    
+    #define MAGEN 2
+	#define NON 0
     void setup();
     void loop();
-    int last_update;
-    
+    uint32_t last_update;
+	uint32_t last_update2;
+uint32_t last_update3;
+	int rand_index;
+	int e;
+	int count;
+	 int region;
+	std::vector<int> my_array = {0,1,2};
+	uint32_t wait_time;
+	uint32_t update;
+	bool wait = 1;
 };
+class rand_static : public Kilobot
+{
+friend class Kiloworld;
+public:
+    // Minimal example kiloobt controller
+    
+    rand_static(ModelPosition *_pos, Settings *_settings,
+                    std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile)
+    {
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&rand_static::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&rand_static::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&rand_static::message_tx_success_dummy;
+        setup();
+    }
+    ~rand_static()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+    
+    
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    
+	#define MAGEN 2
+	#define NON 0
+    void setup();
+    void loop();
+    uint32_t last_update;
+	uint32_t last_update2;
+uint32_t last_update3;
+	int rand_index;
+	int e;
+	int count;
+	 int region;
+	std::vector<int> my_array = {0,1,2};
+	uint32_t wait_time;
+	uint32_t update;
+	bool wait = 1;
+};
+
+class ring : public Kilobot
+{
+public:
+    // Minimal example kiloobt controller
+    
+    ring(ModelPosition *_pos, Settings *_settings,
+                    std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile)
+    {
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&ring::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&ring::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&ring::message_tx_success_dummy;
+        setup();
+    }
+    ~ring()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+    
+    
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    #define MAGEN 2
+	#define NON 0
+    void setup();
+    void loop();
+    uint32_t last_update;
+	uint32_t last_update2;
+uint32_t last_update3;
+uint32_t wait;
+uint32_t wait_time;
+uint32_t update;
+	int rand_index;
+	int e;
+	int count;
+	 int region;
+	std::vector<int> my_array = {0,1,2};
+	int a = 1;
+	bool go_left = 0;
+	bool go_right = 0;
+	bool go_forward = 0;	
+
+};
+class left_right : public Kilobot
+{
+public:
+    // Minimal example kiloobt controller
+    
+    left_right(ModelPosition *_pos, Settings *_settings,
+                    std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile)
+    {
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&left_right::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&left_right::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&left_right::message_tx_success_dummy;
+        setup();
+    }
+    ~left_right()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+    
+    
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    #define MAGEN 2
+	#define NON 0
+    void setup();
+    void loop();
+    uint32_t last_update;
+	uint32_t last_update2;
+uint32_t last_update3;
+	int rand_index;
+	int e;
+	int count;
+	 int region;
+	std::vector<int> my_array = {0,1,2};
+};
+
+
+class Iterative_deep : public Kilobot
+{
+public:
+    // Minimal example kiloobt controller
+    
+    Iterative_deep(ModelPosition *_pos, Settings *_settings,
+                    std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile)
+    {
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&Iterative_deep::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&Iterative_deep::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&Iterative_deep::message_tx_success_dummy;
+        setup();
+    }
+    ~Iterative_deep()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+    
+    friend class Kiloworld;
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    #define MAGEN 2
+	#define NON 0
+    void setup();
+    void loop();
+    uint32_t last_update;
+    uint32_t update;
+    uint32_t last_update2;
+	uint32_t last_update3;
+   uint32_t wait_time;
+    int my_array[4] = {0,1,2,3};
+    int e;
+    int rand_index;
+    int count;
+    int region;
+    bool go_left = 1;
+    int a = 1;
+    int b = 0;
+};
+class forward_right : public Kilobot
+{
+public:
+    // Minimal example kiloobt controller
+    
+    forward_right(ModelPosition *_pos, Settings *_settings,
+                    std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile)
+    {
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&forward_right::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&forward_right::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&forward_right::message_tx_success_dummy;
+        setup();
+    }
+    ~forward_right()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+    
+    friend class Kiloworld;
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    #define MAGEN 2
+	#define NON 0
+    void setup();
+    void loop();
+    uint32_t last_update;
+    uint32_t update;
+    uint32_t last_update2;
+ uint32_t wait_time;
+bool wait;
+	uint32_t last_update3;
+    int my_array[4] = {0,1,2,3};
+    int e;
+    int rand_index;
+    int count;
+    int region;
+    bool go_left = 0;
+    int a = 1;
+    int b = 0;
+};
+class forward_right_correct : public Kilobot
+{
+public:
+    // Minimal example kiloobt controller
+    
+    forward_right_correct(ModelPosition *_pos, Settings *_settings,
+                    std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile)
+    {
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&forward_right_correct::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&forward_right_correct::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&forward_right_correct::message_tx_success_dummy;
+        setup();
+    }
+    ~forward_right_correct()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+    
+    friend class Kiloworld;
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    #define MAGEN 2
+	#define NON 0
+    void setup();
+    void loop();
+    uint32_t last_update;
+    uint32_t update;
+    uint32_t last_update2;
+ uint32_t wait_time;
+bool wait;
+	uint32_t last_update3;
+    int my_array[4] = {0,1,2,3};
+    int e;
+    int rand_index;
+    int count;
+    int region;
+    bool go_left = 0;
+    int a = 1;
+    int b = 0;
+};
+class forward_right_left : public Kilobot
+{
+public:
+    // Minimal example kiloobt controller
+    
+    forward_right_left(ModelPosition *_pos, Settings *_settings,
+                    std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile)
+    {
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&forward_right_left::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&forward_right_left::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&forward_right_left::message_tx_success_dummy;
+        setup();
+    }
+    ~forward_right_left()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+    
+    friend class Kiloworld;
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    #define MAGEN 2
+	#define NON 0
+    void setup();
+    void loop();
+    uint32_t last_update;
+    uint32_t update;
+    uint32_t last_update2;
+	uint32_t last_update3;
+uint32_t wait_time;
+
+    int my_array[4] = {0,1,2,3};
+    int e;
+    int rand_index;
+    int count;
+    int region;
+    bool go_left = 0;
+    bool go_right = 0;
+    bool go_forward = 1;
+    int a = 1;
+    int b = 0;
+};
+class Disperse_magenta : public Kilobot
+{
+public:
+    // Disperse magenta kiloobt controller
+    
+    Disperse_magenta(ModelPosition *_pos, Settings *_settings,
+                    std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile)
+    {
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&Disperse_magenta::message_tx;
+        kilo_message_rx         = (message_rx_t)&Disperse_magenta::message_rx;
+        kilo_message_tx_success = (message_tx_success_t)&Disperse_magenta::message_tx_success;
+        setup();
+    }
+    ~Disperse_magenta()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+    
+    
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    #define MAGEN 2
+	#define NON 0
+    void setup();
+    void loop();
+    uint32_t last_update;
+    uint32_t last_update2;
+    int new_motion;
+    uint8_t rand_num;
+    int dice;
+    int new_message = 0;
+    message_t rcvd_message;
+    int message_sent = 0;
+    message_t transmit_msg;
+
+
+    message_t *message_tx()
+    {
+        return &transmit_msg;
+    }
+
+    void message_tx_success()
+    {
+        message_sent = 1;
+    }
+
+    void message_rx(message_t *msg, distance_measurement_t *dist)
+    {
+	rcvd_message = *msg;
+	new_message = 1;
+    }
+};
+
+
 
 class Stigmergy_example : public Kilobot
 {
@@ -173,7 +812,8 @@ public:
     //------------------------------------------------------------
     // Kilobot user functions
     //------------------------------------------------------------
-    
+    #define MAGEN 2
+	#define NON 0
     void setup();
     void loop();
     int last_update;
@@ -243,7 +883,8 @@ public:
     int last_update;
     uint8_t message_sent = 0;
     message_t msg;
-    
+    #define MAGEN 2
+	#define NON 0
     void setup()
     {
         msg.type = NORMAL;
@@ -334,7 +975,8 @@ public:
     // declare constants
     static const uint8_t TOOCLOSE_DISTANCE = 40; // 40 mm
     static const uint8_t DESIRED_DISTANCE = 60; // 60 mm
-    
+    #define MAGEN 2
+	#define NON 0
     // declare motion variable type
     typedef enum {
         STOP,

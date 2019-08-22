@@ -15,6 +15,8 @@
 //#include "kilolib.h"
 #include "worldfile.h"
 #include <random>
+//#include "kilolib.h"
+
 
 
 namespace Kilolib
@@ -47,16 +49,20 @@ namespace Kilolib
 
     class Circle : public Region
     {
+	//friend class Kiloworld
+    protected:
+        float r;
     public:
         Circle(float _x, float _y, float _r, int _rt)
         :   Region(_x, _y, _rt),
             r(_r)
         {}
+	
         void render();
         void update(float dt) {}
         int read_region(float xp, float yp, bool thresh);
-    protected:
-        float r;
+    
+	friend class Kiloworld;
     };
 
     class Rectangle : public Region
@@ -111,20 +117,21 @@ namespace Kilolib
         void                set_pheromone(float xp, float yp, float a);
     };
     
-
     class Kiloworld : public Test
     {
+	
     public:
         Kiloworld(Settings *_settings)
         :
             settings(_settings),
-            xsize(3.0),
-            ysize(2.0),
+            xsize(2),
+            ysize(1.5),
             xgrid(1),
             ygrid(1),
             gridmargin(0.2),
             simtime(0.0),
             steps(0)
+	    
         {
             // Turn off gravity
             m_world->SetGravity(b2Vec2(0,0));
@@ -138,15 +145,17 @@ namespace Kilolib
             // Tell the engine that we have a contact callback
             m_world->SetContactListener(&contact_listener);
         }
-        
+	friend class Minimal_example;
+	friend class Circle;
+	friend class forward_right;
         void Step(Settings* settings);
         void Finish(Settings* settings);
         
         void build_world();
         void parse_worldfile(float xoffset, float yoffset);
-        void make_static_box(float xs, float ys, float xp, float yp);
+        void make_static_box(float xsize, float ysize, float xpos, float ypos);
         void make_static_polygon(float radius, int sides, float xpos, float ypos);
-        void make_static_fence(float x1, float y1, float x2, float y2);
+	
         void render_arena();
         void make_kilobot(float xp, float yp, float th);
         
@@ -156,14 +165,28 @@ namespace Kilolib
             return new Kiloworld(settings);
         }
 
+
+	int regions_num = 4;
         int get_environment(float x, float y, bool thresh=true);
         void set_pheromone(float xp, float yp, float a);
-
-
+	bool large_nbrhood = 0;
+	bool goal_reached = 0;
+	int count_0 = 0;
+	bool all_out = 0;
+	float offc_targ_x1;
+	float offc_targ_y1;
+	float offc_targ_x2;
+	float offc_targ_y2;
+	std::vector<float> regions_x = std::vector<float>(regions_num - 1);
+	std::vector<float> regions_y = std::vector<float>(regions_num - 1);
+	std::vector<float> a_x = std::vector<float> (regions_num - 1);
+	std::vector<float> a_y = std::vector<float> (regions_num - 1);
+       
+	
     private:
         // These are the global settings
         Settings *settings;
-
+	
         float   xsize;
         float   ysize;
         int     xgrid;
@@ -171,7 +194,7 @@ namespace Kilolib
         float   gridmargin;
         float   simtime;
         int     steps;
-
+	
         std::vector<Kilobot*>   bots;
 
         // Hold list of regions
@@ -197,7 +220,13 @@ namespace Kilolib
         std::vector<std::string> ctrlarg_words;
         
         void update_regions();
-       
+	void update_regions_offc();
+	void update_regions_offc_target();
+	void update_regions_offc_target_stop();
+	void update_regions_offc_target_stop_multiple();
+	void record_end();
+	
+	
     };
 
 
