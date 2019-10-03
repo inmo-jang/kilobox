@@ -226,6 +226,9 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
                 bots.push_back((Kilobot*)(new Evokilo4(mod, settings, words, logfile.c_str())));
             if (words[0] == "stigmergy_example")
                 bots.push_back((Kilobot*)(new Stigmergy_example(mod, settings, words, logfile.c_str())));
+            if (words[0] == "simple_example")
+                bots.push_back((Kilobot*)(new Simple_example(mod, settings, words, logfile.c_str())));                   
+
             //----------------------------------------------------------------------------------
             
         }
@@ -443,10 +446,12 @@ void Circle::render()
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     switch(rt)
     {
-        case(0): glColor4f(0.9, 0.9, 0.9, 1.0);break;
+        case(0): glColor4f(0.9, 0.9, 0.9, 0.2);break;
         case(1): glColor4f(0.0, 1.0, 0.0, 0.2);break;
         case(2): glColor4f(1.0, 0.0, 1.0, 0.2);break;
         case(3): glColor4f(0.0, 1.0, 1.0, 0.2);break;
+        case(4): glColor4f(1.0, 0.0, 0.0, 0.2);break;
+        case(5): glColor4f(0.0, 0.0, 1.0, 0.2);break;
     }
     glBegin(GL_TRIANGLE_FAN);
     for(int i=0; i<32; i++)
@@ -466,10 +471,12 @@ void Rectangle::render()
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     switch(rt)
     {
-        case(0): glColor4f(0.9, 0.9, 0.9, 1.0);break;
+        case(0): glColor4f(0.9, 0.9, 0.9, 0.2);break;
         case(1): glColor4f(0.0, 1.0, 0.0, 0.2);break;
         case(2): glColor4f(1.0, 0.0, 1.0, 0.2);break;
         case(3): glColor4f(0.0, 1.0, 1.0, 0.2);break;
+        case(4): glColor4f(1.0, 0.0, 0.0, 0.2);break;
+        case(5): glColor4f(0.0, 0.0, 1.0, 0.2);break;        
     }
     glBegin(GL_QUADS);
     glVertex2f(x - xs/2, y - ys/2);

@@ -31,6 +31,8 @@ FILE *Evokilo2::lfp         = NULL;
 FILE *Evokilo3::lfp         = NULL;
 FILE *Evokilo4::lfp         = NULL;
 FILE *Stigmergy_example::lfp= NULL;
+FILE *Simple_example::lfp   = NULL;
+
 
 //-------------------------------------------------------------
 void Minimal_example::setup()
@@ -71,6 +73,85 @@ void Stigmergy_example::loop()
 
 
 
+//-------------------------------------------------------------
+#define TASK_NULL 0
+#define TASK_1 1
+#define TASK_2 2
+#define TASK_3 3
+#define TASK_4 4
+#define TASK_5 5
+
+void Simple_example::setup()
+{
+    // Set the callbacks
+    kilo_message_tx         = (message_tx_t)&Simple_example::tx_message;
+    kilo_message_rx         = (message_rx_t)&Simple_example::message_rx;
+
+    // Construct a valid message
+    msg.type    = NORMAL;
+    msg.crc     = message_crc(&msg);
+    last_update     = kilo_ticks;
+}
+void Simple_example::loop()
+{
+    
+    int task_found_neighbour;
+    int task_found_env;
+    if (kilo_ticks > last_update + 16)
+    {
+        last_update = kilo_ticks;
+
+        // Get Task Info from Local Communication
+        task_found_neighbour = allocation;
+
+        // Get Task Info from Environment
+        task_found_env = get_environment(); 
+        if (task_found_env!=0){
+            preferred_task = task_found_env;
+            allocation = TASK_NULL; // Initialise
+        }
+        else if ((task_found_env==0)&&(task_found_neighbour!=0)){
+            preferred_task = task_found_neighbour;
+        }
+
+        
+        
+        printf("Robot %d found Task %d\n",kilo_uid, preferred_task);
+        
+
+
+        // Broadcast         
+        memcpy(msg.data, &preferred_task, 4); // memcpy(dest, src, count_byte)
+        msg.crc     = message_crc(&msg);
+
+        switch (preferred_task){
+            case TASK_NULL: 
+                set_color(RGB(2,2,2));
+                break;
+            case TASK_1: // Task 1
+                set_color(RGB(0,2,0));
+                break;
+            case TASK_2: // Task 2
+                set_color(RGB(2,0,2));     
+                break;
+            case TASK_3: // Task 3
+                set_color(RGB(0,2,2));     
+                break;
+            case TASK_4: // Task 4
+                set_color(RGB(2,0,0));     
+                break;
+
+            case TASK_5: // Task 5
+                set_color(RGB(0,0,2));     
+                break;
+        }
+
+        
+        
+    }
+
+}
+//-------------------------------------------------------------
 
 
 

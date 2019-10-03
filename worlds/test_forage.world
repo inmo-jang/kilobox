@@ -2,8 +2,8 @@
 # Set up world in which there is a central nest surrounded by food with
 # a 10cm gap between them
 region( rectangle [0 0 3 2 2] )
-region( circle [0 0 0.3 0] )
-region( circle [0 0 0.2 1] )
+region( circle [1 -0.5 0.3 0] )
+region( circle [-1 0.5 0.2 1] )
 
 
 
