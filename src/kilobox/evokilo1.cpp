@@ -198,14 +198,26 @@ void Grape::loop()
 
         
         
-        printf("Robot %d found Task %d\n",kilo_uid, preferred_task);
+        // printf("Robot %d found Task %d\n",kilo_uid, preferred_task);
         
+        // Utility Comparison
+        num_iterations = (unsigned short int)std::rand();
 
 
         // Broadcast         
-        memcpy(msg.data, &preferred_task, 4); // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[1], &num_agent_in_task_1, 1); // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[2], &num_agent_in_task_2, 1); // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[3], &num_agent_in_task_3, 1); // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[4], &num_agent_in_task_4, 1); // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[5], &num_agent_in_task_5, 1); // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[6], &num_agent_in_task_6, 1); // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[7], &num_iterations, 2); // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[9], &random_time_stamp, 1); // memcpy(dest, src, count_byte)
+
+        // memcpy(msg.data, &preferred_task, 4); // memcpy(dest, src, count_byte)        
         msg.crc     = message_crc(&msg);
 
+        // LED Display
         switch (preferred_task){
             case TASK_NULL: 
                 set_color(RGB(2,2,2));

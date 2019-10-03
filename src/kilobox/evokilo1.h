@@ -333,10 +333,34 @@ public:
     void loop();
     int last_update;
     
-    message_t   msg;
+ 
+
+    message_t   msg; // Note: Defined as "uint8_t data[9]" in kilolib.h: each uint8_t can be 0 to 255. 
+    // Data for Message    
+    
+    // Locally known information
+    unsigned char satisfied = 0; // data[0]
+    unsigned char num_agent_in_task_1 = 0; // data[1]
+    unsigned char num_agent_in_task_2 = 0; // data[2]
+    unsigned char num_agent_in_task_3 = 0; // data[3]
+    unsigned char num_agent_in_task_4 = 0; // data[4]
+    unsigned char num_agent_in_task_5 = 0; // data[5]
+    unsigned char num_agent_in_task_6 = 0; // data[6]
+    unsigned short int num_iterations = 0; // data[7-8]
+    unsigned char random_time_stamp = 0;   // data[9]
+    
+    // Neighbour's info (for D-Mutex)
+    unsigned short int num_iterations_neighbour = 0;
+    unsigned char random_time_stamp_neighbour = 0;
+
+
+    // Decision Making 
+    unsigned char task_chosen = 0;    
+    
+    // TODO: Will be deleted
     int preferred_task = 0;
     int allocation = 0;
-    int num_msg = 0; // Number of Messages Received
+
 
     // Message transmission callback
     message_t *tx_message() 
@@ -350,10 +374,39 @@ public:
 
         //printf("in message_rx %s\n",__PRETTY_FUNCTION__);
         // Keep running average of message distance
-        int mf;
-        memcpy(&mf, m->data, 4);
-        allocation = mf;
-        num_msg ++;
+        unsigned short int mf;
+        memcpy(&mf, &(m->data[7]), 2); // memcpy(dest, src, count_byte)
+        num_iterations_neighbour = mf;
+
+        unsigned char mg;
+        memcpy(&mg, &(m->data[9]), 1); // memcpy(dest, src, count_byte)
+        random_time_stamp_neighbour = mg;
+
+
+        // D-Mutex Algorithm (T-RO paper, Algorithm 2)
+        if ((num_iterations_neighbour > num_iterations)||((num_iterations_neighbour == num_iterations)&&(random_time_stamp_neighbour > random_time_stamp)))
+        {            
+            memcpy(&mg, &(m->data[1]), 1); 
+            num_agent_in_task_1 = mg; 
+            memcpy(&mg, &(m->data[2]), 1);
+            num_agent_in_task_2 = mg; 
+            memcpy(&mg, &(m->data[3]), 1);
+            num_agent_in_task_3 = mg; 
+            memcpy(&mg, &(m->data[4]), 1);
+            num_agent_in_task_4 = mg; 
+            memcpy(&mg, &(m->data[5]), 1);
+            num_agent_in_task_5 = mg; 
+            memcpy(&mg, &(m->data[6]), 1);
+            num_agent_in_task_6 = mg; 
+
+            num_iterations = num_iterations_neighbour;
+            random_time_stamp = random_time_stamp_neighbour;
+
+            satisfied = 0; 
+
+            printf("Robot %d rx: Partition(%d, %d, %d, %d, %d, %d); Num_Iteration : %d", kilo_uid, num_agent_in_task_1, num_agent_in_task_2, num_agent_in_task_3, num_agent_in_task_4, num_agent_in_task_5, num_agent_in_task_6, num_iterations);
+        }
+  
     }
 
 };
