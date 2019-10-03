@@ -13,8 +13,6 @@
 #include <algorithm>
 #include <iterator>
 
-//#include "stage.hh"
-//using namespace Stg;
 
 #include "kilolib.h"
 #include "evokilo1.h"
@@ -32,8 +30,9 @@ FILE *Evokilo1::lfp         = NULL;
 FILE *Evokilo2::lfp         = NULL;
 FILE *Evokilo3::lfp         = NULL;
 FILE *Evokilo4::lfp         = NULL;
+FILE *Stigmergy_example::lfp= NULL;
 
-
+//-------------------------------------------------------------
 void Minimal_example::setup()
 {
     last_update     = kilo_ticks;
@@ -46,6 +45,29 @@ void Minimal_example::loop()
         set_color(RGB((kilo_ticks>>4)%2,0,0));
     }
 }
+//-------------------------------------------------------------
+
+
+
+//-------------------------------------------------------------
+void Stigmergy_example::setup()
+{
+    last_update     = kilo_ticks;
+    enable_pheromone();
+}
+void Stigmergy_example::loop()
+{
+    if (kilo_ticks > last_update + 16)
+    {
+        last_update = kilo_ticks;
+        set_color(RGB((kilo_ticks>>4)%2,0,0));
+        int16_t e = get_environment();
+        int16_t e1 = get_environment(false);
+        
+        printf("pheromone %d %d\n", e, e1);
+    }
+}
+//-------------------------------------------------------------
 
 
 
@@ -54,6 +76,7 @@ void Minimal_example::loop()
 
 
 
+//-------------------------------------------------------------
 float sigmoid(float x) {return tanh(x);}
 
 float *NN::nn_update(float *inputs)
@@ -192,7 +215,9 @@ void Evokilo1::loop()
     }
     
 }
+//-------------------------------------------------------------
 
+//-------------------------------------------------------------
 void Evokilo2::setup()
 {
     // Set the callbacks
@@ -312,7 +337,9 @@ void Evokilo2::loop()
     }
     
 }
+//-------------------------------------------------------------
 
+//-------------------------------------------------------------
 void Evokilo3::setup()
 {
     // Set the callbacks
@@ -396,8 +423,10 @@ void Evokilo3::loop()
     }
     
 }
+//-------------------------------------------------------------
 
 
+//-------------------------------------------------------------
 void Evokilo4::setup()
 {
     // Set the callbacks
@@ -521,5 +550,27 @@ void Evokilo4::loop()
     }
     
 }
+//-------------------------------------------------------------
+
+
+
+void Kiloworld::update_regions()
+{
+    // Set region 0 position to centre of mass of robots
+    float x = 0;
+    float y = 0;
+    for (int i = 0; i < bots.size(); i++)
+    {
+        x += bots[i]->pos->pose.x;
+        y += bots[i]->pos->pose.y;
+    }
+    x /= bots.size();
+    y /= bots.size();
+    if (regions.size() > 0)
+    {
+        regions[0]->set_position(x, y);
+    }
+}
+
 
 

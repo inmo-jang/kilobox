@@ -1,0 +1,10 @@
+region( circle [0 0 0.2 1] )
+define rstar position ( ctrl "orbit_star")
+define rplanet position ( ctrl "orbit_planet")
+
+#global ( params [ 0.0013 0.0675 0.001 0.01 0.032 20.0 5.0 5.0 0.8 0.1 0.1 0.000114 0.005 0.015 0.95] )
+
+quit_time 300
+rstar( pose [ 0.000000  0.000000 0 0 ])
+rplanet( pose [ 0.000000  0.06000 0 0 ])
+

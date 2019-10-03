@@ -11,7 +11,7 @@ int Kilobot::ids = 0;
 
 
 
-void Kilobot::make_kilobot(float xp, float yp, float th)
+void Kilobot::make_kilobot(float xp, float yp, float th, float density)
 {
     // Create the body
     b2BodyDef   kbdef;
@@ -31,7 +31,7 @@ void Kilobot::make_kilobot(float xp, float yp, float th)
     c.m_radius = settings->kbdia/2.0;
     // Create the fixture for the body
     kfdef.shape             = &c;
-    kfdef.density           = settings->kbdensity;
+    kfdef.density           = density ? density : settings->kbdensity;
     kfdef.friction          = settings->kbfriction;
     kfdef.restitution       = settings->kbrestitution;
     kfdef.filter.categoryBits   = KILOBOT;
@@ -209,6 +209,10 @@ void Kilobot::update(float delta_t, float simtime)
     loop();
 
     // Leave pheromone trace in environment
+    if (pheromone)
+        pos->kworld->set_pheromone(pos->pose.x, pos->pose.y, pos->pose.a);
+    
+    
     // Do the physics, this always happens every tick, regardless of loop schelduling
     // This consists of working out what forces to apply to get our desired goal velocities
     // and then applying them
@@ -248,7 +252,7 @@ void Kilobot::update(float delta_t, float simtime)
     //kilo_uid, xd, yd, omega_goal, xf, yf, torque);
 }
 
-void DrawSolidCircle(const b2Vec2& center, float32 radius, const b2Vec2& axis, const b2Color& color, bool outline, bool solid)
+void DrawSolidCircle(const b2Vec2& center, float32 radius, const float angle, const b2Color& color, bool outline, bool solid)
 {
 	const float32 k_segments = 16.0f;
 	const float32 k_increment = 2.0f * b2_pi / k_segments;
@@ -283,7 +287,7 @@ void DrawSolidCircle(const b2Vec2& center, float32 radius, const b2Vec2& axis, c
         }
         glEnd();
 
-        b2Vec2 p = center + radius * axis;
+        b2Vec2 p = center + radius * b2Vec2(cosf(angle), sinf(angle));
         glBegin(GL_LINES);
         glVertex2f(center.x, center.y);
         glVertex2f(p.x, p.y);
@@ -292,50 +296,15 @@ void DrawSolidCircle(const b2Vec2& center, float32 radius, const b2Vec2& axis, c
 }
 
 
-void Kilobot::render()
-{
-    b2Vec2 mypos = m_body->GetPosition();
-    //float a = m_body->GetAngle();
-    const b2Transform &xf = m_body->GetTransform();
-    //printf("##id:%5d x:%8.4f y:%8.4f\n", kilo_uid, mypos.x, mypos.y);
-    
-    
-    DrawSolidCircle(mypos, settings->kbsenserad, b2Mul(xf, b2Vec2(1.0f, 0.0f)),
-                    b2Color(msgcolour.r, msgcolour.g, msgcolour.b), false, false);
-    DrawSolidCircle(mypos, settings->kbdia/2, b2Mul(xf, b2Vec2(1.0f, 0.0f)), b2Color(led_r, led_g, led_b), true, true);
-    
-    
-    //glColor3f(1,1,1);//white
-    //glBegin(GL_LINES);
-    //for (int i = 0; i < inrange_bots.size(); i++) {
-    //    b2Vec2 theirpos = inrange_bots[i]->m_body->GetPosition();
-    //    //printf("  id:%5d x:%8.4f y:%8.4f\n", inrange_bots[i]->kb_id, theirpos.x, theirpos.y);
-    //    glVertex2f(mypos.x, mypos.y);
-    //    glVertex2f(theirpos.x, theirpos.y);
-    //}
-    //glEnd();
-    
-    if (settings->enableTrails && (trail.size() > 1))
-    {
-        glColor3f(0,0,0);
-        glBegin(GL_LINES);
-        for(int i=0; i<trail.size()-1; i++)
-        {
-            glVertex2f(trail[i].x, trail[i].y);
-            glVertex2f(trail[i+1].x, trail[i+1].y);
-        }
-        glEnd();
-    }
-}
 
 void Kilobot::rendersensor()
 {
     b2Vec2 mypos = m_body->GetPosition();
-    //float a = m_body->GetAngle();
-    const b2Transform &xf = m_body->GetTransform();
+    float a = m_body->GetAngle();
+    //const b2Transform &xf = m_body->GetTransform();
     //printf("##id:%5d x:%8.4f y:%8.4f\n", kilo_uid, mypos.x, mypos.y);
     
-    DrawSolidCircle(mypos, settings->kbsenserad, b2Mul(xf, b2Vec2(1.0f, 0.0f)),
+    DrawSolidCircle(mypos, settings->kbsenserad, a,
                     b2Color(msgcolour.r, msgcolour.g, msgcolour.b), false, false);
 
 }
@@ -343,11 +312,11 @@ void Kilobot::rendersensor()
 void Kilobot::renderbody()
 {
     b2Vec2 mypos = m_body->GetPosition();
-    //float a = m_body->GetAngle();
-    const b2Transform &xf = m_body->GetTransform();
+    float a = m_body->GetAngle();
+    //const b2Transform &xf = m_body->GetTransform();
     //printf("##id:%5d x:%8.4f y:%8.4f\n", kilo_uid, mypos.x, mypos.y);
 
-    DrawSolidCircle(mypos, settings->kbdia/2, b2Mul(xf, b2Vec2(1.0f, 0.0f)), b2Color(led_r, led_g, led_b), true, true);
+    DrawSolidCircle(mypos, settings->kbdia/2, a, b2Color(led_r, led_g, led_b), true, true);
     
     
     //glColor3f(1,1,1);//white

@@ -18,8 +18,8 @@
 #include <cstdio>
 
 
-#include "../Framework/Test.h"
-#include "../Framework/Render.h"
+#include "Testbed/Framework/Test.h"
+#include "Testbed/Framework/Render.h"
 #include "kiloworld.h"
 
 #define DEGTORAD 0.0174532925199432957f
@@ -369,6 +369,7 @@ public:
     b2World     *world;
     Pose        pose;
     Color       color;
+    float       density;
     Pose GetPose() 
     {
         return pose;
@@ -420,11 +421,11 @@ namespace Kilolib
             omega_goal          (0.0),
             xdot_goal           (0.0),
             ydot_goal           (0.0),
-            ambient             (ModelStigmergy::colour_t(0,0,0,0)),
             led_r               (1.0),
             led_g               (1.0),
             led_b               (1.0),
             msgcolour           (0.5),
+            pheromone           (false),
             current_left_m      (0),
             current_right_m     (0),
             timer0_freq         (8e6/1024),
@@ -439,7 +440,7 @@ namespace Kilolib
         {
             // Generate a unique ID, pre-increment so that first ID is 1
             kilo_uid = ++ids;
-            make_kilobot(pos->GetPose().x, pos->GetPose().y, pos->GetPose().a);
+            make_kilobot(pos->GetPose().x, pos->GetPose().y, pos->GetPose().a, pos->density);
 
             // Give the robot a name
             pos->token = string_format("kilobot:%d", kilo_uid);
@@ -482,21 +483,22 @@ namespace Kilolib
         
         virtual float metric() {return 0.0; }
         
+        // This method will be called at the end of the simulation, overload
+        // it to eg output stats
+        virtual void finish() {
+            //printf("%s\n",__PRETTY_FUNCTION__);
+        }
 
-
-
-        void render();
         void rendersensor();
         void renderbody();
         void update_motion();
         void update(float delta_t, float simtime);
 
     private:
-        void make_kilobot(float xp, float yp, float th);
+        void make_kilobot(float xp, float yp, float th, float density = 0);
         void check_messages();
         
         float   dt;
-        double  simtime;
 
         
         // Each kilobot has its own random number generator
@@ -509,17 +511,17 @@ namespace Kilolib
         float                      omega_goal;
         float                      xdot_goal;
         float                      ydot_goal;
-        // Pheromone strength
-        float                      pheromone;
-        ModelStigmergy::colour_t    ambient;
+
         
         // Vector of locations to plot trails
         std::vector<Pose>           trail;
 
         // LED colour
-        float led_r, led_g, led_b;
+        float                       led_r, led_g, led_b;
         // Message colour
-        Color msgcolour;
+        Color                       msgcolour;
+        // Pheromone enable
+        bool                        pheromone;
         
         // Current motor values
         int                         current_left_m;
@@ -531,6 +533,7 @@ namespace Kilolib
         float                       clkbias;
         // Clock offset in usec
         usec_t                      clkoffset;
+
         
         
 
@@ -567,11 +570,7 @@ namespace Kilolib
         virtual void setup()    = 0;
         virtual void loop()     = 0;
         
-        // This method will be called at the end of the simulation, overload
-        // it to eg output stats
-        virtual void finish() {
-            //printf("%s\n",__PRETTY_FUNCTION__);
-        }
+
         
         // Message container type
         typedef struct {
@@ -706,7 +705,7 @@ namespace Kilolib
 
         typedef ModelStigmergy::colour_t colour_t;
         //-------------------------------------------------
-        int16_t get_environment()
+        int16_t get_environment(bool thresh = true)
         {
             // THIS IS NOT PART OF THE STANDARD API!!
             // To be implemented using some sort of modulation
@@ -715,13 +714,21 @@ namespace Kilolib
             // Now actually implemented based on the modulation pattern
             // of the DLP projector
 
-            int env = pos->kworld->get_environment(pos->pose.x, pos->pose.y);
+            int env = pos->kworld->get_environment(pos->pose.x, pos->pose.y, thresh);
             //printf("x:%10f y:%10f rt:%2i\n",pos->pose.x, pos->pose.y, env);
             return env;
         }
         void set_color_msg(float c)
         {
             msgcolour = Color(c);
+        }
+        void enable_pheromone()
+        {
+            pheromone = true;
+        }
+        void disable_pheromone()
+        {
+            pheromone = false;
         }
         //-------------------------------------------------
 

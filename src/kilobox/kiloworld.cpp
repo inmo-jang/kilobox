@@ -11,6 +11,8 @@
 using namespace Kilolib;
 
 
+
+ 
 void Kiloworld::Step(Settings* settings)
 {
     float dt = settings->hz > 0.0f ? 1.0f / settings->hz : float32(0.0f);
@@ -24,7 +26,13 @@ void Kiloworld::Step(Settings* settings)
         simtime = dt * steps;
         for(int i=0; i<bots.size(); i++)
             bots[i]->update(dt, simtime);
+        for(int i=0; i<regions.size(); i++)
+            regions[i]->update(dt);
     }
+    
+    if (settings->dynamic)
+        update_regions();
+    
     //run the default physics and rendering
     Test::Step(settings);
     
@@ -56,6 +64,15 @@ void Kiloworld::Step(Settings* settings)
 
 void Kiloworld::Finish(Settings *settings)
 {
+    for(int i=0; i<bots.size(); i++)
+        bots[i]->finish();
+    
+    // Get total food
+    int f = 0;
+    for(int i=0; i<bots.size(); i++)
+        f += bots[i]->metric();
+    printf("Food:%8i\n", f);
+    
     printf("Sim about to finish\n");
 }
 
@@ -138,6 +155,19 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
                 //printf("rectangle %f %f %f %f %i\n", x, y, xs, ys, rt);
                 regions.push_back((Region*)(new Rectangle(x, y, xs, ys, rt)));
             }
+            if (wf->PropertyExists(entity, "stigmergy"))
+            {
+                float rate, radius, decay, diffusion;
+                wf->ReadTuple(entity, "stigmergy", 0, 4, "ffff", &rate, &radius, &decay, &diffusion);
+                regions.push_back((Region*)(new Stigmergy(xsize, ysize, decay, diffusion, radius, rate, settings)));
+            }
+            if (wf->PropertyExists(entity, "fence"))
+            {
+                float x1, y1, x2, y2;
+                wf->ReadTuple(entity, "fence", 0, 4, "ffff", &x1, &y1, &x2, &y2);
+                printf("fence %f %f %f %f\n", x1, y1, x2, y2);
+                make_static_fence(x1, y1, x2, y2);
+            }
         }
         if (entity_parent == 0 && !strcmp(typestr, "position"))
         {
@@ -167,6 +197,7 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
             mod->pose.x = x + xoffset;
             mod->pose.y = y + yoffset;
             mod->pose.a = a;
+            mod->density = z;
             mod->world = m_world;
             mod->kworld = this;
             // tokenize the argument string into words
@@ -193,6 +224,8 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
                 bots.push_back((Kilobot*)(new Evokilo3(mod, settings, words, logfile.c_str())));
             if (words[0] == "evokilo4")
                 bots.push_back((Kilobot*)(new Evokilo4(mod, settings, words, logfile.c_str())));
+            if (words[0] == "stigmergy_example")
+                bots.push_back((Kilobot*)(new Stigmergy_example(mod, settings, words, logfile.c_str())));
             //----------------------------------------------------------------------------------
             
         }
@@ -255,18 +288,28 @@ void Kiloworld::build_world()
     // Get any command line args for the controllers
     ctrlarg_words = split(settings->ctrlargs);
     
-    // Make a grid of arenas
-    for(int y=0; y<ygrid; y++)
+    float radius = wf->ReadFloat(entity, "arena_radius", 0);
+    if (radius == 0)
     {
-        for(int x=0; x<xgrid; x++)
+        // Make a grid of arenas
+        for(int y=0; y<ygrid; y++)
         {
-            // Make arena of fixed lines
-            float xp = (xsize + gridmargin) * x;
-            float yp = (ysize + gridmargin) * y;
-            make_static_box(xsize, ysize, xp, yp);
-            parse_worldfile(xp, yp);
+            for(int x=0; x<xgrid; x++)
+            {
+                // Make arena of fixed lines
+                float xp = (xsize + gridmargin) * x;
+                float yp = (ysize + gridmargin) * y;
+                make_static_box(xsize, ysize, xp, yp);
+                parse_worldfile(xp, yp);
+            }
         }
     }
+    else
+    {
+        make_static_polygon(radius, 64, 0, 0);
+        parse_worldfile(0, 0);
+    }
+    
     printf("Params are:\n");
     printf("kbsigma_vbias       %f\n",settings->kbsigma_vbias);
     printf("kbsigma_omegabias   %f\n",settings->kbsigma_omegabias);
@@ -310,6 +353,62 @@ void Kiloworld::make_static_box(float xs, float ys, float xp, float yp)
     arena_fixture.push_back(arena->CreateFixture(&perimeter, 0));
 }
 
+void Kiloworld::make_static_fence(float x1, float y1, float x2, float y2)
+{
+    // Create the body
+    b2BodyDef   arenadef;
+    b2Body      *arena = m_world->CreateBody(&arenadef);
+    
+    // Make a rectangle out of line
+    float theta = atan2f(y2 - y1, x2 - x1);
+    const float eps = 0.001;
+    float c1 = eps * cos(theta);
+    float s1 = eps * sin(theta);
+    // Create the shape of the fixture
+    b2Vec2 vs[4];
+    vs[0].Set(x1 + s1, y1 - c1);
+    vs[1].Set(x2 + s1, y2 - c1);
+    vs[2].Set(x2 - s1, y2 + c1);
+    vs[3].Set(x1 - s1, y1 + c1);
+    b2ChainShape perimeter;
+    perimeter.CreateLoop(vs, 4);
+    
+    // Create the fixture attached to the arena body
+    // The fixture is created directly from the shape because
+    // we are not altering the default properties of the created
+    // fixture
+    arena_fixture.push_back(arena->CreateFixture(&perimeter, 0));
+}
+
+void Kiloworld::make_static_polygon(float radius, int sides, float xp, float yp)
+{
+    // Create the body
+    b2BodyDef   arenadef;
+    b2Body      *arena = m_world->CreateBody(&arenadef);
+    
+    if (sides > 64)
+    {
+        printf("Maximum of 100 sided polygon for arena\n");
+    }
+    // Create the shape of the fixture
+    b2Vec2 vs[64];
+    for (int i = 0; i < sides; i++)
+    {
+        float angle = (float)i * 2 * M_PI / sides;
+        float x = xp + radius * cos(angle);
+        float y = yp + radius * sin(angle);
+        vs[i].Set(x, y);
+    }
+    b2ChainShape perimeter;
+    perimeter.CreateLoop(vs, sides);
+    
+    // Create the fixture attached to the arena body
+    // The fixture is created directly from the shape because
+    // we are not altering the default properties of the created
+    // fixture
+    arena_fixture.push_back(arena->CreateFixture(&perimeter, 0));
+}
+
 
 void Kiloworld::render_arena()
 {
@@ -321,7 +420,7 @@ void Kiloworld::render_arena()
 
         b2Vec2 v1 = vertices[0];
 
-        glColor3f(0.0f, 1.0f, 0.0f);
+        glColor3f(0.0f, 0.5f, 0.0f);
         glBegin(GL_LINES);
         for (int32 i = 1; i < count; ++i)
         {
@@ -381,22 +480,72 @@ void Rectangle::render()
     glDisable(GL_BLEND);
 }
 
+void Stigmergy::render()
+{
+    if (!s->drawStigmergy)
+        return;
+    
+    const float x = xsize / 2.0, y = ysize / 2.0;
+    glEnable(GL_BLEND);
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glRasterPos2f(-x, -y);
+    
+    // To get the pixel zoom ratio, we need to project from world coordinates to
+    // window (pixel) coordinates, then divide by the actual size of the stigmergy
+    // array
+    double m[16], p[16];
+    int v[4];
+    double x1, y1, z1, x2, y2, z2;
+    glGetDoublev(GL_PROJECTION_MATRIX, p);
+    glGetDoublev(GL_MODELVIEW_MATRIX, m);
+    glGetIntegerv(GL_VIEWPORT, v);
+    gluProject(-x, -y, 0, m, p, v, &x1, &y1, &z1);
+    gluProject( x,  y, 0, m, p, v, &x2, &y2, &z2);
+    //printf("%f %f\n", (x2 - x1) / xres, (y2 - y1) / yres);
+    glPixelZoom((x2 - x1) / xres, (y2 - y1) / yres);
+    
+    // Now create a new pixel array that has an alpha channel so we can blend
+    // with transparency
+    std::vector<float> surface(data.size() * 4);
+    for (int i = 0; i < data.size(); i++)
+    {
+        float p;
+        if (s->binaryPhero)
+            p = data[i] > 0.5 ? 1.0 : 0.0;
+        else
+            p = data[i];
+        surface[(i<<2) ]    = p;
+        surface[(i<<2) + 1] = 0.0;
+        surface[(i<<2) + 2] = 0.0;
+        surface[(i<<2) + 3] = p * 0.7;
+    }
+    glDrawPixels(xres, yres, GL_RGBA, GL_FLOAT, surface.data());
+    glPixelZoom(1.0, 1.0);
+    glDisable(GL_BLEND);
+}
 
-int Kiloworld::get_environment(float x, float y)
+int Kiloworld::get_environment(float x, float y, bool thresh)
 {
     // Ask all regions if we are in their area. Positive if yes,
     // first to respond is used
     for(int i=regions.size()-1; i>=0; i--)
     {
-        int r = regions[i]->read_region(x, y);
+        int r = regions[i]->read_region(x, y, thresh);
         if (r >= 0)
             return r;
     }
     return 0;
 }
 
+void Kiloworld::set_pheromone(float xp, float yp, float a)
+{
+    // Only the Stigmery region type overloads the set_pheromone method
+    for (auto &r : regions)
+        r->set_pheromone(xp, yp, a);
+    //printf("Setting %f %f\n", xp, yp);
+}
 
-int Circle::read_region(float xp, float yp)
+int Circle::read_region(float xp, float yp, bool thresh)
 {
     //printf("Checking circle at %f %f %f %i\n", x, y, r, rt);
     if (sqrt((xp - x) * (xp - x) + (yp - y) * (yp - y)) < r)
@@ -404,7 +553,7 @@ int Circle::read_region(float xp, float yp)
     return -1;
 }
 
-int Rectangle::read_region(float xp, float yp)
+int Rectangle::read_region(float xp, float yp, bool thresh)
 {
     //printf("Checking rectangle at %f %f %f %f%i\n", x, y, xs, ys, rt);
     if (    (xp > (x - xs/2)) 
@@ -416,6 +565,66 @@ int Rectangle::read_region(float xp, float yp)
 }
 
 
+int Stigmergy::read_region(float xp, float yp, bool thresh)
+{
+    int ixp = (xp + xsize / 2) * resolution;
+    int iyp = (yp + ysize / 2) * resolution;
+    if ((ixp < 0) || (ixp >= xres) || (iyp < 0) || (iyp >= yres))
+        return -1;
+    if (thresh)
+        return get_data(ixp, iyp) > 0.5;
+    return get_data(ixp, iyp) * 1000;
+}
+
+
+void Stigmergy::set_pheromone(float xp, float yp, float a)
+{
+    // Deposit pheromone in the environment
+    // Pheromone is added at <rate>, spread over a circle of <radius>
+    // Pheromone decays exponentially at <decay> dt
+    
+    // Transform displacement in robot frame to world frame
+    xp += -displacement * cos(a);
+    yp += -displacement * sin(a);
+    
+    int ixp = (xp + xsize / 2) * resolution;
+    int iyp = (yp + ysize / 2) * resolution;
+    if ((ixp < 0) || (ixp >= xres) || (iyp < 0) || (iyp >= yres))
+        return;
+    // Brute force circle plotting
+    int ir      = radius * resolution;
+    float ppmsq = resolution * resolution;
+    int irsq    = radius * radius * ppmsq;
+    float rate_per_pixel = rate / (M_PI * radius * radius * ppmsq);
+    for(int y = -ir; y <= +ir; y++)
+    {
+        int ysq     = y * y;
+        int yptr    = (iyp + y) * xres;
+        for(int x = -ir; x <= ir; x++)
+            if(x * x + ysq <= irsq)
+            {
+                int p = yptr + ixp + x;
+                if ((p >= 0) && (p < data.size()))
+                {
+                    data.data()[p] += rate_per_pixel * internal_dt;
+                    if (data.data()[p] > 1.0)
+                        data.data()[p] = 1.0;
+                    //printf("ps %3d %3d %f\n", ixp + x, iyp + y, data.data()[p]);
+                }
+            }
+    }
+}
+
+void Stigmergy::update(float dt)
+{
+    // Do exponential decay
+    // Save the timestep for use elsewhere. This is a bit hacky, should be accessable.
+    
+    // We would put diffusion here if doing it
+    internal_dt = dt;
+    for (auto &i : data)
+        i += i * decay * dt;
+}
 
 
 
