@@ -12,9 +12,8 @@ Xcode project with the standard commands.
 Build instructions
 ==================
 
-Tested on OSX 10.9, OSX 10.10, Ubuntu 14.04. Many deprecated warnings
-about glut with OSX builds. Not sure what dependencies are needed for
-Ubuntu, haven't tried with a clean install. Uses C++11.
+Tested on OSX 10.9, OSX 10.10, Ubuntu 14.04. Seems also working on macOS Mojave 10.14.2. 
+Many deprecated warnings about glut with OSX builds. Not sure what dependencies are needed for Ubuntu, haven't tried with a clean install. Uses C++11.
 
 
 git clone https://siteks@bitbucket.org/siteks/kilobox.git
@@ -27,8 +26,11 @@ make
 Example simulation
 ==================
 
-./Testbed/Testbed ../kilobox/worlds/orbit.world
-./Testbed/Testbed ../kilobox/worlds/test_forage.world
+At "kilobox_build" folder,
+
+./src/kilobox/kilobox ../worlds/orbit.world
+./src/kilobox/kilobox ../worlds/test_forage.world
+
 
 
 Notes
