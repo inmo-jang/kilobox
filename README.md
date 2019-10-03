@@ -34,6 +34,8 @@ At ``kilobox_build`` folder,
 ./src/kilobox/kilobox ../worlds/simple_example.world
 ``
 
+Expected result will be https://youtu.be/lyxVm6HM0L4.
+
 
 Notes
 =====
@@ -167,7 +169,7 @@ Setting the message callbacks has to be done with some extra syntax
 Some code has to be added elsewhere to fit everything together. So:
 
 1) Write a controller class in ``evokilo1.cpp`` and ``evokilo1.h``, with the class inheriting from Kilobot
-2) At the beginning of evokilo1.cpp, add another line to initialise the logging file pointer
+2) At the beginning of ``evokilo1.cpp``, add another line to initialise the logging file pointer
 3) Modify ``kiloworld.cpp`` around line 210 so that a reference in the world file will
     result in the instantiation of your new controller
 
