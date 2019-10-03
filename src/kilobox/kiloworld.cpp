@@ -227,7 +227,9 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
             if (words[0] == "stigmergy_example")
                 bots.push_back((Kilobot*)(new Stigmergy_example(mod, settings, words, logfile.c_str())));
             if (words[0] == "simple_example")
-                bots.push_back((Kilobot*)(new Simple_example(mod, settings, words, logfile.c_str())));                   
+                bots.push_back((Kilobot*)(new Simple_example(mod, settings, words, logfile.c_str())));
+            if (words[0] == "grape")
+                bots.push_back((Kilobot*)(new Grape(mod, settings, words, logfile.c_str())));                
 
             //----------------------------------------------------------------------------------
             
