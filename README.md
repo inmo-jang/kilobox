@@ -21,6 +21,7 @@ Many deprecated warnings about glut with OSX builds. Not sure what dependencies 
 git clone https://github.com/inmo-jang/kilobox.git
 cd kilobox
 mkdir kilobox_build
+cd kilobox_build
 cmake .. 
 make
 ```
