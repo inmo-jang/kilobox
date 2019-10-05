@@ -14,7 +14,7 @@ Xcode project with the standard commands.
 Build instructions
 ==================
 
-Tested on OSX 10.9, OSX 10.10, Ubuntu 14.04. Seems also working on macOS Mojave 10.14.2. 
+Tested on OSX 10.9, OSX 10.10, macOS Sierra 10.12, Ubuntu 14.04. Seems also working on macOS Mojave 10.14.2. 
 Many deprecated warnings about glut with OSX builds. Not sure what dependencies are needed for Ubuntu, haven't tried with a clean install. Uses C++11.
 
 ```
