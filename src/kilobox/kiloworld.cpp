@@ -228,6 +228,8 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
                 bots.push_back((Kilobot*)(new Stigmergy_example(mod, settings, words, logfile.c_str())));
             if (words[0] == "simple_example")
                 bots.push_back((Kilobot*)(new Simple_example(mod, settings, words, logfile.c_str())));
+            if (words[0] == "estimation_distance_to_task")
+                bots.push_back((Kilobot*)(new Estimation_distance_to_task(mod, settings, words, logfile.c_str())));  
             if (words[0] == "grape")
                 bots.push_back((Kilobot*)(new Grape(mod, settings, words, logfile.c_str())));                
 

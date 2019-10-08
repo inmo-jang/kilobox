@@ -32,6 +32,7 @@ FILE *Evokilo3::lfp         = NULL;
 FILE *Evokilo4::lfp         = NULL;
 FILE *Stigmergy_example::lfp= NULL;
 FILE *Simple_example::lfp   = NULL;
+FILE *Estimation_distance_to_task::lfp            = NULL;
 FILE *Grape::lfp            = NULL;
 
 
@@ -153,6 +154,109 @@ void Simple_example::loop()
 
 }
 //-------------------------------------------------------------
+
+
+//-------------------------------------------------------------
+#define TASK_NULL 0
+#define TASK_1 1
+#define TASK_2 2
+#define TASK_3 3
+
+void Estimation_distance_to_task::setup()
+{
+    // Set the callbacks
+    kilo_message_tx         = (message_tx_t)&Estimation_distance_to_task::tx_message;
+    kilo_message_rx         = (message_rx_t)&Estimation_distance_to_task::message_rx;
+
+    // Construct a valid message
+    msg.type    = NORMAL;
+    msg.crc     = message_crc(&msg);
+    last_update     = kilo_ticks;
+
+    // Broadcast (Initialisation); NB: Otherwise, some random msg values spoil scnearios.          
+    memcpy(&msg.data[1], &num_agent_in_task[0], 1); // memcpy(dest, src, count_byte)
+    memcpy(&msg.data[2], &distance_to_task[0], 1);  // memcpy(dest, src, count_byte)
+    memcpy(&msg.data[3], &num_agent_in_task[1], 1); // memcpy(dest, src, count_byte)
+    memcpy(&msg.data[4], &distance_to_task[1], 1);  // memcpy(dest, src, count_byte)
+    memcpy(&msg.data[5], &num_agent_in_task[2], 1); // memcpy(dest, src, count_byte)
+    memcpy(&msg.data[6], &distance_to_task[2], 1);  // memcpy(dest, src, count_byte)
+    memcpy(&msg.data[7], &num_iterations, 2);      // memcpy(dest, src, count_byte)
+    memcpy(&msg.data[9], &random_time_stamp, 1);   // memcpy(dest, src, count_byte)    
+}
+void Estimation_distance_to_task::loop()
+{
+    // NB: All the variables will be reinitialised at each loop
+    int task_found_neighbour;
+    int task_found_env;
+    if (kilo_ticks > last_update + 16)
+    {
+        last_update = kilo_ticks;
+
+        // Get Task Info from Environment (if the robot found a new task by itself)
+        task_found_env = get_environment(); 
+        // printf("Robot %d found Task %d\n", kilo_uid, task_found_env);
+        // printf("Robot %d Distance to Tasks (%d, %d, %d)\n", kilo_uid, distance_to_task[0], distance_to_task[1], distance_to_task[2]);
+        if (task_found_env!=0){
+            distance_to_task[task_found_env-1] = 1; // Careful about Task Index
+            
+        }
+        
+        
+        // Utility Comparison
+        int min_cost;
+        min_cost = (int)*std::min_element(distance_to_task.begin(), distance_to_task.end());
+        int preferred_task; 
+        preferred_task = std::min_element(distance_to_task.begin(), distance_to_task.end()) - distance_to_task.begin() + 1;
+        if (min_cost < chosen_task_cost){
+            printf("Robot %d joins to Task %d because its delta_cost is %d\n", kilo_uid, preferred_task, chosen_task_cost - min_cost);
+            chosen_task = preferred_task;
+            chosen_task_cost = min_cost;
+            
+            
+        }
+        // printf("Robot %d: Minimum Cost %d; Chosen task %d\n",kilo_uid, chosen_task_cost, chosen_task);
+        
+
+        num_iterations = (unsigned short int)std::rand();
+
+
+        // Broadcast         
+        memcpy(&msg.data[1], &num_agent_in_task[0], 1); // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[2], &distance_to_task[0], 1);  // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[3], &num_agent_in_task[1], 1); // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[4], &distance_to_task[1], 1);  // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[5], &num_agent_in_task[2], 1); // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[6], &distance_to_task[2], 1);  // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[7], &num_iterations, 2);      // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[9], &random_time_stamp, 1);   // memcpy(dest, src, count_byte)
+
+        // memcpy(msg.data, &preferred_task, 4); // memcpy(dest, src, count_byte)        
+        msg.crc     = message_crc(&msg);
+
+        // LED Display
+        switch (chosen_task){
+            case TASK_NULL: 
+                set_color(RGB(2,2,2));
+                break;
+            case TASK_1: // Task 1
+                set_color(RGB(0,2,0));
+                break;
+            case TASK_2: // Task 2
+                set_color(RGB(2,0,2));     
+                break;
+            case TASK_3: // Task 3
+                set_color(RGB(0,2,2));     
+                break;
+            
+        }
+
+        
+        
+    }
+
+}
+//-------------------------------------------------------------
+
 
 
 //-------------------------------------------------------------
