@@ -359,6 +359,11 @@ public:
 
     // Scenario
     int num_task = 3;
+    unsigned char unit_hop_dist = 8;
+    unsigned char max_dist_neighbour = 130; // Needs to be set after experiments
+
+    // Test
+    int dist_neighbour; 
 
 
     // Message transmission callback
@@ -371,6 +376,8 @@ public:
     {
         // *m : Neighbour robot's msg pointer (Not sure)
 
+        dist_neighbour = estimate_distance(d);
+        // printf("Neighbour distance = %d\n", dist_neighbour);
         //printf("in message_rx %s\n",__PRETTY_FUNCTION__);
         // Keep running average of message distance
         unsigned short int mf;
@@ -409,9 +416,9 @@ public:
                 distance_to_task_neighbour[i] = mg;
             } 
 
-            if (distance_to_task[i] > distance_to_task_neighbour[i] + 1){
+            if (distance_to_task[i] > distance_to_task_neighbour[i] + unit_hop_dist*dist_neighbour/max_dist_neighbour){
                 printf("Robot %d rx: Distance of Task %d is updated from %d to %d plus 1\n", kilo_uid, i+1, distance_to_task[i], distance_to_task_neighbour[i]);
-                distance_to_task[i] = distance_to_task_neighbour[i] + 1;
+                distance_to_task[i] = distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour);
                 
             }
         }
