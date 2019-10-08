@@ -37,7 +37,7 @@ global ( params [0.001759 0.095316 0.000971 0.028605 0.032000 20.000000 5.000000
 
 # (2) Robot Setting
 # - Defines robot type r0, with controller evokilo2, and parameters -3.187500 3.093750. The parameters are passed as a list of words to the controller class on construction. (e.g. define r0 position ( ctrl "evokilo2 -3.187500 3.093750" ))
-define r0 position (ctrl "grape")
+define r0 position (ctrl "estimation_distance_to_task")
 
 # (3) Test Setting
 # - Run the simulation for 300 simulated seconds. Ignored in GUI mode. (e.g. quit_time 300)
