@@ -338,14 +338,10 @@ public:
     message_t   msg; // Note: Defined as "uint8_t data[9]" in kilolib.h: each uint8_t can be 0 to 255. 
     // Data for Message    
     
-    // Locally known information
+    // Locally known information (Currently, only three tasks are supported)
     unsigned char satisfied = 0; // data[0]
-    unsigned char num_agent_in_task_1 = 0; // data[1]
-    unsigned char num_agent_in_task_2 = 0; // data[2]
-    unsigned char num_agent_in_task_3 = 0; // data[3]
-    unsigned char num_agent_in_task_4 = 0; // data[4]
-    unsigned char num_agent_in_task_5 = 0; // data[5]
-    unsigned char num_agent_in_task_6 = 0; // data[6]
+    std::vector<unsigned char> num_agent_in_task = {0, 0, 0}; // data[1], data[3], data[5]
+    std::vector<unsigned char> distance_to_task = {255, 255, 255};  // data[2], data[4], data[6] - Initialised with arbirary big numbers
     unsigned short int num_iterations = 0; // data[7-8]
     unsigned char random_time_stamp = 0;   // data[9]
     
@@ -353,13 +349,16 @@ public:
     unsigned short int num_iterations_neighbour = 0;
     unsigned char random_time_stamp_neighbour = 0;
 
+    // Neighbour's info (for estimating distances to tasks) - Newly added for KiloGRAPE
+    std::vector<unsigned char> distance_to_task_neighbour = {255, 255, 255};
+
 
     // Decision Making 
-    unsigned char task_chosen = 0;    
-    
-    // TODO: Will be deleted
-    int preferred_task = 0;
-    int allocation = 0;
+    int chosen_task = 0;
+    int chosen_task_cost = 255; // Arbirarily set
+
+    // Scenario
+    int num_task = 3;
 
 
     // Message transmission callback
@@ -385,28 +384,39 @@ public:
 
         // D-Mutex Algorithm (T-RO paper, Algorithm 2)
         if ((num_iterations_neighbour > num_iterations)||((num_iterations_neighbour == num_iterations)&&(random_time_stamp_neighbour > random_time_stamp)))
-        {            
-            memcpy(&mg, &(m->data[1]), 1); 
-            num_agent_in_task_1 = mg; 
-            memcpy(&mg, &(m->data[2]), 1);
-            num_agent_in_task_2 = mg; 
-            memcpy(&mg, &(m->data[3]), 1);
-            num_agent_in_task_3 = mg; 
-            memcpy(&mg, &(m->data[4]), 1);
-            num_agent_in_task_4 = mg; 
-            memcpy(&mg, &(m->data[5]), 1);
-            num_agent_in_task_5 = mg; 
-            memcpy(&mg, &(m->data[6]), 1);
-            num_agent_in_task_6 = mg; 
+        {
+            for (int i=0; i < num_task; i++){
+                memcpy(&mg, &(m->data[2*i+1]), 1); 
+                num_agent_in_task[i] = mg; 
+
+            }            
 
             num_iterations = num_iterations_neighbour;
             random_time_stamp = random_time_stamp_neighbour;
 
             satisfied = 0; 
 
-            printf("Robot %d rx: Partition(%d, %d, %d, %d, %d, %d); Num_Iteration : %d", kilo_uid, num_agent_in_task_1, num_agent_in_task_2, num_agent_in_task_3, num_agent_in_task_4, num_agent_in_task_5, num_agent_in_task_6, num_iterations);
+            // printf("Robot %d rx: Partition(%d, %d, %d); Num_Iteration : %d\n", kilo_uid, num_agent_in_task[0], num_agent_in_task[1], num_agent_in_task[2], num_iterations);
         }
-  
+
+        // printf("Robot %d rx: Distances of Tasks are (%d, %d, %d)\n", kilo_uid, distance_to_task[0], distance_to_task[1], distance_to_task[2]);
+        // printf("Robot %d rx: Distances of Tasks (Neighbour known) are (%d, %d, %d)\n", kilo_uid, distance_to_task_neighbour[0], distance_to_task_neighbour[1], distance_to_task_neighbour[2]);
+
+        // Estimating distances to tasks (Newly Added)
+        for (int i=0; i< num_task; i++){
+            memcpy(&mg, &(m->data[2*i+2]), 1);
+            if (mg != 0){ // NB: "mg" may be zero as m->data was initialised. So, we need to rule out this case when taking neighbour info.  
+                distance_to_task_neighbour[i] = mg;
+            } 
+
+            if (distance_to_task[i] > distance_to_task_neighbour[i] + 1){
+                printf("Robot %d rx: Distance of Task %d is updated from %d to %d plus 1\n", kilo_uid, i+1, distance_to_task[i], distance_to_task_neighbour[i]);
+                distance_to_task[i] = distance_to_task_neighbour[i] + 1;
+                
+            }
+        }
+
+
     }
 
 };
