@@ -3,4 +3,5 @@ kilobox/Box2D/Documentation
 *.h~
 *.world~
 *build*
-
+.DS_Store
+src/.DS_Store
