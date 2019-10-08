@@ -29,14 +29,22 @@ make
 Example simulation
 ==================
 
-At ``kilobox_build`` folder,
+- (1) Communication Function Check
 
-``
-./src/kilobox/kilobox ../worlds/simple_example.world
-``
+    At ``kilobox_build`` folder,
 
-Expected result will be https://youtu.be/lyxVm6HM0L4.
+        ``
+        ./src/kilobox/kilobox ../worlds/simple_example.world
+        ``
 
+    Expected result will be https://youtu.be/lyxVm6HM0L4.
+
+- (2) Estimating the distances to food sources
+
+
+        ``
+        ./src/kilobox/kilobox ../worlds/estimation_distance_to_task.world
+        ``
 
 Notes
 =====
