@@ -2,5 +2,5 @@ kilobox/Box2D/Documentation
 *.cpp~
 *.h~
 *.world~
-build*
+*build*
 
