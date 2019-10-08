@@ -29,7 +29,7 @@ make
 Example simulation
 ==================
 
-- (1) Communication Function Check
+- **(1) Communication Function Check**
 
     At ``kilobox_build`` folder,
 
@@ -39,7 +39,7 @@ Example simulation
 
     Expected result will be https://youtu.be/lyxVm6HM0L4.
 
-- (2) Estimating the distances to food sources
+- **(2) Estimating the distances to food sources**
 
 
         ``
