@@ -197,7 +197,7 @@ void Estimation_distance_to_task::loop()
         // printf("Robot %d found Task %d\n", kilo_uid, task_found_env);
         // printf("Robot %d Distance to Tasks (%d, %d, %d)\n", kilo_uid, distance_to_task[0], distance_to_task[1], distance_to_task[2]);
         if (task_found_env!=0){
-            distance_to_task[task_found_env-1] = 1; // Careful about Task Index
+            distance_to_task[task_found_env-1] = 1; // Careful about Task Index; It means that the robot found a task, which is 1 hop count distance from it self. 
             
         }
         
@@ -298,32 +298,70 @@ void Grape::loop()
         // Get Task Info from Environment (if the robot found a new task by itself)
         task_found_env = get_environment(); 
         // printf("Robot %d found Task %d\n", kilo_uid, task_found_env);
-        // printf("Robot %d Distance to Tasks (%d, %d, %d)\n", kilo_uid, distance_to_task[0], distance_to_task[1], distance_to_task[2]);
         if (task_found_env!=0){
-            distance_to_task[task_found_env-1] = 1; // Careful about Task Index
+            // distance_to_task[task_found_env-1] = 1; // Careful about Task Index; It means that the robot found a task, which is 1 hop count distance from it self. 
+            distance_to_task_uint[task_found_env-1] = 1; // Careful about Task Index; It means that the robot found a task, which is 1 hop count distance from it self.             
+            task_info_time_stamp[task_found_env-1] = kilo_ticks; 
             
         }
-        
+        else{ // For forgetting untracked tasks
+            for (int i=0; i< num_task; i++){ // For each task
+                // if (distance_to_task[i] != 1 && distance_to_task[i] != 255){ // For only non-task robots; This condition is just for experiment purposes. 
+                //     distance_to_task[i] = distance_to_task[i] + (kilo_ticks - task_info_time_stamp[i])/32*unit_hop_dist/2; // ++1/2*unit_hop_dist per second; The increment should be less than half, I guess. Otherwise, distance_to_task is updated by neighbours who still has lower values, which eventually causes longer time for all the robots to forget this value. 
+                //     if (distance_to_task[i] > 100){ // 230, which is the value that is arbitrary large but below than 255. To cut off overflow. This value functions as bumber. 
+                //         distance_to_task[i] = 255;
+                //     }
+                // }
+
+                if (distance_to_task_uint[i] != 1 && distance_to_task_uint[i] < 255){ // For only non-task robots; This condition is just for experiment purposes. 
+                    distance_to_task_uint[i] = distance_to_task_uint[i] + (kilo_ticks - task_info_time_stamp[i])/32*unit_hop_dist/2; // ++1/2*unit_hop_dist per second; The increment should be less than half, I guess. Otherwise, distance_to_task is updated by neighbours who still has lower values, which eventually causes longer time for all the robots to forget this value. 
+                    if (distance_to_task_uint[i] > 230){ // 230, which is the value that is arbitrary large but below than 255. To cut off overflow. This value functions as bumber. 
+                        distance_to_task_uint[i] = 255;
+                    }
+                }
+
+            }
+        }
+  
+        // Utility Computation
+        for(int i=0; i<num_task; i++){
+            task_cost[i] = distance_to_task_uint[i];
+        }
+        if (chosen_task != TASK_NULL){
+            chosen_task_cost = task_cost[chosen_task-1];
+        }
         
         // Utility Comparison
         int min_cost;
-        min_cost = (int)*std::min_element(distance_to_task.begin(), distance_to_task.end());
+        min_cost = *std::min_element(task_cost.begin(), task_cost.end());
         int preferred_task; 
-        preferred_task = std::min_element(distance_to_task.begin(), distance_to_task.end()) - distance_to_task.begin() + 1;
-        if (min_cost < chosen_task_cost){
-            printf("Robot %d joins to Task %d because its delta_cost is %d\n", kilo_uid, preferred_task, chosen_task_cost - min_cost);
+        preferred_task = std::min_element(task_cost.begin(), task_cost.end()) - task_cost.begin() + 1;
+        if (min_cost == 255){
+            chosen_task = TASK_NULL;
+            chosen_task_cost = 255;
+        }
+        else if (min_cost < chosen_task_cost){
+            // printf("Robot %d joins to Task %d because its delta_cost is %d\n", kilo_uid, preferred_task, chosen_task_cost - min_cost);
             chosen_task = preferred_task;
             chosen_task_cost = min_cost;
-            
-            
         }
-        // printf("Robot %d: Minimum Cost %d; Chosen task %d\n",kilo_uid, chosen_task_cost, chosen_task);
+        printf("Robot %d dist_tasks (%d, %d, %d) at (%d, %d, %d)\n", kilo_uid, distance_to_task_uint[0], distance_to_task_uint[1], distance_to_task_uint[2], task_info_time_stamp[0], task_info_time_stamp[1], task_info_time_stamp[2]);            
+        // printf("Robot %d: Minimum Cost (%d) preferred_task (%d) chosen_task_cost (%d) Finally chosen task (%d)\n",kilo_uid, min_cost, preferred_task, chosen_task_cost, chosen_task);
         
 
         num_iterations = (unsigned short int)std::rand();
 
 
-        // Broadcast         
+        // Broadcast      
+        for(int i=0; i<num_task; i++){
+            if (distance_to_task_uint[i] > 255){
+                distance_to_task[i] = 255;
+            }
+            else{
+                distance_to_task[i] = distance_to_task_uint[i];
+            }
+            
+        } 
         memcpy(&msg.data[1], &num_agent_in_task[0], 1); // memcpy(dest, src, count_byte)
         memcpy(&msg.data[2], &distance_to_task[0], 1);  // memcpy(dest, src, count_byte)
         memcpy(&msg.data[3], &num_agent_in_task[1], 1); // memcpy(dest, src, count_byte)
@@ -348,7 +386,7 @@ void Grape::loop()
                 set_color(RGB(2,0,2));     
                 break;
             case TASK_3: // Task 3
-                set_color(RGB(0,2,2));     
+                set_color(RGB(0,1,2));     
                 break;
             
         }

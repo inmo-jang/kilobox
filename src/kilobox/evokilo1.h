@@ -358,8 +358,8 @@ public:
 
     // Scenario
     int num_task = 3;
-    unsigned char unit_hop_dist = 8;
-    unsigned char max_dist_neighbour = 130; // Needs to be set after experiments
+    unsigned char unit_hop_dist = 8; // The communication radius will be modulated up to this value.
+    unsigned char max_dist_neighbour = 130; // The maximum possible value from "estimate_distance()" function; For normalising purpose; Needs to be set after experiments  
 
     // Test
     int dist_neighbour; 
@@ -499,6 +499,7 @@ public:
     unsigned char satisfied = 0; // data[0]
     std::vector<unsigned char> num_agent_in_task = {0, 0, 0}; // data[1], data[3], data[5]
     std::vector<unsigned char> distance_to_task = {255, 255, 255};  // data[2], data[4], data[6] - Initialised with arbirary big numbers
+    std::vector<unsigned int> distance_to_task_uint = {255, 255, 255};  // This is for local computation. 
     unsigned short int num_iterations = 0; // data[7-8]
     unsigned char random_time_stamp = 0;   // data[9]
     
@@ -508,16 +509,17 @@ public:
 
     // Neighbour's info (for estimating distances to tasks) - Newly added for KiloGRAPE
     std::vector<unsigned char> distance_to_task_neighbour = {255, 255, 255};
-
+    std::vector<uint32_t> task_info_time_stamp = {kilo_ticks, kilo_ticks, kilo_ticks};
 
     // Decision Making 
+    std::vector<unsigned int> task_cost = {255, 255, 255};  // data[2], data[4], data[6] - Initialised with arbirary big numbers
     int chosen_task = 0;
     int chosen_task_cost = 255; // Arbirarily set
 
     // Scenario
     int num_task = 3;
-    unsigned char unit_hop_dist = 8;
-    unsigned char max_dist_neighbour = 130; // Needs to be set after experiments
+    unsigned char unit_hop_dist = 24; // The communication radius will be modulated up to this value.
+    unsigned char max_dist_neighbour = 130; // The maximum possible value from "estimate_distance()" function; For normalising purpose; Needs to be set after experiments 
 
     // Test
     int dist_neighbour; 
@@ -572,11 +574,14 @@ public:
             if (mg != 0){ // NB: "mg" may be zero as m->data was initialised. So, we need to rule out this case when taking neighbour info.  
                 distance_to_task_neighbour[i] = mg;
             } 
-
-            if (distance_to_task[i] > distance_to_task_neighbour[i] + unit_hop_dist*dist_neighbour/max_dist_neighbour){
-                printf("Robot %d rx: Distance of Task %d is updated from %d to %d plus 1\n", kilo_uid, i+1, distance_to_task[i], distance_to_task_neighbour[i]);
-                distance_to_task[i] = distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour);
-                
+            
+            // if (distance_to_task[i] > distance_to_task_neighbour[i] + unit_hop_dist*dist_neighbour/max_dist_neighbour){ // Update distance_task value 
+            if (distance_to_task_uint[i] > distance_to_task_neighbour[i] + unit_hop_dist*dist_neighbour/max_dist_neighbour){ // Update distance_task value             
+                // printf("Robot %d rx: Distance of Task %d is updated from %d to %d because of %d \n", kilo_uid, i+1, distance_to_task[i], distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour), distance_to_task_neighbour[i] + unit_hop_dist*dist_neighbour/max_dist_neighbour);
+                // distance_to_task[i] = distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour);
+                printf("Robot %d rx: Distance of Task %d is updated from %d to %d \n", kilo_uid, i+1, distance_to_task_uint[i], distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour));
+                distance_to_task_uint[i] = distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour);                
+                task_info_time_stamp[i] = kilo_ticks;                 
             }
         }
 
