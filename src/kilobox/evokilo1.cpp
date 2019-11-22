@@ -314,7 +314,7 @@ void Grape::loop()
                 // }
 
                 if (distance_to_task_uint[i] != 1 && distance_to_task_uint[i] < 255){ // For only non-task robots; This condition is just for experiment purposes. 
-                    distance_to_task_uint[i] = distance_to_task_uint[i] + (kilo_ticks - task_info_time_stamp[i])/32*unit_hop_dist/2; // ++1/2*unit_hop_dist per second; The increment should be less than half, I guess. Otherwise, distance_to_task is updated by neighbours who still has lower values, which eventually causes longer time for all the robots to forget this value. 
+                    distance_to_task_uint[i] = distance_to_task_uint[i] + (kilo_ticks - task_info_time_stamp[i])/32*unit_hop_dist*parameter_forgetting; // ++parameter_forgetting*unit_hop_dist per second; The increment should be less than half, I guess. Otherwise, distance_to_task is updated by neighbours who still has lower values, which eventually causes longer time for all the robots to forget this value. 
                     if (distance_to_task_uint[i] > 230){ // 230, which is the value that is arbitrary large but below than 255. To cut off overflow. This value functions as bumber. 
                         distance_to_task_uint[i] = 255;
                     }
@@ -345,7 +345,9 @@ void Grape::loop()
             chosen_task = preferred_task;
             chosen_task_cost = min_cost;
         }
-        printf("Robot %d dist_tasks (%d, %d, %d) at (%d, %d, %d)\n", kilo_uid, distance_to_task_uint[0], distance_to_task_uint[1], distance_to_task_uint[2], task_info_time_stamp[0], task_info_time_stamp[1], task_info_time_stamp[2]);            
+        // printf("Robot %d dist_tasks (%d, %d, %d) at (%d, %d, %d) at t %d\n", kilo_uid, distance_to_task_uint[0], distance_to_task_uint[1], distance_to_task_uint[2], task_info_time_stamp[0], task_info_time_stamp[1], task_info_time_stamp[2], kilo_ticks);            
+        // This is for analysis "Analysis Forgetting Task"
+        // printf("%d \t\t %d \t %d \t %d \t\t %d \t %d \t %d \t\t %d \t \n", kilo_uid, distance_to_task_uint[0], distance_to_task_uint[1], distance_to_task_uint[2], task_info_time_stamp[0], task_info_time_stamp[1], task_info_time_stamp[2], kilo_ticks);            
         // printf("Robot %d: Minimum Cost (%d) preferred_task (%d) chosen_task_cost (%d) Finally chosen task (%d)\n",kilo_uid, min_cost, preferred_task, chosen_task_cost, chosen_task);
         
 

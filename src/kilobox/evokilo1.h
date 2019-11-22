@@ -518,9 +518,11 @@ public:
 
     // Scenario
     int num_task = 3;
-    unsigned char unit_hop_dist = 24; // The communication radius will be modulated up to this value.
+    unsigned char unit_hop_dist = 15; // The communication radius will be modulated up to this value.
     unsigned char max_dist_neighbour = 130; // The maximum possible value from "estimate_distance()" function; For normalising purpose; Needs to be set after experiments 
-
+    float parameter_forgetting = 1.0; // The user parameter to set how quickly a robot forgets its "distance_to_task" value as time goes. (See the main loop in cpp)
+    float expected_time_for_comm = 0.5; // The user parameter to set the expected time spent for one communication transaction
+    float correction_dist_to_task = expected_time_for_comm * unit_hop_dist * parameter_forgetting;
     // Test
     int dist_neighbour; 
 
@@ -576,11 +578,11 @@ public:
             } 
             
             // if (distance_to_task[i] > distance_to_task_neighbour[i] + unit_hop_dist*dist_neighbour/max_dist_neighbour){ // Update distance_task value 
-            if (distance_to_task_uint[i] > distance_to_task_neighbour[i] + unit_hop_dist*dist_neighbour/max_dist_neighbour){ // Update distance_task value             
+            if (distance_to_task_uint[i] > distance_to_task_neighbour[i] + unit_hop_dist*dist_neighbour/max_dist_neighbour + correction_dist_to_task){ // Update distance_task value             
                 // printf("Robot %d rx: Distance of Task %d is updated from %d to %d because of %d \n", kilo_uid, i+1, distance_to_task[i], distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour), distance_to_task_neighbour[i] + unit_hop_dist*dist_neighbour/max_dist_neighbour);
                 // distance_to_task[i] = distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour);
-                printf("Robot %d rx: Distance of Task %d is updated from %d to %d \n", kilo_uid, i+1, distance_to_task_uint[i], distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour));
-                distance_to_task_uint[i] = distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour);                
+                // printf("Robot %d rx: Distance of Task %d is updated from %d to %d \n", kilo_uid, i+1, distance_to_task_uint[i], distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour));
+                distance_to_task_uint[i] = distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour + correction_dist_to_task);                
                 task_info_time_stamp[i] = kilo_ticks;                 
             }
         }
