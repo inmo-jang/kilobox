@@ -1,0 +1,79 @@
+# (1) Environment Settings
+# - Specify a rectangular region centered on (0,0) with size (3,2) metres, returning 2 (i.e. region( rectangle [0 0 3 2 2] ))
+region( rectangle [0 0 3 2 0] )
+# - overlayed with a circular region centered on (0,0) with radius 0.2 m, returning 1 (i.e. region( circle [0 0 0.2 1] ))
+region( circle [0 0.9 0.2 1] )
+region( circle [1 -0.5 0.2 2] )
+region( circle [-1 -0.5 0.2 3] )
+# region( circle [1 -0.5 0.2 4] )
+
+
+# - Specify simulator parameters. These are:
+#       Name                Default Meaning
+#   1   sigma_vbias         0.0013  stddev of gaussian used to set velocity bias
+#   2   sigma_omegabias     0.0675  stddev of gaussian used to set angular velocity bias
+#   3   sigma_vnoise        0.001   stddev of gaussian added to velocity at each timestep
+#   4   sigma_omeganoise    0.01    stddev of gaussian added to angular velocity at each timestep
+#   5   dia                 0.032   diameter of kilobot
+#   6   density             20.0    density of kilobot in kg/m^2
+#   7   lineardamp          5.0     linear velocity damping coefficient    
+#   8   angulardamp         5.0     angular velocity damping coefficient
+#   9   friction            0.8     mu between kilobots
+#   10  restitution         0.1     restitution between kilobots
+#   11  senserad            0.1     sensor radius, distance messages can travel
+#   12  speedconst          1.14e-4 constant to convert the motor speed (70) to linear 'wheel' velocity 
+#   13  wheeloffset         0.005   offset of wheel axis from centre of robot
+#   14  wheeldist           0.015   distance between wheels
+#   15  msgsuccess          0.95    probability a message will be successfully received
+#
+# The bias and noise figures were obtained by measuring the actual performance of ~20
+# calibrated kilobots in forward and turning motion.
+#
+# The kilobot motion is approximated by two-wheel kinematics, these constants give roughly 
+# the right motion
+
+global ( params [0.001759 0.095316 0.000971 0.028605 0.032000 20.000000 5.000000 5.000000 0.695555 0.100000 0.110767 0.000078 0.006223 0.011603 0.843987] )
+
+
+# (2) Robot Setting
+# - Defines robot type r0, with controller evokilo2, and parameters -3.187500 3.093750. The parameters are passed as a list of words to the controller class on construction. (e.g. define r0 position ( ctrl "evokilo2 -3.187500 3.093750" ))
+define r0 position (ctrl "estimation_distance_to_task_forget")
+
+# (3) Test Setting
+# - Run the simulation for 300 simulated seconds. Ignored in GUI mode. (e.g. quit_time 300)
+quit_time 300
+
+# (4) Instantiate Robots
+# - Instantiate two robots of type r0 at position (-0.1,-0.1) and (-0.25,-0.15) metres.
+# For example, 
+# r0( pose [ 0.000000  0.100000 45 0])
+# r0( pose [ 0.100000  -0.100000 135 0])
+# r0( pose [ -0.100000  -0.100000 225 0])
+
+
+r0( pose [ 0.00000 0.90000 0 153.468078 ])
+r0( pose [ 1.00000 -0.50000 0 153.468078 ])
+r0( pose [ -1.00000 -0.50000 0 73.001949 ])
+
+
+
+r0( pose [ -0.380000 -0.380000 0 153.468078 ])
+r0( pose [ -0.380000 -0.340000 0 73.001949 ])
+r0( pose [ -0.380000 -0.300000 0 -69.993046 ])
+r0( pose [ -0.380000 -0.260000 0 -111.144426 ])
+r0( pose [ -0.380000 -0.220000 0 164.309672 ])
+r0( pose [ -0.380000 -0.180000 0 -81.704053 ])
+r0( pose [ -0.380000 -0.140000 0 -35.540806 ])
+r0( pose [ -0.380000 -0.100000 0 -25.017874 ])
+r0( pose [ -0.380000 -0.060000 0 -15.914592 ])
+r0( pose [ -0.380000 -0.020000 0 31.437596 ])
+r0( pose [ -0.380000 0.020000 0 -150.965093 ])
+r0( pose [ -0.380000 0.060000 0 -74.983716 ])
+r0( pose [ -0.380000 0.100000 0 -161.119165 ])
+r0( pose [ -0.380000 0.140000 0 -67.285764 ])
+r0( pose [ -0.380000 0.180000 0 110.289876 ])
+r0( pose [ -0.380000 0.220000 0 96.159282 ])
+r0( pose [ -0.380000 0.260000 0 165.713035 ])
+r0( pose [ -0.380000 0.300000 0 55.070299 ])
+r0( pose [ -0.380000 0.340000 0 24.692061 ])
+r0( pose [ -0.380000 0.380000 0 -72.730383 ])

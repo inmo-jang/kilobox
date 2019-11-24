@@ -427,6 +427,172 @@ public:
 
 };
 
+
+class Estimation_distance_to_task_forget : public Kilobot
+{
+public:
+    // kiloobt controller for Estimation_distance_to_task_forget
+    
+    Estimation_distance_to_task_forget(ModelPosition *_pos, Settings *_settings,
+                    std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile)
+    {
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&Estimation_distance_to_task_forget::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&Estimation_distance_to_task_forget::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&Estimation_distance_to_task_forget::message_tx_success_dummy;
+        setup();
+    }
+    ~Estimation_distance_to_task_forget()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+    
+    
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    
+    void setup();
+    void loop();
+    int last_update;
+    
+ 
+
+    message_t   msg; // Note: Defined as "uint8_t data[9]" in kilolib.h: each uint8_t can be 0 to 255. 
+    // Data for Message    
+    
+    // Locally known information (Currently, only three tasks are supported)
+    unsigned char satisfied = 0; // data[0]
+    std::vector<unsigned char> num_agent_in_task = {0, 0, 0}; // data[1], data[3], data[5]
+    std::vector<unsigned char> distance_to_task = {255, 255, 255};  // data[2], data[4], data[6] - Initialised with arbirary big numbers
+    std::vector<unsigned int> distance_to_task_uint = {255, 255, 255};  // This is for local computation. 
+    unsigned short int num_iterations = 0; // data[7-8]
+    unsigned char random_time_stamp = 0;   // data[9]
+    
+    // Neighbour's info (for D-Mutex)
+    unsigned short int num_iterations_neighbour = 0;
+    unsigned char random_time_stamp_neighbour = 0;
+
+    // Neighbour's info (for estimating distances to tasks) - Newly added for KiloGRAPE
+    std::vector<unsigned char> distance_to_task_neighbour = {255, 255, 255};
+    std::vector<uint32_t> task_info_time_stamp = {kilo_ticks, kilo_ticks, kilo_ticks};
+
+    // Decision Making 
+    std::vector<unsigned int> task_cost = {255, 255, 255};  // data[2], data[4], data[6] - Initialised with arbirary big numbers
+    int chosen_task = 0;
+    int chosen_task_cost = 255; // Arbirarily set
+
+    // Scenario
+    int num_task = 3;
+    unsigned char unit_hop_dist = 15; // The communication radius will be modulated up to this value.
+    unsigned char max_dist_neighbour = 130; // The maximum possible value from "estimate_distance()" function; For normalising purpose; Needs to be set after experiments 
+    float parameter_forgetting = 1.0; // The user parameter to set how quickly a robot forgets its "distance_to_task" value as time goes. (See the main loop in cpp)
+    float expected_time_for_comm = 0.5; // The user parameter to set the expected time spent for one communication transaction
+    float correction_dist_to_task = expected_time_for_comm * unit_hop_dist * parameter_forgetting;
+    // Test
+    int dist_neighbour; 
+
+
+    // Message transmission callback
+    message_t *tx_message() 
+    {
+        return &msg;
+    }
+
+    void message_rx(message_t *m, distance_measurement_t *d)
+    {
+        // *m : Neighbour robot's msg pointer (Not sure)
+
+        dist_neighbour = estimate_distance(d);
+        // printf("Neighbour distance = %d\n", dist_neighbour);
+        //printf("in message_rx %s\n",__PRETTY_FUNCTION__);
+        // Keep running average of message distance
+        unsigned short int mf;
+        memcpy(&mf, &(m->data[7]), 2); // memcpy(dest, src, count_byte)
+        num_iterations_neighbour = mf;
+
+        unsigned char mg;
+        memcpy(&mg, &(m->data[9]), 1); // memcpy(dest, src, count_byte)
+        random_time_stamp_neighbour = mg;
+
+
+        // D-Mutex Algorithm (T-RO paper, Algorithm 2)
+        if ((num_iterations_neighbour > num_iterations)||((num_iterations_neighbour == num_iterations)&&(random_time_stamp_neighbour > random_time_stamp)))
+        {
+            for (int i=0; i < num_task; i++){
+                memcpy(&mg, &(m->data[2*i+1]), 1); 
+                num_agent_in_task[i] = mg; 
+
+            }            
+
+            num_iterations = num_iterations_neighbour;
+            random_time_stamp = random_time_stamp_neighbour;
+
+            satisfied = 0; 
+
+            // printf("Robot %d rx: Partition(%d, %d, %d); Num_Iteration : %d\n", kilo_uid, num_agent_in_task[0], num_agent_in_task[1], num_agent_in_task[2], num_iterations);
+        }
+
+        // printf("Robot %d rx: Distances of Tasks are (%d, %d, %d)\n", kilo_uid, distance_to_task[0], distance_to_task[1], distance_to_task[2]);
+        // printf("Robot %d rx: Distances of Tasks (Neighbour known) are (%d, %d, %d)\n", kilo_uid, distance_to_task_neighbour[0], distance_to_task_neighbour[1], distance_to_task_neighbour[2]);
+
+        // Estimating distances to tasks (Newly Added)
+        for (int i=0; i< num_task; i++){
+            memcpy(&mg, &(m->data[2*i+2]), 1);
+            if (mg != 0){ // NB: "mg" may be zero as m->data was initialised. So, we need to rule out this case when taking neighbour info.  
+                distance_to_task_neighbour[i] = mg;
+            } 
+            
+            // if (distance_to_task[i] > distance_to_task_neighbour[i] + unit_hop_dist*dist_neighbour/max_dist_neighbour){ // Update distance_task value 
+            if (distance_to_task_uint[i] > distance_to_task_neighbour[i] + unit_hop_dist*dist_neighbour/max_dist_neighbour + correction_dist_to_task){ // Update distance_task value             
+                // printf("Robot %d rx: Distance of Task %d is updated from %d to %d because of %d \n", kilo_uid, i+1, distance_to_task[i], distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour), distance_to_task_neighbour[i] + unit_hop_dist*dist_neighbour/max_dist_neighbour);
+                // distance_to_task[i] = distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour);
+                // printf("Robot %d rx: Distance of Task %d is updated from %d to %d \n", kilo_uid, i+1, distance_to_task_uint[i], distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour));
+                distance_to_task_uint[i] = distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour + correction_dist_to_task);                
+                task_info_time_stamp[i] = kilo_ticks;                 
+            }
+        }
+
+
+    }
+
+};
+
 class Grape : public Kilobot
 {
 public:

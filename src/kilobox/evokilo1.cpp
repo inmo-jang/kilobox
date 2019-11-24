@@ -33,6 +33,7 @@ FILE *Evokilo4::lfp         = NULL;
 FILE *Stigmergy_example::lfp= NULL;
 FILE *Simple_example::lfp   = NULL;
 FILE *Estimation_distance_to_task::lfp            = NULL;
+FILE *Estimation_distance_to_task_forget::lfp            = NULL;
 FILE *Grape::lfp            = NULL;
 
 
@@ -265,6 +266,143 @@ void Estimation_distance_to_task::loop()
 #define TASK_2 2
 #define TASK_3 3
 
+void Estimation_distance_to_task_forget::setup()
+{
+    // Set the callbacks
+    kilo_message_tx         = (message_tx_t)&Estimation_distance_to_task_forget::tx_message;
+    kilo_message_rx         = (message_rx_t)&Estimation_distance_to_task_forget::message_rx;
+
+    // Construct a valid message
+    msg.type    = NORMAL;
+    msg.crc     = message_crc(&msg);
+    last_update     = kilo_ticks;
+
+    // Broadcast (Initialisation); NB: Otherwise, some random msg values spoil scnearios.          
+    memcpy(&msg.data[1], &num_agent_in_task[0], 1); // memcpy(dest, src, count_byte)
+    memcpy(&msg.data[2], &distance_to_task[0], 1);  // memcpy(dest, src, count_byte)
+    memcpy(&msg.data[3], &num_agent_in_task[1], 1); // memcpy(dest, src, count_byte)
+    memcpy(&msg.data[4], &distance_to_task[1], 1);  // memcpy(dest, src, count_byte)
+    memcpy(&msg.data[5], &num_agent_in_task[2], 1); // memcpy(dest, src, count_byte)
+    memcpy(&msg.data[6], &distance_to_task[2], 1);  // memcpy(dest, src, count_byte)
+    memcpy(&msg.data[7], &num_iterations, 2);      // memcpy(dest, src, count_byte)
+    memcpy(&msg.data[9], &random_time_stamp, 1);   // memcpy(dest, src, count_byte)    
+}
+void Estimation_distance_to_task_forget::loop()
+{
+    // NB: All the variables will be reinitialised at each loop
+    int task_found_neighbour;
+    int task_found_env;
+    if (kilo_ticks > last_update + 16)
+    {
+        last_update = kilo_ticks;
+
+        // Get Task Info from Environment (if the robot found a new task by itself)
+        task_found_env = get_environment(); 
+        // printf("Robot %d found Task %d\n", kilo_uid, task_found_env);
+        if (task_found_env!=0){
+            // distance_to_task[task_found_env-1] = 1; // Careful about Task Index; It means that the robot found a task, which is 1 hop count distance from it self. 
+            distance_to_task_uint[task_found_env-1] = 1; // Careful about Task Index; It means that the robot found a task, which is 1 hop count distance from it self.             
+            task_info_time_stamp[task_found_env-1] = kilo_ticks; 
+            
+        }
+        else{ // For forgetting untracked tasks
+            for (int i=0; i< num_task; i++){ // For each task
+                if (distance_to_task_uint[i] != 1 && distance_to_task_uint[i] < 255){ // For only non-task robots; This condition is just for experiment purposes. 
+                    distance_to_task_uint[i] = distance_to_task_uint[i] + (kilo_ticks - task_info_time_stamp[i])/32*unit_hop_dist*parameter_forgetting; // ++parameter_forgetting*unit_hop_dist per second; The increment should be less than half, I guess. Otherwise, distance_to_task is updated by neighbours who still has lower values, which eventually causes longer time for all the robots to forget this value. 
+                    if (distance_to_task_uint[i] > 230){ // 230, which is the value that is arbitrary large but below than 255. To cut off overflow. This value functions as bumber. 
+                        distance_to_task_uint[i] = 255;
+                    }
+                }
+
+            }
+        }
+  
+        // Utility Computation
+        for(int i=0; i<num_task; i++){
+            task_cost[i] = distance_to_task_uint[i];
+        }
+        if (chosen_task != TASK_NULL){
+            chosen_task_cost = task_cost[chosen_task-1];
+        }
+        
+        // Utility Comparison
+        int min_cost;
+        min_cost = *std::min_element(task_cost.begin(), task_cost.end());
+        int preferred_task; 
+        preferred_task = std::min_element(task_cost.begin(), task_cost.end()) - task_cost.begin() + 1;
+        if (min_cost == 255){
+            chosen_task = TASK_NULL;
+            chosen_task_cost = 255;
+        }
+        else if (min_cost < chosen_task_cost){
+            // printf("Robot %d joins to Task %d because its delta_cost is %d\n", kilo_uid, preferred_task, chosen_task_cost - min_cost);
+            chosen_task = preferred_task;
+            chosen_task_cost = min_cost;
+        }
+        // printf("Robot %d dist_tasks (%d, %d, %d) at (%d, %d, %d) at t %d\n", kilo_uid, distance_to_task_uint[0], distance_to_task_uint[1], distance_to_task_uint[2], task_info_time_stamp[0], task_info_time_stamp[1], task_info_time_stamp[2], kilo_ticks);            
+        // This is for analysis "Analysis Forgetting Task"
+        // printf("%d \t\t %d \t %d \t %d \t\t %d \t %d \t %d \t\t %d \t \n", kilo_uid, distance_to_task_uint[0], distance_to_task_uint[1], distance_to_task_uint[2], task_info_time_stamp[0], task_info_time_stamp[1], task_info_time_stamp[2], kilo_ticks);            
+        // printf("Robot %d: Minimum Cost (%d) preferred_task (%d) chosen_task_cost (%d) Finally chosen task (%d)\n",kilo_uid, min_cost, preferred_task, chosen_task_cost, chosen_task);
+        
+
+        num_iterations = (unsigned short int)std::rand();
+
+
+        // Broadcast      
+        for(int i=0; i<num_task; i++){
+            if (distance_to_task_uint[i] > 255){
+                distance_to_task[i] = 255;
+            }
+            else{
+                distance_to_task[i] = distance_to_task_uint[i];
+            }
+            
+        } 
+        memcpy(&msg.data[1], &num_agent_in_task[0], 1); // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[2], &distance_to_task[0], 1);  // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[3], &num_agent_in_task[1], 1); // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[4], &distance_to_task[1], 1);  // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[5], &num_agent_in_task[2], 1); // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[6], &distance_to_task[2], 1);  // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[7], &num_iterations, 2);      // memcpy(dest, src, count_byte)
+        memcpy(&msg.data[9], &random_time_stamp, 1);   // memcpy(dest, src, count_byte)
+
+        // memcpy(msg.data, &preferred_task, 4); // memcpy(dest, src, count_byte)        
+        msg.crc     = message_crc(&msg);
+
+        // LED Display
+        switch (chosen_task){
+            case TASK_NULL: 
+                set_color(RGB(2,2,2));
+                break;
+            case TASK_1: // Task 1
+                set_color(RGB(0,2,0));
+                break;
+            case TASK_2: // Task 2
+                set_color(RGB(2,0,2));     
+                break;
+            case TASK_3: // Task 3
+                set_color(RGB(0,1,2));     
+                break;
+            
+        }
+
+        
+        
+    }
+
+}
+//-------------------------------------------------------------
+
+
+
+
+//-------------------------------------------------------------
+#define TASK_NULL 0
+#define TASK_1 1
+#define TASK_2 2
+#define TASK_3 3
+
 void Grape::setup()
 {
     // Set the callbacks
@@ -306,13 +444,6 @@ void Grape::loop()
         }
         else{ // For forgetting untracked tasks
             for (int i=0; i< num_task; i++){ // For each task
-                // if (distance_to_task[i] != 1 && distance_to_task[i] != 255){ // For only non-task robots; This condition is just for experiment purposes. 
-                //     distance_to_task[i] = distance_to_task[i] + (kilo_ticks - task_info_time_stamp[i])/32*unit_hop_dist/2; // ++1/2*unit_hop_dist per second; The increment should be less than half, I guess. Otherwise, distance_to_task is updated by neighbours who still has lower values, which eventually causes longer time for all the robots to forget this value. 
-                //     if (distance_to_task[i] > 100){ // 230, which is the value that is arbitrary large but below than 255. To cut off overflow. This value functions as bumber. 
-                //         distance_to_task[i] = 255;
-                //     }
-                // }
-
                 if (distance_to_task_uint[i] != 1 && distance_to_task_uint[i] < 255){ // For only non-task robots; This condition is just for experiment purposes. 
                     distance_to_task_uint[i] = distance_to_task_uint[i] + (kilo_ticks - task_info_time_stamp[i])/32*unit_hop_dist*parameter_forgetting; // ++parameter_forgetting*unit_hop_dist per second; The increment should be less than half, I guess. Otherwise, distance_to_task is updated by neighbours who still has lower values, which eventually causes longer time for all the robots to forget this value. 
                     if (distance_to_task_uint[i] > 230){ // 230, which is the value that is arbitrary large but below than 255. To cut off overflow. This value functions as bumber. 
