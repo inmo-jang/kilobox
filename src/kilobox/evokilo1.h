@@ -679,8 +679,9 @@ public:
 
     // Decision Making 
     std::vector<unsigned int> task_cost = {255, 255, 255};  // data[2], data[4], data[6] - Initialised with arbirary big numbers
-    int chosen_task = 0;
-    int chosen_task_cost = 255; // Arbirarily set
+    int chosen_task = 0;    // Note: 0 represents "void task". Instead, in cpp file, "preferred_task[0]"? represents task 1. 
+    int chosen_task_cost = 255; // Arbirarily set (will be depricated)
+    float chosen_task_individual_utility = 0; // Arbirarily set
 
     // Scenario
     int num_task = 3;
@@ -692,7 +693,16 @@ public:
     // Test
     int dist_neighbour; 
 
+    // Memory for Local Partition (Setting: a recorded time stamp is considered as the ID for a particular partion information - Inmo  )
+    bool local_memory_time_stamp[256] = {false}; // As a default, all the elements are initialised as 'false' 
+    unsigned char local_memory_chosen_task[256] = {0}; // As a default, all the elements are initialised as "0", meaning void task. 
 
+    // Task demand (In this experiment, they are predefined, which is not the case in practice)
+    std::vector<unsigned int> task_demand = {30000, 30000, 30000};
+    std::vector<float> individual_utility = {0, 0, 0, 0}; // Example: individual_utility[1] is the value for Task 1. 
+    // float weight_factor_task_demand = 100.0;
+    // float weight_factor_task_cost = 1.0/255.0*10.0;
+    
     // Message transmission callback
     message_t *tx_message() 
     {

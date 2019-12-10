@@ -455,35 +455,72 @@ void Grape::loop()
         }
   
         // Utility Computation
+        // --- (1) Remind the prievous decision
+        if (local_memory_time_stamp[random_time_stamp] == true){ // If this partition info is already stored
+            chosen_task = local_memory_chosen_task[random_time_stamp];
+            printf("Robot %d: Given a stored partition %d, where it was at task %d \n", kilo_uid, random_time_stamp, chosen_task);
+        }
+        else{ // This partition is new info
+            chosen_task = TASK_NULL;   
+            printf("Robot %d: Given a new partition \n", kilo_uid);
+        }
+        
+        // --- (2) Utility computation
         for(int i=0; i<num_task; i++){
-            task_cost[i] = distance_to_task_uint[i];
+            if(distance_to_task_uint[i] != 255){ // Meaning that this task is known. 
+                task_cost[i] = distance_to_task_uint[i];
+                if ( (i+1) == chosen_task ){
+                    individual_utility[i+1] = (float)task_demand[i]/num_agent_in_task[i] - (float)task_cost[i];
+                }
+                else{                
+                    individual_utility[i+1] = (float)task_demand[i]/(num_agent_in_task[i]+1) - (float)task_cost[i];
+                }                 
+            }
+            else{ // Meaning that this task is unknown yet. 
+                individual_utility[i+1] = 0.0;
+            }
+
+          
         }
-        if (chosen_task != TASK_NULL){
-            chosen_task_cost = task_cost[chosen_task-1];
-        }
+        printf("Robot %d: Task Demand (%d, %d, %d)\n", kilo_uid, task_demand[0], task_demand[1], task_demand[2]);
+        printf("Robot %d: num_agent_in_task (%d, %d, %d)\n", kilo_uid, num_agent_in_task[0], num_agent_in_task[1], num_agent_in_task[2]);
+        printf("Robot %d: Task cost (%d, %d, %d)\n", kilo_uid, task_cost[0], task_cost[1], task_cost[2]);
+        printf("Robot %d: Utility (%f, %f, %f, %f)\n", kilo_uid, individual_utility[0], individual_utility[1], individual_utility[2], individual_utility[3]);
         
-        // Utility Comparison
-        int min_cost;
-        min_cost = *std::min_element(task_cost.begin(), task_cost.end());
+        // Utility Comparison (Maximisation)
+        float max_utility;
+        max_utility = *std::max_element(individual_utility.begin(), individual_utility.end());
         int preferred_task; 
-        preferred_task = std::min_element(task_cost.begin(), task_cost.end()) - task_cost.begin() + 1;
-        if (min_cost == 255){
-            chosen_task = TASK_NULL;
-            chosen_task_cost = 255;
+        preferred_task = std::max_element(individual_utility.begin(), individual_utility.end()) - individual_utility.begin();
+        if (max_utility <= 0){
+            preferred_task = TASK_NULL;
+            printf("Robot %d: Chose void task as task info is unknown \n", kilo_uid);
         }
-        else if (min_cost < chosen_task_cost){
-            // printf("Robot %d joins to Task %d because its delta_cost is %d\n", kilo_uid, preferred_task, chosen_task_cost - min_cost);
-            chosen_task = preferred_task;
-            chosen_task_cost = min_cost;
+        else if (max_utility > individual_utility[chosen_task]){ // Partition evolved
+            
+            if(chosen_task!=TASK_NULL){
+                num_agent_in_task[chosen_task-1] = num_agent_in_task[chosen_task-1] - 1;
+            }            
+            num_agent_in_task[preferred_task-1] += 1;
+            num_iterations += 1;
+
+            // Stamping
+            if (random_time_stamp == 0){ // If this is the first time evolution of a blank partition. Otherwise, keep the informed time stamp value. 
+                random_time_stamp = (unsigned char)std::rand();  
+            }            
+            local_memory_time_stamp[random_time_stamp] = true; 
+
+            printf("Robot %d: Partition ID %d evolved to (%d, %d, %d) from %d to %d, iteration %d \n", kilo_uid, random_time_stamp, num_agent_in_task[0], num_agent_in_task[1], num_agent_in_task[2], chosen_task, preferred_task, num_iterations);
+
         }
-        // printf("Robot %d dist_tasks (%d, %d, %d) at (%d, %d, %d) at t %d\n", kilo_uid, distance_to_task_uint[0], distance_to_task_uint[1], distance_to_task_uint[2], task_info_time_stamp[0], task_info_time_stamp[1], task_info_time_stamp[2], kilo_ticks);            
-        // This is for analysis "Analysis Forgetting Task"
-        // printf("%d \t\t %d \t %d \t %d \t\t %d \t %d \t %d \t\t %d \t \n", kilo_uid, distance_to_task_uint[0], distance_to_task_uint[1], distance_to_task_uint[2], task_info_time_stamp[0], task_info_time_stamp[1], task_info_time_stamp[2], kilo_ticks);            
-        // printf("Robot %d: Minimum Cost (%d) preferred_task (%d) chosen_task_cost (%d) Finally chosen task (%d)\n",kilo_uid, min_cost, preferred_task, chosen_task_cost, chosen_task);
+        else
+        {
+            printf("Robot %d: Partition ID %d remain at (%d, %d, %d) at %d \n", kilo_uid, random_time_stamp, num_agent_in_task[0], num_agent_in_task[1], num_agent_in_task[2], chosen_task);
+        }
+
         
-
-        num_iterations = (unsigned short int)std::rand();
-
+        // Save to local memory
+        local_memory_chosen_task[random_time_stamp] = preferred_task;
 
         // Broadcast      
         for(int i=0; i<num_task; i++){
@@ -508,7 +545,7 @@ void Grape::loop()
         msg.crc     = message_crc(&msg);
 
         // LED Display
-        switch (chosen_task){
+        switch (preferred_task){
             case TASK_NULL: 
                 set_color(RGB(2,2,2));
                 break;
