@@ -34,6 +34,7 @@ FILE *Stigmergy_example::lfp= NULL;
 FILE *Simple_example::lfp   = NULL;
 FILE *Estimation_distance_to_task::lfp            = NULL;
 FILE *Estimation_distance_to_task_forget::lfp            = NULL;
+FILE *Comm_with_multiple_msgs::lfp            = NULL;
 FILE *Grape::lfp            = NULL;
 
 
@@ -394,6 +395,497 @@ void Estimation_distance_to_task_forget::loop()
 }
 //-------------------------------------------------------------
 
+
+//-------------------------------------------------------------
+#define TASK_NULL 0
+#define TASK_1 1
+#define TASK_2 2
+#define TASK_3 3
+#define MSG_END 255
+
+void Comm_with_multiple_msgs::setup()
+{
+    // Set the callbacks
+    kilo_message_tx         = (message_tx_t)&Comm_with_multiple_msgs::tx_message;
+    kilo_message_rx         = (message_rx_t)&Comm_with_multiple_msgs::message_rx;
+
+    // Construct a valid message
+    msg.type    = NORMAL;
+    msg.crc     = message_crc(&msg);
+    last_update     = kilo_ticks;
+    kilo_ticks_ini = kilo_ticks;
+
+    // // Broadcast (Initialisation); NB: Otherwise, some random msg values spoil scnearios.          
+    memcpy(&msg.data[1], &kilo_uid, 1); // memcpy(dest, src, count_byte)
+
+}
+
+void Comm_with_multiple_msgs::message_rx(message_t *m, distance_measurement_t *d)
+{
+        // *m : Neighbour robot's msg pointer (Not sure)
+
+        // dist_neighbour = estimate_distance(d);
+
+        // Check who sent this msg
+        unsigned char mf;
+        memcpy(&mf, &(m->data[1]), 1); // Using 7-bytes mode; memcpy(dest, src, count_byte)
+        neighbour_kilo_uid = mf;
+
+        // Check the msg sequence
+        memcpy(&mf, &(m->data[2]), 1); // Using 7-bytes mode; memcpy(dest, src, count_byte)
+        rcv_num_seq_msg = mf;
+        unsigned char neighbour_seq_msg = rcv_num_seq_msg % 10;
+        unsigned char neighbour_num_msg = (rcv_num_seq_msg - neighbour_seq_msg)/10;
+
+
+        printf("[%d] Robot %d rx: Data received %d-th msg of %d msgs from Robot %d\n", kilo_ticks, kilo_uid, neighbour_seq_msg + 1, neighbour_num_msg, neighbour_kilo_uid);
+        // TODO: Check the msg contents
+
+
+        // ======= Check if I already have a msg from this neighbour robot, and choose the memory to save the msg contents
+        std::vector<unsigned char>::iterator it;
+        it = find (msg_neighbour_robots.begin(), msg_neighbour_robots.end(), neighbour_kilo_uid); // Find the index corresponding "neighbour_kilo_uid" from the local memory. "it" is the resulatant.
+
+        bool isNewRobot = false; // Inisialisation
+        if (it == msg_neighbour_robots.end()){ // This becomes true if "it" was not in msg_neighbour_robots. 
+            it = find (msg_neighbour_robots.begin(), msg_neighbour_robots.end(), 0); // Find the index of the memory that doesn't have any content. 
+            isNewRobot = true;
+        }
+        int index = std::distance(msg_neighbour_robots.begin(), it); // the index of the memory that I am going to update using the received message. 
+
+
+        // ====== Check if I am going to process this message.
+        bool is_msg_valid = false; // Inisialisation 
+        
+        if(neighbour_num_msg == 0){ // Added this condition because in the simulator, the first msg recevied is from nobody. 
+            printf("====== Just ignore the printf above =======\n");
+        }   
+        else{
+            if(isNewRobot){ // For a new neighbour robot
+                if(msg_seq_waiting[index] == neighbour_seq_msg){ // TODO: From a new robot, the first msg didn't come. 
+                    is_msg_valid = true; // By default, this message is valid.  
+                }        
+                else{
+                    printf("[%d] LOSS - Robot %d was wating for %d-th msg but received %d from Robot %d  -- New Robot Error\n", kilo_ticks, kilo_uid, msg_seq_waiting[index]+1, neighbour_seq_msg +1, neighbour_kilo_uid);
+                    is_msg_valid = false;
+
+                }                        
+            }
+            else{ // For a known neighbour robot
+                if (msg_seq_waiting[index] == neighbour_seq_msg){ // Check if this sequence is the right sequence I was waiting for. Note that often the same msg can be received. That's why the robot needs to check this condition.
+                    is_msg_valid = true;
+                } 
+                else if (msg_seq_waiting[index] < neighbour_seq_msg){ // This msg seq is wrong. It implies that I may have lost or missed some previous msgs. 
+                    
+                    // Note that, sometimes, the neighbour robot keeps broadcasting the same msg. That's why we have "<" here.  
+                    printf("[%d] LOSS - Robot %d was wating for %d-th msg but received %d from Robot %d  -- might lost some msgs\n", kilo_ticks, kilo_uid, msg_seq_waiting[index]+1, neighbour_seq_msg +1, neighbour_kilo_uid);
+                    // Re-initialisation
+                    msg_neighbour_robots[index] = 0; 
+                    msg_seq_waiting[index] = 0;                    
+                    is_msg_valid = false;                
+                }
+                else{
+                    printf("[%d] WAIT - Robot %d was wating for %d-th msg but received %d from Robot %d  -- the same msg\n", kilo_ticks, kilo_uid, msg_seq_waiting[index]+1, neighbour_seq_msg +1, neighbour_kilo_uid);
+                    is_msg_valid = false;
+
+                }
+
+            }
+        }     
+
+
+        // ====== Check whether now I receive all the message for decoding the contents
+        bool is_ready_to_assemble = false; // Inisialisation -- This will be true if all the msgs are received.        
+        if(is_msg_valid){
+            printf("[%d] Robot %d storing the msg from %d \n", kilo_ticks, kilo_uid, neighbour_kilo_uid);
+
+            msg_rcv_time_stamp[index] = kilo_ticks;
+            msg_neighbour_robots[index] = neighbour_kilo_uid;             
+            msg_seq_waiting[index] = msg_seq_waiting[index] + 1;
+
+            
+            // Store the msg contents into a local memory   
+            // TODO: Here the 8 below should be changed        
+            for(int i=1; i<8; i=i+1){ // 7-byte mode   
+                memcpy(&mf, &(m->data[i+2]), 1); // memcpy(dest, src, count_byte)
+                switch(index){
+                    case 0:
+                        msg_store_0.push_back(mf);
+                        break;
+                    case 1:
+                        msg_store_1.push_back(mf);
+                        break;
+                    case 2:
+                        msg_store_2.push_back(mf);
+                        break;
+                    case 3:
+                        msg_store_3.push_back(mf);
+                        break;
+                    case 4:
+                        msg_store_4.push_back(mf);
+                        break;
+                    case 5:
+                        msg_store_5.push_back(mf);
+                        break;
+                    case 6:
+                        msg_store_6.push_back(mf);
+                        break;
+                    case 7:  
+                        msg_store_7.push_back(mf);
+                        break;
+                }
+            }
+
+            // Check whether I am ready to assemble
+            if(msg_seq_waiting[index] == neighbour_num_msg){
+                printf("[%d] *READY* - Robot %d is ready to assemble all the msgs from %d \n", kilo_ticks, kilo_uid, neighbour_kilo_uid);
+                is_ready_to_assemble = true;
+            }
+
+            printf("[%d] Robot %d storage (%d,%d,%d,%d,%d,%d,%d,%d) for (%d,%d,%d,%d,%d,%d,%d,%d)\n", kilo_ticks, kilo_uid, msg_store_0.size(), msg_store_1.size(), msg_store_2.size(), msg_store_3.size(), msg_store_4.size(), msg_store_5.size(), msg_store_6.size(), msg_store_7.size(), msg_neighbour_robots[0], msg_neighbour_robots[1], msg_neighbour_robots[2], msg_neighbour_robots[3], msg_neighbour_robots[4], msg_neighbour_robots[5], msg_neighbour_robots[6], msg_neighbour_robots[7]);            
+            
+        }
+
+        
+        // ====== Message assembling/decoding
+        if(is_ready_to_assemble){
+            // TODO: Message decode accroding to the protocol 
+            std::vector<unsigned char> msg_decode = {};
+            switch(index){
+                case 0:
+                    msg_decode = msg_store_0;
+                    msg_store_0 = {}; // Empty the used storage
+                    break;
+                case 1:
+                    msg_decode = msg_store_1;
+                    msg_store_1 = {};
+                    break;
+                case 2:
+                    msg_decode = msg_store_2;
+                    msg_store_2 = {};
+                    break;
+                case 3:
+                    msg_decode = msg_store_3;
+                    msg_store_3 = {};
+                    break;
+                case 4:
+                    msg_decode = msg_store_4;
+                    msg_store_4 = {};
+                    break;
+                case 5:
+                    msg_decode = msg_store_5;
+                    msg_store_5 = {};
+                    break;
+                case 6:
+                    msg_decode = msg_store_6;
+                    msg_store_6 = {};
+                    break;
+                case 7:  
+                    msg_decode = msg_store_7;
+                    msg_store_7 = {};
+                    break;
+            }
+            msg_neighbour_robots[index] = 0; // Initialise the used storage
+            msg_seq_waiting[index] = 0;
+
+
+            printf("[%d] *** DECODED *** Robot %d decoded msg (size - %d); (msg - [", kilo_ticks, kilo_uid, msg_decode.size());
+            for(int i=0; i < msg_decode.size(); i=i+1){
+                printf(" %d ",msg_decode[i]);
+            }
+            printf("])\n");
+
+            
+            printf("[%d] Robot %d storage (%d,%d,%d,%d,%d,%d,%d,%d) for (%d,%d,%d,%d,%d,%d,%d,%d)\n", kilo_ticks, kilo_uid, msg_store_0.size(), msg_store_1.size(), msg_store_2.size(), msg_store_3.size(), msg_store_4.size(), msg_store_5.size(), msg_store_6.size(), msg_store_7.size(), msg_neighbour_robots[0], msg_neighbour_robots[1], msg_neighbour_robots[2], msg_neighbour_robots[3], msg_neighbour_robots[4], msg_neighbour_robots[5], msg_neighbour_robots[6], msg_neighbour_robots[7]);  
+
+            // LED Display 
+            if(check_msg(msg_decode, neighbour_kilo_uid)){
+                LED_on(neighbour_kilo_uid);
+            }
+            
+        }
+
+
+        
+
+        
+
+        // unsigned short int mf;
+        // memcpy(&mf, &(m->data[7]), 2); // memcpy(dest, src, count_byte)
+        // num_iterations_neighbour = mf;
+
+        // unsigned char mg;
+        // memcpy(&mg, &(m->data[9]), 1); // memcpy(dest, src, count_byte)
+        // random_time_stamp_neighbour = mg;
+
+
+        // // D-Mutex Algorithm (T-RO paper, Algorithm 2)
+        // if ((num_iterations_neighbour > num_iterations)||((num_iterations_neighbour == num_iterations)&&(random_time_stamp_neighbour > random_time_stamp)))
+        // {
+        //     for (int i=0; i < num_task; i++){
+        //         memcpy(&mg, &(m->data[2*i+1]), 1); 
+        //         num_agent_in_task[i] = mg; 
+
+        //     }            
+
+        //     num_iterations = num_iterations_neighbour;
+        //     random_time_stamp = random_time_stamp_neighbour;
+
+        //     satisfied = 0; 
+
+        // }
+
+        
+        // printf("Robot %d rx: Distances of Tasks (Neighbour known) are (%d, %d, %d)\n", kilo_uid, distance_to_task_neighbour[0], distance_to_task_neighbour[1], distance_to_task_neighbour[2]);
+
+        // // Estimating distances to tasks (Newly Added)
+        // for (int i=0; i< num_task; i++){
+        //     memcpy(&mg, &(m->data[2*i+2]), 1);
+        //     if (mg != 0){ // NB: "mg" may be zero as m->data was initialised. So, we need to rule out this case when taking neighbour info.  
+        //         distance_to_task_neighbour[i] = mg;
+        //     } 
+            
+        //     // if (distance_to_task[i] > distance_to_task_neighbour[i] + unit_hop_dist*dist_neighbour/max_dist_neighbour){ // Update distance_task value 
+        //     if (distance_to_task_uint[i] > distance_to_task_neighbour[i] + unit_hop_dist*dist_neighbour/max_dist_neighbour + correction_dist_to_task){ // Update distance_task value             
+        //         // printf("Robot %d rx: Distance of Task %d is updated from %d to %d because of %d \n", kilo_uid, i+1, distance_to_task[i], distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour), distance_to_task_neighbour[i] + unit_hop_dist*dist_neighbour/max_dist_neighbour);
+        //         // distance_to_task[i] = distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour);
+        //         // printf("Robot %d rx: Distance of Task %d is updated from %d to %d \n", kilo_uid, i+1, distance_to_task_uint[i], distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour));
+        //         distance_to_task_uint[i] = distance_to_task_neighbour[i] + (unsigned char)(unit_hop_dist*dist_neighbour/max_dist_neighbour + correction_dist_to_task);                
+        //         task_info_time_stamp[i] = kilo_ticks;                 
+        //     }
+        // }
+
+
+
+}
+
+std::vector<unsigned char> Comm_with_multiple_msgs::generate_contents_to_broadcast(){
+    
+    printf("[%d] Robot %d generated a sequence of messages \n", kilo_ticks, kilo_uid);
+
+    // TODO: Generation of information to share  - partition_info -> contents_to_broadcast; 
+    std::vector<unsigned char> _contents_to_broadcast = {}; // The contents that I am going to broadcast
+    _contents_to_broadcast.push_back(kilo_uid);
+    _contents_to_broadcast.push_back(kilo_uid+1);
+    _contents_to_broadcast.push_back(kilo_uid+2);
+    _contents_to_broadcast.push_back(kilo_uid+3);
+    _contents_to_broadcast.push_back(kilo_uid+4);
+    _contents_to_broadcast.push_back(kilo_uid+5);
+    _contents_to_broadcast.push_back(kilo_uid+6);
+    _contents_to_broadcast.push_back(kilo_uid+7);
+    _contents_to_broadcast.push_back(kilo_uid+8);
+    _contents_to_broadcast.push_back(100);
+    _contents_to_broadcast.push_back(110);
+    _contents_to_broadcast.push_back(120);
+
+    return _contents_to_broadcast;
+   
+
+}
+
+void Comm_with_multiple_msgs::broadcast_msgs(){
+
+        // Check if the generated contents are firstly to be broadcast 
+        if (is_msg_to_broadcast == false){
+            // Contents to msgs
+            num_byte_contents = contents_to_broadcast.size(); // Check the byte size of the contents
+            if(num_byte_contents > 0){
+                // Number of msgs to broadcast
+                if(num_byte_contents % 7 == 0){
+                    num_msg = num_byte_contents/7; 
+                }
+                else{
+                    num_msg = num_byte_contents/7 + 1; 
+                }
+                        
+                // Initilisation - now the first msg will be sent
+                is_msg_to_broadcast = true;
+                seq_msg = 0; 
+
+                printf("[%d] Robot %d Ready to broadcast (%d msgs)\n", kilo_ticks, kilo_uid, num_msg);
+            }
+            else{ // For debug
+                printf("[%d] ERROR: Robot %d -- No contents to broadcast\n", kilo_ticks, kilo_uid);
+            }  
+        }
+
+
+        if (seq_msg < num_msg){ // Meaning that the robot is in broadcasting a sequence of msgs
+            unsigned int num_msg_seq_msg = num_msg*10 + seq_msg;
+            memcpy(&msg.data[2], &num_msg_seq_msg, 1); // memcpy(dest, src, count_byte)
+            // Msg Generation --- Main contents
+            int num_byte_to_broadcast = std::min((int)contents_to_broadcast.size(), 7);
+            printf("[%d] Robot %d num_byte_to_broadcast %d\n", kilo_ticks, kilo_uid, num_byte_to_broadcast);
+            for (int i=3; i < num_byte_to_broadcast+3; i=i+1){    
+                unsigned int byte_to_broadcast = contents_to_broadcast.front();                
+                memcpy(&msg.data[i], &byte_to_broadcast, 1); // memcpy(dest, src, count_byte)                
+                std::vector<unsigned char>::iterator first_index = contents_to_broadcast.begin();
+                contents_to_broadcast.erase(first_index);
+                printf("[%d] Robot %d put %d to the msg, now the remaining bytes are %d\n", kilo_ticks, kilo_uid, byte_to_broadcast, contents_to_broadcast.size());
+                // printf("[%d] Robot %d Msg Type %d\n", kilo_ticks, kilo_uid, msg.type);
+            }
+            // Fill dummy info indicating the end of the msg
+            if(num_byte_to_broadcast < 7){    
+                for (int i=num_byte_to_broadcast+3; i < 10; i=i+1){
+                    unsigned int byte_to_broadcast = MSG_END;   
+                    memcpy(&msg.data[i], &byte_to_broadcast, 1); // memcpy(dest, src, count_byte)  
+                    printf("[%d] Robot %d put %d to the msg\n", kilo_ticks, kilo_uid, byte_to_broadcast);                                  
+                }
+            }
+            // Msg Generation --- Header & CRC
+            memcpy(&msg.data[1], &kilo_uid, 1); // memcpy(dest, src, count_byte)          
+            msg.crc     = message_crc(&msg);
+
+            printf("[%d] Robot %d broadcast (%d/%d) msg - Test %d, Msg Type %d\n", kilo_ticks, kilo_uid, seq_msg+1, num_msg, num_msg_seq_msg, msg.type);
+
+            // Update the parameters for the next loop
+            seq_msg = seq_msg + 1; // The sequence of the current msg to broadcast
+            if(seq_msg == num_msg){ // Now broadcasting is finished, so do initilisation
+                num_msg = 0;
+                seq_msg = 0;
+                is_msg_to_broadcast = false;
+            }
+
+        }
+
+}
+
+void Comm_with_multiple_msgs::LED_on(int indicator){
+    // LED Display
+    switch (indicator){
+        case 0: 
+            set_color(RGB(2,2,2));
+            break;
+        case 1: // Task 1
+            set_color(RGB(0,2,0));
+            break;
+        case 2: // Task 2
+            set_color(RGB(2,0,2));     
+            break;
+        case 3: // Task 3
+            set_color(RGB(0,1,2));     
+            break;
+        case 4: 
+            set_color(RGB(1,0,0));     
+            break;
+        case 5: 
+            set_color(RGB(0,0,1));     
+            break;
+                
+    }
+}
+
+bool Comm_with_multiple_msgs::check_msg(std::vector<unsigned char> msg_decode, unsigned char neighbour_kilo_uid){
+
+
+    std::vector<unsigned char> preknown_contents = {}; 
+    preknown_contents.push_back(neighbour_kilo_uid);
+    preknown_contents.push_back(neighbour_kilo_uid+1);
+    preknown_contents.push_back(neighbour_kilo_uid+2);
+    preknown_contents.push_back(neighbour_kilo_uid+3);
+    preknown_contents.push_back(neighbour_kilo_uid+4);
+    preknown_contents.push_back(neighbour_kilo_uid+5);
+    preknown_contents.push_back(neighbour_kilo_uid+6);
+    preknown_contents.push_back(neighbour_kilo_uid+7);
+    preknown_contents.push_back(neighbour_kilo_uid+8);
+    preknown_contents.push_back(100);
+    preknown_contents.push_back(110);
+    preknown_contents.push_back(120);
+    preknown_contents.push_back(255);
+    preknown_contents.push_back(255);
+
+    bool result;
+    if(preknown_contents == msg_decode){
+        result = true;
+    }
+    else{
+        result = false;
+    }
+    return result;
+
+}
+
+void Comm_with_multiple_msgs::loop()
+{
+    // NB: All the variables will be reinitialised at each loop
+    int task_found_env;
+    if (kilo_ticks > last_update + 16)
+    {
+        last_update = kilo_ticks;
+
+        
+        // // Get Task Info from Environment (if the robot found a new task by itself)
+        // task_found_env = get_environment(); 
+        // // printf("Robot %d found Task %d\n", kilo_uid, task_found_env);
+        // if (task_found_env!=0){
+        //     // distance_to_task[task_found_env-1] = 1; // Careful about Task Index; It means that the robot found a task, which is 1 hop count distance from it self. 
+        //     distance_to_task_uint[task_found_env-1] = 1; // Careful about Task Index; It means that the robot found a task, which is 1 hop count distance from it self.             
+        //     task_info_time_stamp[task_found_env-1] = kilo_ticks; 
+            
+        // }
+        // else{ // For forgetting untracked tasks
+        //     for (int i=0; i< num_task; i++){ // For each task
+        //         if (distance_to_task_uint[i] != 1 && distance_to_task_uint[i] < 255){ // For only non-task robots; This condition is just for experiment purposes. 
+        //             distance_to_task_uint[i] = distance_to_task_uint[i] + (kilo_ticks - task_info_time_stamp[i])/32*unit_hop_dist*parameter_forgetting; // ++parameter_forgetting*unit_hop_dist per second; The increment should be less than half, I guess. Otherwise, distance_to_task is updated by neighbours who still has lower values, which eventually causes longer time for all the robots to forget this value. 
+        //             if (distance_to_task_uint[i] > 230){ // 230, which is the value that is arbitrary large but below than 255. To cut off overflow. This value functions as bumber. 
+        //                 distance_to_task_uint[i] = 255;
+        //             }
+        //         }
+
+        //     }
+        // }
+  
+        // // Utility Computation
+        // for(int i=0; i<num_task; i++){
+        //     task_cost[i] = distance_to_task_uint[i];
+        // }
+        // if (chosen_task != TASK_NULL){
+        //     chosen_task_cost = task_cost[chosen_task-1];
+        // }
+        
+        // // Utility Comparison
+        // int min_cost;
+        // min_cost = *std::min_element(task_cost.begin(), task_cost.end());
+        // int preferred_task; 
+        // preferred_task = std::min_element(task_cost.begin(), task_cost.end()) - task_cost.begin() + 1;
+        // if (min_cost == 255){
+        //     chosen_task = TASK_NULL;
+        //     chosen_task_cost = 255;
+        // }
+        // else if (min_cost < chosen_task_cost){
+        //     // printf("Robot %d joins to Task %d because its delta_cost is %d\n", kilo_uid, preferred_task, chosen_task_cost - min_cost);
+        //     chosen_task = preferred_task;
+        //     chosen_task_cost = min_cost;
+        // }
+        
+
+        // num_iterations = (unsigned short int)std::rand();
+
+
+        // // Broadcast      
+        // for(int i=0; i<num_task; i++){
+        //     if (distance_to_task_uint[i] > 255){
+        //         distance_to_task[i] = 255;
+        //     }
+        //     else{
+        //         distance_to_task[i] = distance_to_task_uint[i];
+        //     }
+            
+        // } 
+        
+
+        // Generation of contents to broadcast
+        if (is_msg_to_broadcast == false){
+            contents_to_broadcast = generate_contents_to_broadcast();
+        }
+
+        // Broadcast the generated contents using multiple messages
+        broadcast_msgs();
+        
+    }
+
+}
+//-------------------------------------------------------------
 
 
 
