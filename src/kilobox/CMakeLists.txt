@@ -23,6 +23,10 @@ set(kilobox_SRC
     worldfile.h
 	evokilo1.h
 	evokilo1.cpp
+	utils.h
+	utils.cpp
+	grape.h
+	grape.cpp
 )
 
 

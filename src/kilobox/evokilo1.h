@@ -6,6 +6,7 @@
 #ifndef EVOKILO1_H
 #define EVOKILO1_H
 
+#include "grape.h" // Functions for GRAPE
 #include "kilolib.h"
 #include <vector>
 #include <cstdlib>
@@ -729,10 +730,168 @@ public:
     void message_rx(message_t *m, distance_measurement_t *d); // Message receive callback
 
 
-    std::vector<unsigned char> generate_contents_to_broadcast(); // Message generation 
-    void broadcast_msgs(); // Message generation 
+    std::vector<unsigned char> generate_contents_to_broadcast(); // Generate a long msg from the robot's locally-known partition (i.e. myPartition)  
+    void broadcast_msgs(); // Broadcast the generated contents using multiple messages
     void LED_on(int indicator); // Display LED indicator
-    bool check_msg(std::vector<unsigned char> msg_decode, unsigned char neighbour_kilo_uid); // Function to compare the preknown msg with a received msg
+    bool check_msg(std::vector<unsigned char> msg_decode, unsigned char neighbour_kilo_uid);
+};
+
+
+
+
+
+
+#define MSG_END 0
+class Estimation_distance_to_task_using_multiple_msgs : public Kilobot
+{
+public:
+    // kiloobt controller for Estimation_distance_to_task_using_multiple_msgs
+    
+    Estimation_distance_to_task_using_multiple_msgs(ModelPosition *_pos, Settings *_settings,
+                    std::vector<std::string> _words, std::string _logfile = "") :
+    Kilobot (_pos, _settings),
+    words   (_words),
+    logfile (_logfile)
+    {
+        if (logfile != "")
+        {
+            //printf("Logfile is %s\n", logfile.c_str());
+            log_open(logfile);
+        }
+        kilo_message_tx         = (message_tx_t)&Estimation_distance_to_task_using_multiple_msgs::message_tx_dummy;
+        kilo_message_rx         = (message_rx_t)&Estimation_distance_to_task_using_multiple_msgs::message_rx_dummy;
+        kilo_message_tx_success = (message_tx_success_t)&Estimation_distance_to_task_using_multiple_msgs::message_tx_success_dummy;
+        setup();
+    }
+    ~Estimation_distance_to_task_using_multiple_msgs()
+    {
+        if (lfp)
+            log_close();
+    }
+    // Class methods to handle log file
+    static FILE *lfp;
+    static void log_open(std::string fname)
+    {
+        if (!lfp)
+        {
+            printf("Opening log file %s\n", fname.c_str());
+            lfp = fopen(fname.c_str(),"w");
+        }
+    }
+    static void log(char *s)
+    {
+        if (lfp)
+            fputs(s, lfp);
+    }
+    static void log_close()
+    {
+        fclose(lfp);
+        lfp = NULL;
+    }
+    
+    //void finish();
+    std::vector<std::string> words;
+    std::string logfile;
+    
+    // Hold usecs so we can log every second
+    usec_t last_time = 0;
+    
+    
+    //------------------------------------------------------------
+    // Kilobot user functions
+    //------------------------------------------------------------
+    
+    void setup();
+    void loop();
+    int last_update;
+    int kilo_ticks_ini;
+    
+ 
+
+    message_t   msg; // Note: Defined as "uint8_t data[9]" in kilolib.h: each uint8_t can be 0 to 255. 
+    // Data for Message    
+    
+    
+    
+    // GRAPE Variables 
+    partition myPartition;
+    partition neighbourPartition;
+
+    // This is a simulated scenario information 
+    global_env _global_env;
+    // Locally known information 
+    local_env_info myLocalEnvInfo;
+    
+    // std::vector<unsigned char> distance_to_task = {255, 255, 255};  // data[2], data[4], data[6] - Initialised with arbirary big numbers
+    // std::vector<unsigned int> distance_to_task_uint = {255, 255, 255};  // This is for local computation. 
+    
+    
+    // Neighbour's info (for D-Mutex)
+    // unsigned short int num_iterations_neighbour = 0;
+    // unsigned char random_time_stamp_neighbour = 0;
+
+    // Neighbour's info (for estimating distances to tasks) - Newly added for KiloGRAPE
+    std::vector<unsigned char> distance_to_task_neighbour = {255, 255, 255};
+    std::vector<uint32_t> task_info_time_stamp = {kilo_ticks, kilo_ticks, kilo_ticks}; // The time when this task was found
+
+    // Decision Making (Local Information)
+    int chosen_task = 0;
+    int chosen_task_cost = 255; // Arbirarily set
+
+    // Scenario
+    
+    unsigned char unit_hop_dist = 15; // The communication radius will be modulated up to this value.
+    float parameter_forgetting = 1.0; // The user parameter to set how quickly a robot forgets its "distance_to_task" value as time goes. (See the main loop in cpp)
+    float expected_time_for_comm = 0.5; // The user parameter to set the expected time spent for one communication transaction
+    float correction_dist_to_task = expected_time_for_comm * unit_hop_dist * parameter_forgetting;
+
+    
+
+    // Communication using multiple msgs (The following variables are used in "broadcast_msgs()")
+    unsigned int seq_msg = 0; // The sequence of the current msg to broadcast
+    unsigned int num_msg = 0; // The number of messages to broadcast
+    bool is_msg_to_broadcast = false; // Is there any messages to broadcast
+    std::vector<unsigned char> contents_to_broadcast = {}; // The contents that I am going to broadcast
+    
+
+    //-- Receiving Msgs from neighbour robots
+    unsigned char neighbour_kilo_uid;   // data[1]
+    unsigned char rcv_num_seq_msg;      // data[2]
+    std::vector<unsigned char> msg_neighbour_robots = {0,0,0,0,0,0,0,0}; // This vector indicates whose information I am holding
+    std::vector<unsigned char> msg_rcv_time_stamp = {0,0,0,0,0,0,0,0}; // This vector indicates when the recent msg I received
+    std::vector<unsigned char> msg_seq_waiting = {0,0,0,0,0,0,0,0}; // This vector indicates the sequence of msg that I need to receive further. 
+    std::vector<unsigned char> msg_store_0 = {}; // The vector containing the contents
+    std::vector<unsigned char> msg_store_1 = {}; 
+    std::vector<unsigned char> msg_store_2 = {};
+    std::vector<unsigned char> msg_store_3 = {};
+    std::vector<unsigned char> msg_store_4 = {};
+    std::vector<unsigned char> msg_store_5 = {};
+    std::vector<unsigned char> msg_store_6 = {};
+    std::vector<unsigned char> msg_store_7 = {};
+    std::vector<unsigned char> msg_store_8 = {};
+    
+
+    // Message transmission callback
+    message_t *tx_message() 
+    {
+        return &msg;
+    }
+
+    // Operation when receiving a msg
+    void message_rx(message_t *m, distance_measurement_t *d); // Message receive callback: This generates "msg_decode" and put it to "get_partition_from_msg()"
+    // void get_partition_from_msg(std::vector<unsigned char> msg_decode); // This generates local information for task allocation. 
+
+    // Operation after decision-making done
+    // std::vector<unsigned char> gen_msg_from_partition(); // Generate a long msg from the robot's locally-known partition (i.e. myPartition)  
+    void broadcast_msgs(); // Broadcast the generated contents using multiple messages
+
+    // Etc
+    void LED_on(int indicator); // Display LED indicator
+    // bool check_msg(std::vector<unsigned char> msg_decode, unsigned char neighbour_kilo_uid); // Function to compare the preknown msg with a received msg
+    
+    
+
+
 };
 
 class Grape : public Kilobot
