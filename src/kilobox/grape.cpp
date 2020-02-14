@@ -174,9 +174,9 @@ local_env_info UpdateLocalEnvAsNewTaskFound(local_env_info myLocalEnvInfo, int t
 local_env_info UpdateTaskFreshness(local_env_info myLocalEnvInfo, uint32_t kilo_ticks){ // Forgetting task information as time goes  (But, if the robot is very close to a task, don't forget this task's info)
     
     // User Parameters
-    float forget_rate = 500.0; // The user parameter to set how quickly a robot forgets its "distance_to_task" value as time goes. (See the main loop in cpp)    
-    unsigned int expire_time = 1000; // When "task_freshness" reaches this value, then a robot does not consider this task as it is not valid any longer. 
-    unsigned char distance_increase_rate = 10;
+    float forget_rate = 200.0; // NOTE: The user parameter to set how quickly a robot forgets its "task_distance" value as time goes. This paramter works along with "expire_time" below. (However, it works when a robot is alone. If there is another neighbour robot who updates task_distance info, then this parameter doesn't much matter)    
+    unsigned int expire_time = 1000; // NOTE: When "task_freshness" reaches this value, then a robot does not consider this task as it is not valid any longer. 
+    unsigned char distance_increase_rate = 4; // NOTE: Just by a robot itself, it increases each "task_distance". Otherwise, when this info is updated by inter-robot communication, an expired task is alive again. 
 
     // Function
     for (int i=0; i< myLocalEnvInfo.num_task; i++){ // For each locally known task
