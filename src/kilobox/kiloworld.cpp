@@ -235,7 +235,9 @@ void Kiloworld::parse_worldfile(float xoffset, float yoffset)
             if (words[0] == "comm_with_multiple_msgs")
                 bots.push_back((Kilobot*)(new Comm_with_multiple_msgs(mod, settings, words, logfile.c_str())));   
             if (words[0] == "estimation_distance_to_task_using_multiple_msgs")
-                bots.push_back((Kilobot*)(new Estimation_distance_to_task_using_multiple_msgs(mod, settings, words, logfile.c_str())));                                
+                bots.push_back((Kilobot*)(new Estimation_distance_to_task_using_multiple_msgs(mod, settings, words, logfile.c_str())));  
+            if (words[0] == "grape_using_multiple_msgs")
+                bots.push_back((Kilobot*)(new Grape_using_multiple_msgs(mod, settings, words, logfile.c_str())));                                                
             if (words[0] == "grape")
                 bots.push_back((Kilobot*)(new Grape(mod, settings, words, logfile.c_str())));                
 
