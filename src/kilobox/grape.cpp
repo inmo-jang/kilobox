@@ -49,6 +49,130 @@ std::vector<unsigned char> CheckSatsified(std::vector<unsigned char> agent_satis
     
 }
 
+
+std::vector<unsigned char> UpdateAgentDecisionVec(std::vector<unsigned char> agent_decision, unsigned int kilo_uid, int chosen_task, int num_task){ // Update agent_decision according to the robot's decision (chosen_task). Depending on num_task, the size of agent_decision is varied.  num_task includes void_task.
+ 
+    
+    int bits_for_each_robot = (int)ceil(log2(num_task)); // e.g. it becomes 2 when num_task is 3. 
+
+    int bit_start = bits_for_each_robot*kilo_uid + 1; 
+    int idx_start = (int)ceil(bit_start/8.0)-1; // To find the corresponding element in "agent_decision"
+    int bit_start_idx = (bit_start - 1)%8; // bit_start_from_the_byte
+  
+    int bit_end = bits_for_each_robot*(kilo_uid+1);
+    int idx_end = (int)ceil(bit_end/8.0)-1;// To find the corresponding element in "agent_decision"
+    int bit_end_idx = (bit_end - 1)%8;  // bit_end_from_the_byte
+    
+    int num_robot = EstimateNumRobot(agent_decision.size(), num_task); 
+    int num_bytes_agent_decision = (int)ceil(num_robot*bits_for_each_robot/8.0f);    
+    
+
+    
+    std::vector<unsigned char> agent_decision_mypart  = slice(agent_decision,idx_start,idx_end); // It may be 1 element or multiples
+    std::vector<unsigned char> agent_decision_mypart_before  = {};
+    if (idx_start > 0){
+        agent_decision_mypart_before  = slice(agent_decision,0,idx_start-1); // It may be 1 element or multiples
+    }    
+    std::vector<unsigned char> agent_decision_mypart_after  = slice(agent_decision,idx_end+1,agent_decision.size()-1); // It may be 1 element or multiples
+    std::vector<unsigned char> agent_decision_mypart_modified = {};
+    if(agent_decision_mypart.size() > 1){
+
+        unsigned short int agent_decision_mypart_short = Vec2Int(agent_decision_mypart);
+        unsigned short int agent_decision_neutraliser = 0;
+        for (int i = bit_start_idx; i <= bit_end_idx+8; i++){
+            agent_decision_neutraliser = agent_decision_neutraliser | (1 << i);
+        }
+    
+        agent_decision_neutraliser = ~agent_decision_neutraliser;
+        unsigned short int agent_decision_short_neutralised = agent_decision_mypart_short & agent_decision_neutraliser;
+        unsigned short int agent_decision_short_modified = agent_decision_short_neutralised | (chosen_task << bit_start_idx);
+        agent_decision_mypart_modified.resize(2);        
+        agent_decision_mypart_modified = Int2Vec(agent_decision_short_modified);        
+    }
+    else{
+        unsigned char agent_decision_mypart_byte = agent_decision_mypart[0];
+        unsigned char agent_decision_neutraliser = 0;
+        for (int i = bit_start_idx; i <= bit_end_idx; i++){
+            agent_decision_neutraliser = agent_decision_neutraliser | (1 << i);
+        }
+        agent_decision_neutraliser = ~agent_decision_neutraliser;
+        unsigned char agent_decision_byte_neutralised = agent_decision_mypart_byte & agent_decision_neutraliser;
+        unsigned char agent_decision_byte_modified = agent_decision_byte_neutralised | (chosen_task << bit_start_idx);
+        agent_decision_mypart_modified.resize(1);
+        agent_decision_mypart_modified[0] = agent_decision_byte_modified;
+        
+    }
+
+    std::vector<unsigned char> agent_decision_modified = AddVecToAnother(agent_decision_mypart_modified, agent_decision_mypart_before);
+    agent_decision_modified = AddVecToAnother(agent_decision_mypart_after, agent_decision_modified);     
+    return agent_decision_modified;
+    
+}
+
+
+int GetMyChosenTaskID(unsigned int kilo_uid, std::vector<unsigned char> agent_decision, int num_task){ // num_task includes void_task.
+    int bits_for_each_robot = (int)ceil(log2(num_task)); // e.g. it becomes 2 when num_task is 3. 
+    
+        int bit_start = bits_for_each_robot*kilo_uid + 1; 
+        int idx_start = (int)ceil(bit_start/8.0)-1; // To find the corresponding element in "agent_decision"
+        int bit_start_idx = (bit_start - 1)%8; // bit_start_from_the_byte
+      
+        int bit_end = bits_for_each_robot*(kilo_uid+1);
+        int idx_end = (int)ceil(bit_end/8.0)-1;// To find the corresponding element in "agent_decision"
+        int bit_end_idx = (bit_end - 1)%8;  // bit_end_from_the_byte      
+        
+  
+        std::vector<unsigned char> agent_decision_mypart  = slice(agent_decision,idx_start,idx_end); // It may be 1 element or multiples
+        unsigned char my_chosen_task = 0; // Initialisation
+        if(agent_decision_mypart.size() > 1){
+            
+            unsigned short int agent_decision_mypart_short = Vec2Int(agent_decision_mypart);
+            unsigned short int agent_decision_neutraliser = 0;
+            for (int i = bit_start_idx; i <= bit_end_idx+8; i++){
+                agent_decision_neutraliser = agent_decision_neutraliser | (1 << i);
+            }
+            
+            unsigned short int agent_decision_short_filtered = agent_decision_mypart_short & agent_decision_neutraliser;
+            my_chosen_task = (unsigned char)(agent_decision_short_filtered >> bit_start_idx);
+    
+        }
+        else{
+            unsigned char agent_decision_mypart_byte = agent_decision_mypart[0];
+            unsigned char agent_decision_neutraliser = 0;
+            for (int i = bit_start_idx; i <= bit_end_idx; i++){
+                agent_decision_neutraliser = agent_decision_neutraliser | (1 << i);
+            }
+            
+            unsigned char agent_decision_byte_filtered = agent_decision_mypart_byte & agent_decision_neutraliser;
+            my_chosen_task = (agent_decision_byte_filtered >> bit_start_idx);
+            
+        }   
+        return my_chosen_task;
+}
+
+std::vector<unsigned short int> GetSubpopulation(std::vector<unsigned char> agent_decision, int num_task, int num_agent){
+    std::vector<unsigned short int> num_agent_in_task(num_task,0);
+    
+    for(int _kilo_uid = 0; _kilo_uid < num_agent; _kilo_uid++){
+        unsigned char my_chosen_task = GetMyChosenTaskID(_kilo_uid, agent_decision, num_task);            
+        num_agent_in_task[my_chosen_task]++;               
+    }
+  
+    return num_agent_in_task;
+}
+
+int EstimateNumRobot(int num_bytes_agent_decision, int num_task){ // Estimate the number of robots from agent_decision.size(); num_task includes void_task
+    int bits_for_each_robot = (int)ceil(log2(num_task)); // e.g. it becomes 2 when num_task is 3.
+    int num_robot = num_bytes_agent_decision*8/bits_for_each_robot;
+    return num_robot;    
+}
+
+int NumByteForAgentDecisionVec(int num_robot, int num_task){ // Given the number of robot/task, compute the required number of bytes for "agent_decision"
+    int bits_for_each_robot = (int)ceil(log2(num_task)); // e.g. it becomes 2 when num_task is 3. 
+    int num_bytes_agent_decision = (int)ceil(num_robot*bits_for_each_robot/8.0f); 
+    return num_bytes_agent_decision;
+}
+
 std::vector<unsigned char> gen_content_from_partition(partition myPartition){
     
     
@@ -141,7 +265,7 @@ local_env_info UpdateLocalEnvAsNewTaskFound(local_env_info myLocalEnvInfo, int t
 {
     // Get the index of the task in global info (This is just for simulation)
     int task_idx_in_globalinfo = GetIndexFromVec(_global_env.task_id, task_found_index);
-    if (!IsIncludedInVec(myLocalEnvInfo.task_id, task_found_index))
+    if (!IsIncludedInVec(myLocalEnvInfo.task_id, task_found_index)) // New Task Found
     { // If the task found is new one, add this task to my local information
         // Save the task info to myLocalInfo
         myLocalEnvInfo.num_task++;
@@ -154,6 +278,8 @@ local_env_info UpdateLocalEnvAsNewTaskFound(local_env_info myLocalEnvInfo, int t
         // myLocalEnvInfo.num_agent_in_task.push_back(0); // Number of Participants for this task
 
         myLocalEnvInfo.task_freshness.push_back(0); // Initilisation
+
+        myLocalEnvInfo.agent_decision = IniVec(myLocalEnvInfo.agent_decision); // Initialisation as this is a new GRAPE
 
     }
     else
@@ -174,9 +300,9 @@ local_env_info UpdateLocalEnvAsNewTaskFound(local_env_info myLocalEnvInfo, int t
 local_env_info UpdateTaskFreshness(local_env_info myLocalEnvInfo, uint32_t kilo_ticks){ // Forgetting task information as time goes  (But, if the robot is very close to a task, don't forget this task's info)
     
     // User Parameters
-    float forget_rate = 200.0; // NOTE: The user parameter to set how quickly a robot forgets its "task_distance" value as time goes. This paramter works along with "expire_time" below. (However, it works when a robot is alone. If there is another neighbour robot who updates task_distance info, then this parameter doesn't much matter)    
+    float forget_rate = 50.0; // NOTE: The user parameter to set how quickly a robot forgets its "task_distance" value as time goes. This paramter works along with "expire_time" below. (However, it works when a robot is alone. If there is another neighbour robot who updates task_distance info, then this parameter doesn't much matter)    
     unsigned int expire_time = 1000; // NOTE: When "task_freshness" reaches this value, then a robot does not consider this task as it is not valid any longer. 
-    unsigned char distance_increase_rate = 4; // NOTE: Just by a robot itself, it increases each "task_distance". Otherwise, when this info is updated by inter-robot communication, an expired task is alive again. 
+    unsigned char distance_increase_rate = 1; // 4; // NOTE: Just by a robot itself, it increases each "task_distance". Otherwise, when this info is updated by inter-robot communication, an expired task is alive again. 
 
     // Function
     for (int i=0; i< myLocalEnvInfo.num_task; i++){ // For each locally known task
@@ -294,7 +420,44 @@ partition UpdatePartition(partition myPartition, uint16_t kilo_uid, int chosen_t
     return myPartition;
 }
 
+local_env_info UpdateLocalInfo(local_env_info myLocalEnvInfo, uint16_t kilo_uid, int chosen_task){ // Update the exiting partition using the robot's new decision
 
+    myLocalEnvInfo.chosen_task = chosen_task; // NOTE: chosen_task becomes 1,2,3,... or VOID_TASK if no task is selected 
+
+    // Update Partition from Local Info
+    partition newPartition;
+    newPartition.num_task = myLocalEnvInfo.num_task;
+    newPartition.task_id = myLocalEnvInfo.task_id;
+    newPartition.task_demand = myLocalEnvInfo.task_demand;
+    newPartition.task_distance = myLocalEnvInfo.task_distance;
+
+    // Check the size of agent_decision. If not enough, then increase it. 
+    int num_agent_ = EstimateNumRobot(myLocalEnvInfo.agent_decision.size(), myLocalEnvInfo.num_task + 1); // NOTE: here, num_task should include void_task
+    if (kilo_uid + 1 > num_agent_){ // if this robot was not considered in agent_decision
+        int num_byte_to_add = NumByteForAgentDecisionVec(kilo_uid + 1, myLocalEnvInfo.num_task + 1) - myLocalEnvInfo.agent_decision.size();
+        for (int i = 0; i < num_byte_to_add; i++)
+        {
+            myLocalEnvInfo.agent_decision.push_back(0); // Increase 1 element;
+        }
+    }
+    
+    myLocalEnvInfo.agent_decision = UpdateAgentDecisionVec(myLocalEnvInfo.agent_decision, kilo_uid, chosen_task, myLocalEnvInfo.num_task + 1);
+
+    newPartition.agent_decision = myLocalEnvInfo.agent_decision;
+
+
+
+    // Number of Iteration
+    newPartition.num_iterations = myLocalEnvInfo.myPartition.num_iterations + 1; 
+    // Time stamp
+    newPartition.random_time_stamp = (unsigned char)std::rand();    
+
+
+    newPartition.satisfied = true;
+
+    myLocalEnvInfo.myPartition = newPartition;
+    return myLocalEnvInfo;
+}
 
 
 local_env_info UpdateLocalEnvInfoFromPartition(local_env_info myLocalEnvInfo, partition neighbourPartition, uint8_t dist_neighbour, uint32_t kilo_ticks, uint16_t kilo_uid){ // Update myLocalEnvInfo using neighbourPartition
@@ -302,7 +465,8 @@ local_env_info UpdateLocalEnvInfoFromPartition(local_env_info myLocalEnvInfo, pa
     unsigned char unit_hop_dist = 15; // The communication radius will be modulated up to this value.
     unsigned char max_dist_neighbour = 130; // The maximum possible value from "estimate_distance()" function; For normalising purpose; Needs to be set after experiments 
 
-    // Compare Task ID and Update myLocalInfo
+    // (1) Task Information Update: This part is important as Kilobot cannot localise.
+    bool IsNewTaskIncluded = false;  // Initialisation
     for(int _idx_Partition = 0; _idx_Partition < neighbourPartition.task_id.size(); _idx_Partition++){
         int _task_id = neighbourPartition.task_id[_idx_Partition];
         int _expected_task_distance = (int)neighbourPartition.task_distance[_idx_Partition] + (int)(unit_hop_dist*dist_neighbour/max_dist_neighbour);
@@ -310,7 +474,7 @@ local_env_info UpdateLocalEnvInfoFromPartition(local_env_info myLocalEnvInfo, pa
             int _idx_LocalInfo = GetIndexFromVec(myLocalEnvInfo.task_id, _task_id);
             if ((int)myLocalEnvInfo.task_distance[_idx_LocalInfo] > _expected_task_distance){
                 if(_expected_task_distance > 255){
-                    printf("\n\n=========================== Robot %d OverFlow111 =========================== \n\n", kilo_uid);
+                    // printf("\n\n=========================== Robot %d OverFlow111 =========================== \n\n", kilo_uid);
                     myLocalEnvInfo.task_distance[_idx_LocalInfo] = 255;
                 }
                 else{
@@ -326,7 +490,7 @@ local_env_info UpdateLocalEnvInfoFromPartition(local_env_info myLocalEnvInfo, pa
             }                   
         }
         else{ // New Task
-
+            IsNewTaskIncluded = true;
             myLocalEnvInfo.num_task++;
             myLocalEnvInfo.task_id.push_back(neighbourPartition.task_id[_idx_Partition]);
 
@@ -334,7 +498,7 @@ local_env_info UpdateLocalEnvInfoFromPartition(local_env_info myLocalEnvInfo, pa
             // To avoid overflow
             if (_expected_task_distance > 255)
             {
-                printf("\n\n=========================== Robot %d OverFlow 222 =========================== \n\n", kilo_uid);
+                // printf("\n\n=========================== Robot %d OverFlow 222 =========================== \n\n", kilo_uid);
                 myLocalEnvInfo.task_distance.push_back(255);
             }
             else
@@ -349,17 +513,34 @@ local_env_info UpdateLocalEnvInfoFromPartition(local_env_info myLocalEnvInfo, pa
             myLocalEnvInfo.task_freshness.push_back(0); // Initialisation
 
             myLocalEnvInfo.needCheck = true;
-            // myLocalEnvInfo.num_agent_in_task.push_back(0); // Number of Participants for this task
+            
+            // myLocalEnvInfo.agent_decision = IniVec(myLocalEnvInfo.agent_decision); // As new task found, let's start new GRAPE from scratch
 
-            printf("\n Robot %d - New Task Info %d is newly updated\n\n", kilo_uid, neighbourPartition.task_id[_idx_Partition]);
         }
         
     }
 
+    // // (2) Partition Information Update: This part is for GRAPE
+    if(myLocalEnvInfo.num_task == neighbourPartition.num_task && IsNewTaskIncluded == false){ // Only update partition if task info is updated without a new task newly included (i.e., not for a new GRAPE instance)
+        myLocalEnvInfo.myPartition = D_Mutex(myLocalEnvInfo.myPartition, neighbourPartition);
+        
+    }
+    
+    
+        
     return myLocalEnvInfo;
 }
 
+partition D_Mutex(partition myPartition, partition neighbourPartition){ // D-Mutex Algorithm (T-RO paper, Algorithm 2)
 
+    if( (neighbourPartition.num_iterations > myPartition.num_iterations) || ( (neighbourPartition.num_iterations == myPartition.num_iterations) && (neighbourPartition.random_time_stamp > myPartition.random_time_stamp)  ) ){
+        myPartition.agent_decision = neighbourPartition.agent_decision;
+        myPartition.num_iterations = neighbourPartition.num_iterations;
+        myPartition.random_time_stamp = neighbourPartition.random_time_stamp;
+        myPartition.satisfied = false;
+    }  
+    return myPartition;
+}
 
 std::vector<unsigned char> test_gen_content_to_broadcast(uint16_t kilo_uid){ // For Testing Communication Function
     

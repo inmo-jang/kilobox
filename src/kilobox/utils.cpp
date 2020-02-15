@@ -1,6 +1,6 @@
 #include "utils.h"
 
-std::vector<unsigned char> slice(std::vector<unsigned char> const &v, int m, int n)
+std::vector<unsigned char> slice(std::vector<unsigned char> const &v, int m, int n) // Get the part of the vector "v" from index m to index n
 {
     auto first = v.cbegin() + m;
     auto last = v.cbegin() + n + 1;
@@ -77,4 +77,31 @@ unsigned int UpperClamp(unsigned int input, unsigned int upper_bound){
         output = input;
     }
     return output;
+}
+
+void PrintVec(std::vector<unsigned char> vec){
+    printf("Vector Element = [");
+    for(int i=0; i<vec.size(); i++){
+        if (i % 10 == 0){
+            printf(":", vec[i]);
+        }
+        printf("%d,", vec[i]);
+        
+    }printf("]\n");
+}
+
+void PrintVecInt(std::vector<unsigned short int> vec){
+    printf("Vector Element = [");
+    for(int i=0; i<vec.size(); i++){
+        if (i % 10 == 0){
+            printf(":", vec[i]);
+        }
+        printf("%d,", vec[i]);
+        
+    }printf("]\n");
+}
+
+int RandIntRange(int lower, int upper){ // Generage a random integer from lower to upper
+    int num = (std::rand() % (upper - lower + 1)) + lower;  
+    return num;
 }

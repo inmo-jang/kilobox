@@ -814,7 +814,6 @@ public:
     
     
     // GRAPE Variables 
-    partition myPartition;
     partition neighbourPartition;
 
     // This is a simulated scenario information 

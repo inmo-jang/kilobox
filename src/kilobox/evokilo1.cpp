@@ -1063,6 +1063,9 @@ void Grape_using_multiple_msgs::message_rx(message_t *m, distance_measurement_t 
             {
                 printf("[%d] XXX DECODING ERROR --- Robot %d decoded msg (size - %d) ", kilo_ticks, kilo_uid, (int)(decoded_content.size()));
             }
+            else if(decoded_content.size() != neighbour_num_msg * NUM_BYTE_MSG){ // To avoid unexpected comm error
+                printf("[%d] XXXXXXXXXXXXXXXXX DECODING ERROR --- 222 ",kilo_ticks );
+            }
             else
             {
                 printf("[%d] *** DECODED *** Robot %d decoded msg (size - %d) from %d; (msg - [", kilo_ticks, kilo_uid, (int)(decoded_content.size()),neighbour_kilo_uid);
@@ -1216,15 +1219,14 @@ void Grape_using_multiple_msgs::loop()
                 printf("\nRobot %d - Decision Making and chose Task %d; chosen_task = %d \n\n ", kilo_uid, myLocalEnvInfo.task_id[chosen_task-1], chosen_task);
                 LED_on(myLocalEnvInfo.task_id[chosen_task-1]);
             }
-            myLocalEnvInfo.chosen_task = chosen_task;
-            myPartition = UpdatePartition(myPartition, kilo_uid, chosen_task, myLocalEnvInfo); // TODO
-            // printf("Num of Known Task = %d \n", myPartition.num_task );            
+            
+            myLocalEnvInfo = UpdateLocalInfo(myLocalEnvInfo, kilo_uid, chosen_task);        
             // myLocalEnvInfo.needCheck = false;
         }
 
         // Generation of contents to broadcast
         if (is_msg_to_broadcast == false){            
-            contents_to_broadcast = gen_content_from_partition(myPartition);
+            contents_to_broadcast = gen_content_from_partition(myLocalEnvInfo.myPartition);
             // printf("\n\nRobot %d - Content Size %d\n\n", kilo_uid, contents_to_broadcast.size());
         }
 

@@ -15,5 +15,8 @@ std::vector<unsigned char> AddVecToAnother(std::vector<unsigned char> vec_to_add
 int GetMinIndex(std::vector<unsigned int> vec);
 int GetMinValue(std::vector<unsigned int> vec);
 unsigned int UpperClamp(unsigned int input, unsigned int upper_bound);
+void PrintVec(std::vector<unsigned char> vec);
+void PrintVecInt(std::vector<unsigned short int> vec);
+int RandIntRange(int lower, int upper);
 
 #endif
