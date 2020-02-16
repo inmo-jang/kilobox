@@ -920,7 +920,7 @@ void Grape_using_multiple_msgs::message_rx(message_t *m, distance_measurement_t 
         unsigned char neighbour_seq_msg = rcv_num_seq_msg % 10;
         unsigned char neighbour_num_msg = (rcv_num_seq_msg - neighbour_seq_msg)/10;
 
-        printf("[%d] Robot %d rx: Data received %d-th msg of %d msgs from Robot %d\n", kilo_ticks, kilo_uid, neighbour_seq_msg + 1, neighbour_num_msg, neighbour_kilo_uid);
+        // printf("[%d] Robot %d rx: Data received %d-th msg of %d msgs from Robot %d\n", kilo_ticks, kilo_uid, neighbour_seq_msg + 1, neighbour_num_msg, neighbour_kilo_uid);
 
         // ======= Check if I already have a msg from this neighbour robot, and choose the memory to save the msg contents
         int index_msg_store;
@@ -946,7 +946,7 @@ void Grape_using_multiple_msgs::message_rx(message_t *m, distance_measurement_t 
                     is_msg_valid = true; // By default, this message is valid.  
                 }        
                 else{
-                    printf("[%d] LOSS - Robot %d was wating for %d-th msg but received %d from Robot %d  -- New Robot Error\n", kilo_ticks, kilo_uid, msg_seq_waiting[index_msg_store]+1, neighbour_seq_msg +1, neighbour_kilo_uid);
+                    // printf("[%d] LOSS - Robot %d was wating for %d-th msg but received %d from Robot %d  -- New Robot Error\n", kilo_ticks, kilo_uid, msg_seq_waiting[index_msg_store]+1, neighbour_seq_msg +1, neighbour_kilo_uid);
                     is_msg_valid = false;
                 }                        
             }
@@ -957,14 +957,14 @@ void Grape_using_multiple_msgs::message_rx(message_t *m, distance_measurement_t 
                 else if (msg_seq_waiting[index_msg_store] < neighbour_seq_msg){ // This msg seq is wrong. It implies that I may have lost or missed some previous msgs. 
                     
                     // Note that, sometimes, the neighbour robot keeps broadcasting the same msg. That's why we have "<" here.  
-                    printf("[%d] LOSS - Robot %d was wating for %d-th msg but received %d from Robot %d  -- might lost some msgs\n", kilo_ticks, kilo_uid, msg_seq_waiting[index_msg_store]+1, neighbour_seq_msg +1, neighbour_kilo_uid);
+                    // printf("[%d] LOSS - Robot %d was wating for %d-th msg but received %d from Robot %d  -- might lost some msgs\n", kilo_ticks, kilo_uid, msg_seq_waiting[index_msg_store]+1, neighbour_seq_msg +1, neighbour_kilo_uid);
                     // Re-initialisation
                     msg_neighbour_robots[index_msg_store] = 0; 
                     msg_seq_waiting[index_msg_store] = 0;                    
                     is_msg_valid = false;                
                 }
                 else{
-                    printf("[%d] WAIT - Robot %d was wating for %d-th msg but received %d from Robot %d  -- the same msg\n", kilo_ticks, kilo_uid, msg_seq_waiting[index_msg_store]+1, neighbour_seq_msg +1, neighbour_kilo_uid);
+                    // printf("[%d] WAIT - Robot %d was wating for %d-th msg but received %d from Robot %d  -- the same msg\n", kilo_ticks, kilo_uid, msg_seq_waiting[index_msg_store]+1, neighbour_seq_msg +1, neighbour_kilo_uid);
                     is_msg_valid = false;
                 }
             }
@@ -1061,19 +1061,19 @@ void Grape_using_multiple_msgs::message_rx(message_t *m, distance_measurement_t 
 
             if (decoded_content.size() == 0)
             {
-                printf("[%d] XXX DECODING ERROR --- Robot %d decoded msg (size - %d) ", kilo_ticks, kilo_uid, (int)(decoded_content.size()));
+                // printf("[%d] XXX DECODING ERROR --- Robot %d decoded msg (size - %d) ", kilo_ticks, kilo_uid, (int)(decoded_content.size()));
             }
             else if(decoded_content.size() != neighbour_num_msg * NUM_BYTE_MSG){ // To avoid unexpected comm error
-                printf("[%d] XXXXXXXXXXXXXXXXX DECODING ERROR --- 222 ",kilo_ticks );
+                // printf("[%d] XXXXXXXXXXXXXXXXX DECODING ERROR --- 222 ",kilo_ticks );
             }
             else
             {
-                printf("[%d] *** DECODED *** Robot %d decoded msg (size - %d) from %d; (msg - [", kilo_ticks, kilo_uid, (int)(decoded_content.size()),neighbour_kilo_uid);
-                for (int i = 0; i < decoded_content.size(); i = i + 1)
-                {
-                    printf(" %d ", decoded_content[i]);
-                }
-                printf("])\n");
+                // printf("[%d] *** DECODED *** Robot %d decoded msg (size - %d) from %d; (msg - [", kilo_ticks, kilo_uid, (int)(decoded_content.size()),neighbour_kilo_uid);
+                // for (int i = 0; i < decoded_content.size(); i = i + 1)
+                // {
+                //     printf(" %d ", decoded_content[i]);
+                // }
+                // printf("])\n");
 
                 // printf("[%d] Robot %d storage (%d,%d,%d,%d,%d,%d,%d,%d) for (%d,%d,%d,%d,%d,%d,%d,%d)\n", kilo_ticks, kilo_uid, msg_store_0.size(), msg_store_1.size(), msg_store_2.size(), msg_store_3.size(), msg_store_4.size(), msg_store_5.size(), msg_store_6.size(), msg_store_7.size(), msg_neighbour_robots[0], msg_neighbour_robots[1], msg_neighbour_robots[2], msg_neighbour_robots[3], msg_neighbour_robots[4], msg_neighbour_robots[5], msg_neighbour_robots[6], msg_neighbour_robots[7]);
 
@@ -1195,7 +1195,7 @@ void Grape_using_multiple_msgs::loop()
         // Debug
         if (myLocalEnvInfo.num_task > 0)
         {
-            printf("Robot %d - Local Info:  Num_Task = %d;", kilo_uid, myLocalEnvInfo.num_task);
+            printf("\n\n[%d] $$$$$$$$$$ Robot %d - Local Info:  Num_Task (w/o void_task) = %d;", kilo_ticks, kilo_uid, myLocalEnvInfo.num_task);
             printf("  Task ID: (");
             for (int i = 0; i < myLocalEnvInfo.num_task; i++)
             {
@@ -1209,19 +1209,41 @@ void Grape_using_multiple_msgs::loop()
             printf(")\n");
         }
 
-        if(myLocalEnvInfo.needCheck == true){            
-            chosen_task = DecisionMaking(myLocalEnvInfo); // chosen_task becomes 1,2,3,... or VOID_TASK if no task is selected
+        if(myLocalEnvInfo.needCheck == true){  
+            unsigned char previous_task_id = GetMyChosenTaskID(kilo_uid, myLocalEnvInfo.agent_decision); // For Debug
+            // printf("-         given agent_decision          (size: %d) \n", myLocalEnvInfo.agent_decision.size());
+            int estimated_max_num_agent = EstimateNumRobot(myLocalEnvInfo.agent_decision.size());
+            std::vector<unsigned short int> num_agent_in_task = GetSubpopulation(myLocalEnvInfo.agent_decision, estimated_max_num_agent);
+            printf("-         given num_agent_in_task        (size: %d) ===> ", num_agent_in_task.size());
+            PrintVecInt(num_agent_in_task);
+            printf("-         here, my previous TASK ID is %d \n", previous_task_id);
+            if(kilo_uid <= 3){
+                chosen_task = DecisionMaking(myLocalEnvInfo, previous_task_id, DM_DISTANCE); 
+            }
+            else{
+                chosen_task = DecisionMaking(myLocalEnvInfo, previous_task_id, DM_BALANCE); 
+            }
+            
             if(chosen_task == VOID_TASK){
                 // printf("\nRobot %d - Decision Making and chose VOID TASK\n\n ", kilo_uid);
                 LED_on(VOID_TASK);
             }
             else{
-                printf("\nRobot %d - Decision Making and chose Task %d; chosen_task = %d \n\n ", kilo_uid, myLocalEnvInfo.task_id[chosen_task-1], chosen_task);
+                // printf("\nRobot %d - Decision Making and chose Task %d; chosen_task = %d \n\n ", kilo_uid, myLocalEnvInfo.task_id[chosen_task-1], chosen_task);
                 LED_on(myLocalEnvInfo.task_id[chosen_task-1]);
             }
             
             myLocalEnvInfo = UpdateLocalInfo(myLocalEnvInfo, kilo_uid, chosen_task);        
             // myLocalEnvInfo.needCheck = false;
+            // for debug
+            estimated_max_num_agent = EstimateNumRobot(myLocalEnvInfo.agent_decision.size());
+            num_agent_in_task = GetSubpopulation(myLocalEnvInfo.agent_decision, estimated_max_num_agent);
+            printf("-         The robot selects  TASK ID %d from Pre-Task %d; assumes Num_Robot = %d  \n", myLocalEnvInfo.chosen_task_id, previous_task_id, estimated_max_num_agent);
+            printf("-               num_agent_in_task                                                      (size: %d) ===> ", num_agent_in_task.size());
+            PrintVecInt(num_agent_in_task);
+            // printf("-         modified agent_decision        (size: %d) \n", myLocalEnvInfo.agent_decision.size());
+            int reconfirm = GetMyChosenTaskID(kilo_uid, myLocalEnvInfo.agent_decision);
+            printf("-            reconfirm ----> TASK %d \n", reconfirm);     
         }
 
         // Generation of contents to broadcast
@@ -1231,7 +1253,9 @@ void Grape_using_multiple_msgs::loop()
         }
 
         // Broadcast the generated contents using multiple messages
-        broadcast_msgs();     
+        broadcast_msgs(); 
+        // Debug
+        printf("[%d] >>>>>> Robot %d  broadcasted  agent_decision          (size: %d) \n", kilo_ticks, kilo_uid, myLocalEnvInfo.myPartition.agent_decision.size());    
     }
 }
 //-------------------------------------------------------------
@@ -1561,17 +1585,18 @@ void Estimation_distance_to_task_using_multiple_msgs::loop()
             printf(")\n");
         }
 
-        if(myLocalEnvInfo.needCheck == true){            
-            chosen_task = DecisionMaking(myLocalEnvInfo); // chosen_task becomes 1,2,3,... or VOID_TASK if no task is selected
+        if(myLocalEnvInfo.needCheck == true){
+            unsigned char previous_task_id = GetMyChosenTaskID(kilo_uid, myLocalEnvInfo.agent_decision); // For Debug            
+            chosen_task = DecisionMaking(myLocalEnvInfo, previous_task_id, DM_DISTANCE); // chosen_task becomes 1,2,3,... or VOID_TASK if no task is selected
             if(chosen_task == VOID_TASK){
-                // printf("\nRobot %d - Decision Making and chose VOID TASK\n\n ", kilo_uid);
+                printf("\nRobot %d - Decision Making and chose VOID TASK\n\n ", kilo_uid);
                 LED_on(VOID_TASK);
             }
             else{
                 printf("\nRobot %d - Decision Making and chose Task %d; chosen_task = %d \n\n ", kilo_uid, myLocalEnvInfo.task_id[chosen_task-1], chosen_task);
                 LED_on(myLocalEnvInfo.task_id[chosen_task-1]);
             }
-            myLocalEnvInfo.chosen_task = chosen_task;
+            myLocalEnvInfo.chosen_task_id = chosen_task;
             myPartition = UpdatePartition(myPartition, kilo_uid, chosen_task, myLocalEnvInfo); // TODO
             // printf("Num of Known Task = %d \n", myPartition.num_task );            
             // myLocalEnvInfo.needCheck = false;

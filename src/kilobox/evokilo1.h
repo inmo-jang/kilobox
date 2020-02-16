@@ -741,7 +741,7 @@ public:
 
 // --------------------------------------------------------------------------------------
 
-#define MSG_END 0
+#define MSG_END 254
 class Grape_using_multiple_msgs : public Kilobot
 {
 public:
@@ -897,7 +897,7 @@ public:
 
 // --------------------------------------------------------------------------------------
 
-#define MSG_END 0
+
 class Estimation_distance_to_task_using_multiple_msgs : public Kilobot
 {
 public:

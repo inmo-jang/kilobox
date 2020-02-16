@@ -11,7 +11,7 @@ using namespace Kilolib;
 
 struct global_env{
         std::vector<unsigned char> task_id = {1,2,3}; // Task ID
-        std::vector<unsigned char> task_demand = {100,100,100}; // Task Demand
+        std::vector<unsigned char> task_demand = {85,170,255}; // Task Demand
 };
 
 
@@ -57,7 +57,7 @@ struct local_env_info{
 
     // Variable facilitating the decision-making
     std::vector<unsigned char> num_agent_in_task = {}; // Number of Participants in each task
-    int chosen_task = 0; // My previous decision for this given local information
+    unsigned char chosen_task_id = 0; // My previous decision for this given local information
     bool needCheck = false; // if it is true, a decision-making should be done based on this local info
 
     partition myPartition;
@@ -68,11 +68,11 @@ bool IsRobotSatisfied(std::vector<unsigned char> agent_satisfied_flag_vector, ui
 std::vector<unsigned char> CheckSatsified(std::vector<unsigned char> agent_satisfied_flag_vector, uint16_t kilo_uid);
 
 // The following two are for complete-information partition
-int GetMyChosenTaskID(unsigned int kilo_uid, std::vector<unsigned char> agent_decision, int num_task);
-std::vector<unsigned short int> GetSubpopulation(std::vector<unsigned char> agent_decision, int num_task, int num_agent);
-std::vector<unsigned char> UpdateAgentDecisionVec(std::vector<unsigned char> agent_decision, unsigned int kilo_uid, int chosen_task, int num_task);
-int EstimateNumRobot(int num_bytes_agent_decision, int num_task);
-int NumByteForAgentDecisionVec(int num_robot, int num_task);
+int GetMyChosenTaskID(unsigned int kilo_uid, std::vector<unsigned char> agent_decision);
+std::vector<unsigned short int> GetSubpopulation(std::vector<unsigned char> agent_decision, int num_agent);
+std::vector<unsigned char> UpdateAgentDecisionVec(std::vector<unsigned char> agent_decision, unsigned int kilo_uid, int chosen_task);
+int EstimateNumRobot(int num_bytes_agent_decision);
+int NumByteForAgentDecisionVec(int num_robot);
 
 partition D_Mutex(partition myPartition, partition neighbourPartition); // D-Mutex Algorithm (T-RO paper, Algorithm 2)
 // 
@@ -87,8 +87,12 @@ local_env_info UpdateTaskFreshness(local_env_info myLocalEnvInfo, uint32_t kilo_
 
 #define VOID_TASK 0
 #define NUM_BYTE_MSG 7 // Number of bytes for content per each message, except header
+#define NUM_MAX_TASK 4 // Number of maximum tasks (including the void task); This will be used for bit-modulation of "agent_decision" vector. 
 
-int DecisionMaking(local_env_info myLocalEnvInfo); // Decision making based on my local info, outputting the index of chosen task (Note: 0 means void task)
+#define DM_DISTANCE 1 
+#define DM_BALANCE 2 
+
+int DecisionMaking(local_env_info myLocalEnvInfo, unsigned char previous_task_id, int option); // Decision making based on my local info, outputting the index of chosen task (Note: 0 means void task)
 
 partition UpdatePartition(partition myPartition, uint16_t kilo_uid, int chosen_task, local_env_info myLocalEnvInfo);
 local_env_info UpdateLocalInfo(local_env_info myLocalEnvInfo, uint16_t kilo_uid, int chosen_task);
@@ -96,6 +100,7 @@ local_env_info UpdateLocalInfo(local_env_info myLocalEnvInfo, uint16_t kilo_uid,
 local_env_info UpdateLocalEnvInfoFromPartition(local_env_info myLocalEnvInfo, partition neighbourPartition, uint8_t dist_neighbour, uint32_t kilo_ticks, uint16_t kilo_uid); // Update myLocalEnvInfo using neighbourPartition
 std::vector<unsigned char> test_gen_content_to_broadcast(uint16_t kilo_uid); // For Testing Communication Function
 
+std::vector<unsigned short int> RearrangeNumAgentsInTasks(std::vector<unsigned short int> num_agent_in_task_global, local_env_info myLocalEnvInfo); // Transform to num_agent_in_task according to the robot's locally known task orders
 
 
 #endif

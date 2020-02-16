@@ -56,20 +56,23 @@ std::vector<unsigned char> AddVecToAnother(std::vector<unsigned char> vec_to_add
     return vec_existing;
 }
 
-int GetMinIndex(std::vector<unsigned int> vec){
+int GetMinIndex(std::vector<signed long int> vec){
     int min_index = std::min_element(vec.begin(), vec.end()) - vec.begin();    
     return min_index;
 }
 
-int GetMinValue(std::vector<unsigned int> vec){
-    int min_value = *std::min_element(vec.begin(), vec.end());    
+signed long int GetMinValue(std::vector<signed long int> vec){
+    signed long int min_value = *std::min_element(vec.begin(), vec.end());    
     return min_value;
 }
 
+unsigned char GetMinValueChar(std::vector<unsigned char> vec){
+    unsigned char min_value = *std::min_element(vec.begin(), vec.end());    
+    return min_value;
+}
 
-
-unsigned int UpperClamp(unsigned int input, unsigned int upper_bound){
-    unsigned int output;
+signed long int UpperClamp(signed long int input, signed long int upper_bound){
+    signed long int output;
     if (input > upper_bound){
         output = upper_bound;
     }
@@ -91,6 +94,17 @@ void PrintVec(std::vector<unsigned char> vec){
 }
 
 void PrintVecInt(std::vector<unsigned short int> vec){
+    printf("Vector Element = [");
+    for(int i=0; i<vec.size(); i++){
+        if (i % 10 == 0){
+            printf(":", vec[i]);
+        }
+        printf("%d,", vec[i]);
+        
+    }printf("]\n");
+}
+
+void PrintVecSignedInt(std::vector<signed long int> vec){
     printf("Vector Element = [");
     for(int i=0; i<vec.size(); i++){
         if (i % 10 == 0){
