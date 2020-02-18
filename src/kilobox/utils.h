@@ -20,5 +20,5 @@ void PrintVec(std::vector<unsigned char> vec);
 void PrintVecInt(std::vector<unsigned short int> vec);
 void PrintVecSignedInt(std::vector<signed long int> vec);
 int RandIntRange(int lower, int upper);
-
+signed long int SumVec(std::vector<unsigned short int> vec);
 #endif

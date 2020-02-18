@@ -1587,7 +1587,7 @@ void Estimation_distance_to_task_using_multiple_msgs::loop()
 
         if(myLocalEnvInfo.needCheck == true){
             unsigned char previous_task_id = GetMyChosenTaskID(kilo_uid, myLocalEnvInfo.agent_decision); // For Debug            
-            chosen_task = DecisionMaking(myLocalEnvInfo, previous_task_id, DM_DISTANCE); // chosen_task becomes 1,2,3,... or VOID_TASK if no task is selected
+            chosen_task = DecisionMaking(myLocalEnvInfo, previous_task_id, DM_BALANCE); // chosen_task becomes 1,2,3,... or VOID_TASK if no task is selected
             if(chosen_task == VOID_TASK){
                 printf("\nRobot %d - Decision Making and chose VOID TASK\n\n ", kilo_uid);
                 LED_on(VOID_TASK);

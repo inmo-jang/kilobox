@@ -318,9 +318,9 @@ local_env_info UpdateLocalEnvAsNewTaskFound(local_env_info myLocalEnvInfo, int t
 local_env_info UpdateTaskFreshness(local_env_info myLocalEnvInfo, uint32_t kilo_ticks){ // Forgetting task information as time goes  (But, if the robot is very close to a task, don't forget this task's info)
     
     // User Parameters
-    float forget_rate = 50.0; // NOTE: The user parameter to set how quickly a robot forgets its "task_distance" value as time goes. This paramter works along with "expire_time" below. (However, it works when a robot is alone. If there is another neighbour robot who updates task_distance info, then this parameter doesn't much matter)    
-    unsigned int expire_time = 1000; // NOTE: When "task_freshness" reaches this value, then a robot does not consider this task as it is not valid any longer. 
-    unsigned char distance_increase_rate = 1; // 4; // NOTE: Just by a robot itself, it increases each "task_distance". Otherwise, when this info is updated by inter-robot communication, an expired task is alive again. 
+    float forget_rate = (float)FORGET_RATE; // NOTE: The user parameter to set how quickly a robot forgets its "task_distance" value as time goes. This paramter works along with "expire_time" below. (However, it works when a robot is alone. If there is another neighbour robot who updates task_distance info, then this parameter doesn't much matter)    
+    unsigned int expire_time = (unsigned int)EXPIRE_TIME; // NOTE: When "task_freshness" reaches this value, then a robot does not consider this task as it is not valid any longer. 
+    unsigned char distance_increase_rate = (unsigned char)DISTANCE_INCREASE_RATE; // 4; // NOTE: Just by a robot itself, it increases each "task_distance". Otherwise, when this info is updated by inter-robot communication, an expired task is alive again. 
 
     // Function
     for (int i=0; i< myLocalEnvInfo.num_task; i++){ // For each locally known task
@@ -360,20 +360,18 @@ int DecisionMaking(local_env_info myLocalEnvInfo, unsigned char previous_task_id
     
 
     // User Parameter
-    signed long int MaxCost = 255;
+    signed long int MaxCost;
 
     // Output initisalisation
     int chosen_task = VOID_TASK; // 0 means void task 
 
-    // To facilitate GRAPE, the robot needs to know subpopulation over the tasks, which can be obtained as follows. 
-    int estimated_max_num_agent = EstimateNumRobot(myLocalEnvInfo.agent_decision.size()); 
-    std::vector<unsigned short int> num_agent_in_task = GetSubpopulation(myLocalEnvInfo.agent_decision, estimated_max_num_agent); // NOTE: num_agent_in_task is based on absolute
     
 
     // Utility Computation
     std::vector<signed long int> task_cost(myLocalEnvInfo.num_task, MaxCost);  // Initialisation; It needs to be arbitrarily large if this decision-making is for minimising
     // (1) - Just based on the task distance
-    if(option == DM_DISTANCE){        
+    if(option == DM_DISTANCE){ 
+        MaxCost = 255;       
         for(int i=0; i<myLocalEnvInfo.num_task; i++){
             signed long int _task_cost = (signed long int)myLocalEnvInfo.task_distance[i]; //  + myLocalEnvInfo.task_freshness[i];
             task_cost[i] = UpperClamp(_task_cost, MaxCost);
@@ -383,7 +381,16 @@ int DecisionMaking(local_env_info myLocalEnvInfo, unsigned char previous_task_id
 
     // (2) Considering task_demand/task_distance
     if(option == DM_BALANCE){
-        MaxCost = 0;
+        // To facilitate GRAPE, the robot needs to know subpopulation over the tasks, which can be obtained as follows. 
+        int estimated_max_num_agent = EstimateNumRobot(myLocalEnvInfo.agent_decision.size()); 
+        std::vector<unsigned short int> num_agent_in_task = GetSubpopulation(myLocalEnvInfo.agent_decision, estimated_max_num_agent); // NOTE: num_agent_in_task is based on absolute
+        signed long int total_num_participanted_agent = SumVec(num_agent_in_task) - (signed long int)num_agent_in_task[0];
+        if(previous_task_id == 0){
+            total_num_participanted_agent = total_num_participanted_agent + 1; // As this robot is going to select a task
+        }
+        printf(" total_num_participanted_agent (including me) = %d\n", total_num_participanted_agent);
+
+        MaxCost = MAX_COST_DM_BALANCE;
 
         printf("the robot was in the previous_task_id (%d)\n", previous_task_id);    
         for(int i=0; i<myLocalEnvInfo.num_task; i++){
@@ -393,9 +400,16 @@ int DecisionMaking(local_env_info myLocalEnvInfo, unsigned char previous_task_id
                 _num_participants = _num_participants - 1;
             }
             printf(" task_id (%d); new_num_participants (including me) = %d\n", _task_id, _num_participants);
-            signed long int _weight_factor = 20;    
-            signed long int _task_demand = (signed long int)(myLocalEnvInfo.task_demand[i]);        
-            signed long int _task_utility = (signed long int)ceil(_weight_factor*_task_demand/(_num_participants+1)) - myLocalEnvInfo.task_distance[i]; 
+            signed long int _max_subpopulation_ratio = 255; // This is necessary because variables are integers, not within [0,1]
+            
+            signed long int _subpopulation_ratio = _max_subpopulation_ratio*_num_participants/total_num_participanted_agent; // Note that this is a ratio in [0, _population_normaliser_max_agent] 
+            printf(" task_id (%d); _subpopulation_ratio (including me) = %d\n", _task_id, _subpopulation_ratio);
+            signed long int _weight_factor = WEIGHT_FACTOR_DISTANCE;    
+            signed long int _task_demand = (signed long int)(myLocalEnvInfo.task_demand[i])*255;        
+            printf(" task_id (%d); _task_demand (including me) = %d\n", _task_id, _task_demand);
+            signed long int _distance_normaliser = 255;
+            signed long int _task_utility = (signed long int)ceil(_task_demand/_subpopulation_ratio)*_distance_normaliser - _weight_factor*myLocalEnvInfo.task_distance[i]; // As variables are integer, MaxCost is multiplied rather than for dividing task_distance 
+            printf(" task_id (%d); _task_utility 1st term = %d\n", _task_id, (signed long int)ceil(_task_demand/_subpopulation_ratio)*_distance_normaliser);
             signed long int _task_cost = -_task_utility;
 
             // signed long int _task_cost = (signed long int)myLocalEnvInfo.task_distance[i]; //  + myLocalEnvInfo.task_freshness[i];

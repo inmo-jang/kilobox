@@ -11,7 +11,7 @@ using namespace Kilolib;
 
 struct global_env{
         std::vector<unsigned char> task_id = {1,2,3}; // Task ID
-        std::vector<unsigned char> task_demand = {85,170,255}; // Task Demand
+        std::vector<unsigned char> task_demand = {1,2,3}; // Task Demand; Note that 255 is intentially set with consideration of Max_Cost = 255
 };
 
 
@@ -83,15 +83,23 @@ unsigned int EstimateNumMsg(unsigned int content_size, unsigned int num_byte_for
 
 local_env_info UpdateLocalEnvAsNewTaskFound(local_env_info myLocalEnvInfo, int task_found_index, global_env _global_env, uint32_t kilo_ticks); // Update LocalInfo when a task is physically found
 
+// Settings for Dynamic Task Environments
+#define FORGET_RATE 0 // See UpdateTaskFreshness(); The parameter sets how quickly a robot forgets its "task_distance" value as time goes. This paramter works along with "expire_time" below. 
+#define EXPIRE_TIME 1000 // See UpdateTaskFreshness(); When "task_freshness" reaches this value, then a robot does not consider this task as it is not valid any longer. 
+#define DISTANCE_INCREASE_RATE 0 // See UpdateTaskFreshness(); Just by a robot itself, it increases each "task_distance". Otherwise, when this info is updated by inter-robot communication, an expired task is alive again. 
 local_env_info UpdateTaskFreshness(local_env_info myLocalEnvInfo, uint32_t kilo_ticks);
 
-#define VOID_TASK 0
-#define NUM_BYTE_MSG 7 // Number of bytes for content per each message, except header
+
+#define NUM_BYTE_MSG 7 // See broadcast_msgs(), message_rx() in the main loop;Number of bytes for content per each message, except header
+
+#define VOID_TASK 0 // See DecisionMaking(); The Void Task ID
 #define NUM_MAX_TASK 4 // Number of maximum tasks (including the void task); This will be used for bit-modulation of "agent_decision" vector. 
 
+// Settings for Decision Making
 #define DM_DISTANCE 1 
 #define DM_BALANCE 2 
-
+#define WEIGHT_FACTOR_DISTANCE 10 
+#define MAX_COST_DM_BALANCE 1000 
 int DecisionMaking(local_env_info myLocalEnvInfo, unsigned char previous_task_id, int option); // Decision making based on my local info, outputting the index of chosen task (Note: 0 means void task)
 
 partition UpdatePartition(partition myPartition, uint16_t kilo_uid, int chosen_task, local_env_info myLocalEnvInfo);

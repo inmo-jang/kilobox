@@ -119,3 +119,11 @@ int RandIntRange(int lower, int upper){ // Generage a random integer from lower 
     int num = (std::rand() % (upper - lower + 1)) + lower;  
     return num;
 }
+
+signed long int SumVec(std::vector<unsigned short int> vec){
+    signed long int sum_of_elems = 0;
+    for(std::vector<unsigned short int>::iterator it = vec.begin(); it != vec.end(); ++it){
+        sum_of_elems += *it;
+    }
+    return sum_of_elems;
+}
